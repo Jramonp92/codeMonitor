@@ -72,15 +72,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- NUEVO MANEJADOR PARA OBTENER LOS ISSUES ---
   if (message.type === 'getIssues') {
     (async () => {
       try {
-        const { repoFullName } = message;
+        const { repoFullName, state } = message;
         if (!repoFullName) {
           throw new Error('repoFullName is required.');
         }
-        const issues = await fetchIssues(repoFullName);
+        const issues = await fetchIssues(repoFullName, state);
         sendResponse({ success: true, issues });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
