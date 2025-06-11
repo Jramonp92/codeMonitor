@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "CodeMonitor",
+    "name": "codeMonitor",
     "version": "0.1.0",
     "description": "Una extensión para monitorear rápidamente el estado de tus repositorios de GitHub.",
     "action": {
@@ -17,6 +17,13 @@
     },
     "permissions": [
       "identity",
-      "storage"
+      "storage",
+      "activeTab"
+    ],
+    "oauth2": {
+    "client_id": "Ov23liJxOBldJkvfBnOm",
+    "scopes": [
+        "repo"
     ]
+    }
   }
