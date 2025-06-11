@@ -48,9 +48,13 @@ export async function fetchRepositories() {
     return await response.json();
   }
   
-  // Función para obtener los issues de un repositorio específico
-  export async function fetchIssues(repoFullName: string) {
-    console.log(`GitHub Client: Pidiendo issues para ${repoFullName}...`);
+/**
+ * Función de issues actualizada para aceptar un filtro de estado.
+ * @param repoFullName - El nombre completo del repositorio.
+ * @param state - El estado de los issues a buscar ('open', 'closed', 'all').
+ */
+export async function fetchIssues(repoFullName: string, state: 'open' | 'closed' | 'all' = 'all') {
+    console.log(`GitHub Client: Pidiendo issues para ${repoFullName} con estado ${state}...`);
   
     const result = await chrome.storage.local.get('token');
     const token = result.token;
@@ -59,7 +63,8 @@ export async function fetchRepositories() {
       throw new Error('No authentication token found.');
     }
   
-    const response = await fetch(`https://api.github.com/repos/${repoFullName}/issues?state=open&sort=updated&per_page=5`, {
+    // Usamos el parámetro 'state' en la URL de la API
+    const response = await fetch(`https://api.github.com/repos/${repoFullName}/issues?state=${state}&sort=updated&per_page=5`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'X-GitHub-Api-Version': '2022-11-28'
@@ -103,7 +108,7 @@ export async function fetchRepositories() {
     console.log(`GitHub Client: Se encontraron ${pullRequests.length} PRs.`);
     return pullRequests;
   }
-  
+
  /**
   * @param repoFullName - El nombre completo del repositorio (ej. 'owner/repo').
   */
