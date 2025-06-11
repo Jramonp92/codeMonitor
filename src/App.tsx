@@ -20,10 +20,13 @@ interface IssueInfo {
   created_at: string;
   state: 'open' | 'closed'; 
   assignees: GitHubUser[];
-  pull_request?: object; // Propiedad para diferenciar PRs de Issues
+  pull_request?: object;
 }
 
-interface PullRequestInfo extends IssueInfo {}
+interface PullRequestInfo extends IssueInfo {
+  draft: boolean;
+  merged_at: string | null;
+}
 
 interface ActionInfo {
   id: number;
@@ -37,9 +40,37 @@ interface ActionInfo {
 
 type Tab = 'Commits' | 'Issues' | 'PRs' | 'Actions';
 type IssueState = 'open' | 'closed' | 'all';
+type PRState = 'all' | 'open' | 'closed' | 'draft' | 'merged' | 'assigned_to_me';
 
-// Componente para la "píldora" de estado
-const StatusPill: React.FC<{ state: 'open' | 'closed' }> = ({ state }) => {
+// --- Componente de estado mejorado ---
+const ItemStatus: React.FC<{ item: IssueInfo | PullRequestInfo }> = ({ item }) => {
+  let backgroundColor = '';
+  let text = '';
+
+  // La propiedad 'draft' solo existe en los PRs, es una buena forma de diferenciarlos.
+  const isPR = 'draft' in item;
+
+  if (isPR) {
+    const pr = item as PullRequestInfo;
+    if (pr.merged_at) {
+      backgroundColor = '#6f42c1'; // Morado para Merged
+      text = 'Merged';
+    } else if (pr.draft) {
+      backgroundColor = '#6a737d'; // Gris para Draft
+      text = 'Draft';
+    } else if (pr.state === 'open') {
+      backgroundColor = '#28a745'; // Verde para Open
+      text = 'Open';
+    } else { // Si está cerrado pero no 'merged'
+      backgroundColor = '#d73a49'; // Rojo para Closed
+      text = 'Closed';
+    }
+  } else {
+    // Es un Issue normal
+    backgroundColor = item.state === 'open' ? '#28a745' : '#d73a49';
+    text = item.state;
+  }
+
   const style = {
     display: 'inline-block',
     padding: '2px 8px',
@@ -49,10 +80,12 @@ const StatusPill: React.FC<{ state: 'open' | 'closed' }> = ({ state }) => {
     fontWeight: 'bold',
     color: 'white',
     textTransform: 'capitalize' as 'capitalize',
-    backgroundColor: state === 'open' ? '#28a745' : '#d73a49',
+    backgroundColor,
   };
-  return <span style={style}>{state}</span>;
+
+  return <span style={style}>{text}</span>;
 };
+
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -63,6 +96,7 @@ function App() {
   const [isContentLoading, setIsContentLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<Tab>('Commits');
   const [issueStateFilter, setIssueStateFilter] = useState<IssueState>('all');
+  const [prStateFilter, setPrStateFilter] = useState<PRState>('all');
 
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [issues, setIssues] = useState<IssueInfo[]>([]);
@@ -86,16 +120,16 @@ function App() {
     }
   }, [user]);
 
-  // Efecto que pide los datos cada vez que cambia el repo, la pestaña o un filtro
+  // Efecto que pide datos (ahora también escucha cambios en prStateFilter)
   useEffect(() => {
     if (selectedRepo) {
       fetchDataForTab(activeTab);
     } else {
       setCommits([]); setIssues([]); setPullRequests([]); setActions([]);
     }
-  }, [selectedRepo, activeTab, issueStateFilter]);
+  }, [selectedRepo, activeTab, issueStateFilter, prStateFilter]);
 
-  // Función central para pedir datos al background script
+  // Función central para pedir datos al background script (actualizada para PRs)
   const fetchDataForTab = (tab: Tab) => {
     setIsContentLoading(true);
     setCommits([]); setIssues([]); setPullRequests([]); setActions([]);
@@ -109,7 +143,18 @@ function App() {
         messageType = 'getIssues';
         payload.state = issueStateFilter;
         break;
-      case 'PRs': messageType = 'getPullRequests'; break;
+      case 'PRs': 
+        messageType = 'getPullRequests';
+        if (prStateFilter === 'draft' || prStateFilter === 'open') {
+          payload.state = 'open';
+        } else if (prStateFilter === 'merged' || prStateFilter === 'closed') {
+          payload.state = 'closed';
+        } else if (prStateFilter === 'assigned_to_me') {
+          payload.state = 'assigned_to_me';
+        } else {
+          payload.state = 'all'; 
+        }
+        break;
       case 'Actions': messageType = 'getActions'; break;
     }
 
@@ -118,11 +163,22 @@ function App() {
         switch(tab) {
           case 'Commits': setCommits(response.commits || []); break;
           case 'Issues': 
-            // Filtramos para quedarnos solo con los que NO son Pull Requests
             const onlyIssues = response.issues?.filter((item: IssueInfo) => !item.pull_request) || [];
             setIssues(onlyIssues);
             break;
-          case 'PRs': setPullRequests(response.pullRequests || []); break;
+          case 'PRs': 
+            let prs = response.pullRequests || [];
+            if (prStateFilter === 'draft') {
+              prs = prs.filter((pr: PullRequestInfo) => pr.draft);
+            } else if (prStateFilter === 'open') {
+              prs = prs.filter((pr: PullRequestInfo) => !pr.draft);
+            } else if (prStateFilter === 'merged') {
+              prs = prs.filter((pr: PullRequestInfo) => pr.merged_at !== null);
+            } else if (prStateFilter === 'closed') {
+              prs = prs.filter((pr: PullRequestInfo) => pr.merged_at === null);
+            }
+            setPullRequests(prs);
+            break;
           case 'Actions': setActions(response.actions || []); break;
         }
       } else {
@@ -140,22 +196,15 @@ function App() {
   const handleLogin = () => {
     setIsLoading(true);
     chrome.runtime.sendMessage({ type: 'login' }, (response) => {
-      if (response && response.success) {
-        setUser(response.user);
-      } else {
-        console.error('Login failed:', response?.error);
-      }
+      if (response && response.success) setUser(response.user);
+      else console.error('Login failed:', response?.error);
       setIsLoading(false);
     });
   };
 
   const handleLogout = () => {
-    setRepos([]);
-    setSelectedRepo('');
-    setCommits([]);
-    setIssues([]);
-    setPullRequests([]);
-    setActions([]);
+    setRepos([]); setSelectedRepo(''); setCommits([]);
+    setIssues([]); setPullRequests([]); setActions([]);
     setIsLoading(true);
     chrome.runtime.sendMessage({ type: 'logout' }, () => {
       setUser(null);
@@ -173,7 +222,7 @@ function App() {
       }
     }
     if (status === 'in_progress') return '⏳';
-    return '🕒'; // queued
+    return '�';
   };
 
   const renderTabs = () => (
@@ -197,6 +246,26 @@ function App() {
         ))}
       </div>
     );
+  };
+
+  const renderPrFilters = () => {
+    if (activeTab !== 'PRs') return null;
+    return (
+      <div className="filter-container">
+        {(['all', 'open', 'closed', 'draft', 'merged', 'assigned_to_me'] as PRState[]).map(state => (
+          <label key={state}>
+            <input 
+              type="radio" 
+              name="prState" 
+              value={state}
+              checked={prStateFilter === state}
+              onChange={(e) => setPrStateFilter(e.target.value as PRState)}
+            />
+            {state === 'assigned_to_me' ? 'Asignados a mi' : state.charAt(0).toUpperCase() + state.slice(1)}
+          </label>
+        ))}
+      </div>
+    );
   }
 
   // Renderiza el contenido de la pestaña activa
@@ -211,7 +280,7 @@ function App() {
               <a href={item.html_url} target="_blank" rel="noopener noreferrer">
                 #{item.number} {item.title}
               </a>
-              <StatusPill state={item.state} />
+              <ItemStatus item={item} />
             </div>
             <div className="item-meta">
               <span>Creado por <strong>{item.user.login}</strong></span>
@@ -252,7 +321,6 @@ function App() {
     return null;
   };
 
-  // Renderiza la vista principal cuando el usuario está logueado
   const renderLoggedInView = () => (
     <div>
       <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
@@ -270,6 +338,7 @@ function App() {
       
       {selectedRepo && renderTabs()}
       {selectedRepo && renderIssueFilters()} 
+      {selectedRepo && renderPrFilters()}
 
       <div className="content-area">{renderContentForTab()}</div>
 
@@ -277,7 +346,6 @@ function App() {
     </div>
   );
 
-  // Renderizador principal del componente App
   return (
     <div className="app-container">
       <h1>Repo Observer</h1>
