@@ -20,6 +20,7 @@ interface IssueInfo {
   created_at: string;
   state: 'open' | 'closed'; 
   assignees: GitHubUser[];
+  pull_request?: object; // Propiedad para diferenciar PRs de Issues
 }
 
 interface PullRequestInfo extends IssueInfo {}
@@ -116,7 +117,11 @@ function App() {
       if (response?.success) {
         switch(tab) {
           case 'Commits': setCommits(response.commits || []); break;
-          case 'Issues': setIssues(response.issues || []); break;
+          case 'Issues': 
+            // Filtramos para quedarnos solo con los que NO son Pull Requests
+            const onlyIssues = response.issues?.filter((item: IssueInfo) => !item.pull_request) || [];
+            setIssues(onlyIssues);
+            break;
           case 'PRs': setPullRequests(response.pullRequests || []); break;
           case 'Actions': setActions(response.actions || []); break;
         }
@@ -168,7 +173,7 @@ function App() {
       }
     }
     if (status === 'in_progress') return '⏳';
-    return '�'; // queued
+    return '🕒'; // queued
   };
 
   const renderTabs = () => (
@@ -198,7 +203,6 @@ function App() {
   const renderContentForTab = () => {
     if (isContentLoading) return <p className="loading-text">Cargando...</p>;
     
-    // --- LÓGICA DE RENDERIZADO ACTUALIZADA ---
     const renderItemList = (items: (IssueInfo | PullRequestInfo)[]) => (
       <ul className="item-list">
         {items.map((item) => (
@@ -248,6 +252,7 @@ function App() {
     return null;
   };
 
+  // Renderiza la vista principal cuando el usuario está logueado
   const renderLoggedInView = () => (
     <div>
       <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
@@ -272,6 +277,7 @@ function App() {
     </div>
   );
 
+  // Renderizador principal del componente App
   return (
     <div className="app-container">
       <h1>Repo Observer</h1>
