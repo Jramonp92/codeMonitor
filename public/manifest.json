@@ -1,0 +1,22 @@
+{
+    "manifest_version": 3,
+    "name": "CodeMonitor",
+    "version": "0.1.0",
+    "description": "Una extensión para monitorear rápidamente el estado de tus repositorios de GitHub.",
+    "action": {
+      "default_popup": "index.html"
+    },
+    "icons": {
+      "16": "favicon16.png",
+      "48": "favicon48.png",
+      "128": "favicon128.png"
+    },
+    "background": {
+      "service_worker": "background.js",
+      "type": "module"
+    },
+    "permissions": [
+      "identity",
+      "storage"
+    ]
+  }
