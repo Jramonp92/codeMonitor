@@ -47,7 +47,6 @@ const ItemStatus: React.FC<{ item: IssueInfo | PullRequestInfo }> = ({ item }) =
   let backgroundColor = '';
   let text = '';
 
-  // La propiedad 'draft' solo existe en los PRs, es una buena forma de diferenciarlos.
   const isPR = 'draft' in item;
 
   if (isPR) {
@@ -61,12 +60,11 @@ const ItemStatus: React.FC<{ item: IssueInfo | PullRequestInfo }> = ({ item }) =
     } else if (pr.state === 'open') {
       backgroundColor = '#28a745'; // Verde para Open
       text = 'Open';
-    } else { // Si está cerrado pero no 'merged'
+    } else { 
       backgroundColor = '#d73a49'; // Rojo para Closed
       text = 'Closed';
     }
   } else {
-    // Es un Issue normal
     backgroundColor = item.state === 'open' ? '#28a745' : '#d73a49';
     text = item.state;
   }
@@ -103,7 +101,6 @@ function App() {
   const [pullRequests, setPullRequests] = useState<PullRequestInfo[]>([]);
   const [actions, setActions] = useState<ActionInfo[]>([]);
 
-  // Efecto para verificar la sesión al inicio
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
       if (response?.loggedIn) setUser(response.user);
@@ -111,7 +108,6 @@ function App() {
     });
   }, []);
 
-  // Efecto para obtener los repositorios cuando el usuario se loguea
   useEffect(() => {
     if (user) {
       chrome.runtime.sendMessage({ type: 'getRepositories' }, (response) => {
@@ -120,7 +116,6 @@ function App() {
     }
   }, [user]);
 
-  // Efecto que pide datos (ahora también escucha cambios en prStateFilter)
   useEffect(() => {
     if (selectedRepo) {
       fetchDataForTab(activeTab);
@@ -129,7 +124,6 @@ function App() {
     }
   }, [selectedRepo, activeTab, issueStateFilter, prStateFilter]);
 
-  // Función central para pedir datos al background script (actualizada para PRs)
   const fetchDataForTab = (tab: Tab) => {
     setIsContentLoading(true);
     setCommits([]); setIssues([]); setPullRequests([]); setActions([]);
@@ -212,6 +206,14 @@ function App() {
     });
   };
 
+  // --- Nueva función para manejar el refresh ---
+  const handleRefresh = () => {
+    if (selectedRepo) {
+      console.log('UI: Refrescando datos para', activeTab);
+      fetchDataForTab(activeTab);
+    }
+  };
+
   const getStatusIcon = (status: ActionInfo['status'], conclusion: ActionInfo['conclusion']) => {
     if (status === 'completed') {
       switch (conclusion) {
@@ -222,7 +224,7 @@ function App() {
       }
     }
     if (status === 'in_progress') return '⏳';
-    return '�';
+    return '🕒';
   };
 
   const renderTabs = () => (
@@ -268,7 +270,6 @@ function App() {
     );
   }
 
-  // Renderiza el contenido de la pestaña activa
   const renderContentForTab = () => {
     if (isContentLoading) return <p className="loading-text">Cargando...</p>;
     
@@ -334,6 +335,10 @@ function App() {
             <option key={repo.id} value={repo.full_name}>{repo.name}</option>
           ))}
         </select>
+        {/* --- Botón de Refresh --- */}
+        <button onClick={handleRefresh} className="refresh-button" title="Refrescar datos" disabled={isContentLoading}>
+          🔄
+        </button>
       </div>
       
       {selectedRepo && renderTabs()}
