@@ -1,0 +1,19 @@
+name: Failing Workflow
+on:
+  workflow_dispatch:
+
+jobs:
+  fail_job:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Wait for 1 minute
+        run: |
+          echo "Esperando 60 segundos para que puedas verlo en estado 'in progress'..."
+          sleep 60
+      
+      - name: Intentionally fail
+        run: |
+          echo "Este workflow va a fallar a propósito..."
+          exit 1

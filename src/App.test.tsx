@@ -34,6 +34,15 @@ const mockPRs = [
   { id: 105, title: 'Closed PR 1', state: 'closed', draft: false, merged_at: null, assignees: [], user: { login: 'creator', avatar_url: '', html_url: '' }, number: 105, html_url: '' },
 ];
 
+const mockActions = [
+    { id: 201, name: 'Successful Action', status: 'completed', conclusion: 'success', actor: { login: 'actor1' }, pull_requests: [], html_url: '', created_at: '' },
+    { id: 202, name: 'Failed Action', status: 'completed', conclusion: 'failure', actor: { login: 'actor2' }, pull_requests: [], html_url: '', created_at: '' },
+    { id: 203, name: 'In Progress Action', status: 'in_progress', conclusion: null, actor: { login: 'actor3' }, pull_requests: [], html_url: '', created_at: '' },
+    { id: 204, name: 'Queued Action', status: 'queued', conclusion: null, actor: { login: 'actor4' }, pull_requests: [], html_url: '', created_at: '' },
+    { id: 205, name: 'Waiting Action', status: 'waiting', conclusion: null, actor: { login: 'actor5' }, pull_requests: [], html_url: '', created_at: '' },
+    { id: 206, name: 'Cancelled Action', status: 'completed', conclusion: 'cancelled', actor: { login: 'actor6' }, pull_requests: [], html_url: '', created_at: '' }
+];
+
 
 // Mock de la API de Chrome
 beforeAll(() => {
@@ -65,41 +74,49 @@ test('renders login button when not authenticated', async () => {
 
 // --- SUITE DE TESTS PARA USUARIO LOGUEADO ---
 describe('when authenticated', () => {
-  // Setup común para todos los tests de esta suite
-  beforeEach(() => {
-    (chrome.runtime.sendMessage as jest.Mock).mockImplementation((message, callback) => {
-      if (!callback) return;
-
-      if (message.type === 'checkAuthStatus') {
-        callback({ loggedIn: true, user: mockUser });
-      } else if (message.type === 'getRepositories') {
-        callback({ success: true, repos: mockRepos });
-      } else if (message.type === 'getCommits') {
-        callback({ success: true, commits: mockCommits });
-      } else if (message.type === 'getIssues') {
-        // --- Mock de Issues mejorado ---
-        const state = message.state || 'all';
-        const filteredIssues = state === 'all' 
-          ? mockIssues 
-          : mockIssues.filter(issue => issue.state === state);
-        callback({ success: true, issues: filteredIssues });
-      } else if (message.type === 'getPullRequests') {
-        // --- Mock de PRs mejorado ---
-        const state = message.state || 'all';
-        let prsToReturn;
-        if (state === 'all') {
-            prsToReturn = mockPRs;
-        } else {
-             prsToReturn = message.state === 'open' 
-                ? mockPRs.filter(p => p.state === 'open')
-                : mockPRs.filter(p => p.state === 'closed');
+    beforeEach(() => {
+      (chrome.runtime.sendMessage as jest.Mock).mockImplementation((message, callback) => {
+        if (!callback) return;
+  
+        if (message.type === 'checkAuthStatus') {
+          callback({ loggedIn: true, user: mockUser });
+        } else if (message.type === 'getRepositories') {
+          callback({ success: true, repos: mockRepos });
+        } else if (message.type === 'getCommits') {
+          callback({ success: true, commits: mockCommits });
+        } else if (message.type === 'getIssues') {
+          const state = message.state || 'all';
+          const filteredIssues = state === 'all' 
+            ? mockIssues 
+            : mockIssues.filter(issue => issue.state === state);
+          callback({ success: true, issues: filteredIssues });
+        } else if (message.type === 'getPullRequests') {
+          const state = message.state || 'all';
+          let prsToReturn;
+          if (state === 'all') {
+              prsToReturn = mockPRs;
+          } else {
+               prsToReturn = message.state === 'open' 
+                  ? mockPRs.filter(p => p.state === 'open')
+                  : mockPRs.filter(p => p.state === 'closed');
+          }
+          callback({ success: true, pullRequests: prsToReturn });
+        } else if (message.type === 'getActions') {
+          const status = message.status || 'all';
+          // Simula la lógica de filtrado de la API de GitHub
+          const filteredActions = status === 'all'
+              ? mockActions
+              : mockActions.filter(action => {
+                  // La API filtra por 'conclusion' para ciertos estados 'completed'
+                  if(status === 'success' || status === 'failure' || status === 'cancelled') {
+                      return action.conclusion === status;
+                  }
+                  return action.status === status;
+              });
+          callback({ success: true, actions: filteredActions });
         }
-        callback({ success: true, pullRequests: prsToReturn });
-      } else if (message.type === 'getActions') {
-        callback({ success: true, actions: [] });
-      }
     });
-  });
+});
 
   test('renders refresh button', async () => {
     render(<App />);
@@ -171,5 +188,43 @@ describe('when authenticated', () => {
     // Filtro Closed (no merged)
     fireEvent.click(screen.getByLabelText('Closed'));
     expect(await screen.findAllByRole('listitem')).toHaveLength(1);
+  });
+
+  test('filters actions correctly', async () => {
+    render(<App />);
+    await screen.findByText(`¡Bienvenido, ${mockUser.login}!`);
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'testuser/repo-1' } });
+  
+    fireEvent.click(await screen.findByText('Actions'));
+  
+    // Filtro 'Success'
+    fireEvent.click(screen.getByLabelText('Success'));
+    expect(await screen.findAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByText(/Successful Action/i)).toBeInTheDocument();
+  
+    // Filtro 'Failure'
+    fireEvent.click(screen.getByLabelText('Failure'));
+    expect(await screen.findAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByText(/Failed Action/i)).toBeInTheDocument();
+  
+    // Filtro 'In Progress'
+    fireEvent.click(screen.getByLabelText('In Progress'));
+    expect(await screen.findAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByText(/In Progress Action/i)).toBeInTheDocument();
+  
+    // Filtro 'Queued'
+    fireEvent.click(screen.getByLabelText('Queued'));
+    expect(await screen.findAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByText(/Queued Action/i)).toBeInTheDocument();
+  
+    // Filtro 'Waiting'
+    fireEvent.click(screen.getByLabelText('Waiting'));
+    expect(await screen.findAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByText(/Waiting Action/i)).toBeInTheDocument();
+
+    // Filtro 'Cancelled'
+    fireEvent.click(screen.getByLabelText('Cancelled'));
+    expect(await screen.findAllByRole('listitem')).toHaveLength(1);
+    expect(screen.getByText(/Cancelled Action/i)).toBeInTheDocument();
   });
 });
