@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 // --- Tipos (Se exportan desde aquí para que otros archivos los usen) ---
-export type Tab = 'Commits' | 'Issues' | 'PRs' | 'Actions';
+export type Tab = 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';;
 export type IssueState = 'open' | 'closed' | 'all';
 export type PRState = 'all' | 'open' | 'closed' | 'draft' | 'merged' | 'assigned_to_me';
 export type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
@@ -12,7 +12,14 @@ export interface GitHubUser { login: string; avatar_url: string; html_url: strin
 export interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
 export interface PullRequestInfo extends IssueInfo { draft: boolean; merged_at: string | null; }
 export interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; actor: { login: string; }; pull_requests: { html_url: string; number: number; }[]; }
-
+export interface ReleaseInfo { 
+    id: number; 
+    name: string; 
+    tag_name: string; 
+    html_url: string; 
+    author: { login: string; }; 
+    published_at: string; 
+  }
 
 export function useGithubData() {
   const [user, setUser] = useState<any>(null);
@@ -32,6 +39,7 @@ export function useGithubData() {
   const [issues, setIssues] = useState<IssueInfo[]>([]);
   const [pullRequests, setPullRequests] = useState<PullRequestInfo[]>([]);
   const [actions, setActions] = useState<ActionInfo[]>([]);
+  const [releases, setReleases] = useState<ReleaseInfo[]>([]);
 
   // --- ESTADOS PARA PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,9 +50,9 @@ export function useGithubData() {
     if (selectedRepo) {
       fetchDataForTab(activeTab, currentPage);
     } else {
-      setCommits([]); setIssues([]); setPullRequests([]); setActions([]);
+        setCommits([]); setIssues([]); setPullRequests([]); setActions([]); setReleases([]); // <-- AÑADIR setReleases
     }
-  }, [selectedRepo, activeTab, issueStateFilter, prStateFilter, actionStatusFilter, currentPage]);
+  }, [selectedRepo, activeTab, issueStateFilter, prStateFilter, actionStatusFilter, currentPage]); 
 
   // Efecto que resetea la página a 1 cuando cambia la pestaña o los filtros
   useEffect(() => {
@@ -74,6 +82,9 @@ export function useGithubData() {
         messageType = 'getActions';
         payload.status = actionStatusFilter;
         break;
+      case 'Releases':
+        messageType = 'getReleases';
+        break;
     }
 
     chrome.runtime.sendMessage({ type: messageType, ...payload }, (response) => {
@@ -100,6 +111,9 @@ export function useGithubData() {
           case 'Actions': 
             setActions(items || []); 
             break;
+          case 'Releases':
+            setReleases(items || []);
+            break;
         }
         setTotalPages(newTotalPages || 1);
       } else {
@@ -120,7 +134,7 @@ export function useGithubData() {
     issueStateFilter, setIssueStateFilter,
     prStateFilter, setPrStateFilter,
     actionStatusFilter, setActionStatusFilter,
-    commits, issues, pullRequests, actions,
+    commits, issues, pullRequests, actions, releases, // <-- AÑADIR releases
     currentPage, setCurrentPage,
     totalPages
   };

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import './App.css'; 
 import { useGithubData } from './hooks/useGithubData';
-import { ItemStatus } from './components/ItemStatus';
+// Asumiendo que estos componentes existen y están correctamente importados
+import { ItemStatus } from './components/ItemStatus'; 
 import { FilterBar } from './components/FilterBar';
 import { Pagination } from './components/Pagination';
-import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, Repo } from './hooks/useGithubData';
+import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, Repo, ReleaseInfo } from './hooks/useGithubData';
 
+// --- Componente Principal de la App ---
 
 function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -19,7 +21,7 @@ function App() {
     issueStateFilter, setIssueStateFilter,
     prStateFilter, setPrStateFilter,
     actionStatusFilter, setActionStatusFilter,
-    commits, issues, pullRequests, actions,
+    commits, issues, pullRequests, actions, releases, // <-- Obtener 'releases' del hook
     currentPage, setCurrentPage,
     totalPages,
   } = useGithubData();
@@ -27,15 +29,22 @@ function App() {
 
   // Efecto para verificar la sesión al inicio
   useEffect(() => {
-    chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
-      if (response?.loggedIn) setUser(response.user);
-      setIsAppLoading(false);
-    });
+    // Esta es una API de ejemplo, en una app real sería chrome.runtime.sendMessage
+    if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
+          if (response?.loggedIn) setUser(response.user);
+          setIsAppLoading(false);
+        });
+    } else {
+        // Mock para desarrollo fuera de la extensión
+        // setUser({ login: 'test-user', avatar_url: 'https://placehold.co/40x40' });
+        setIsAppLoading(false);
+    }
   }, []);
 
   // Efecto para obtener los repositorios cuando el usuario se loguea
   useEffect(() => {
-    if (user) {
+    if (user && window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
       chrome.runtime.sendMessage({ type: 'getRepositories' }, (response) => {
         if (response?.success) setRepos(response.repos);
       });
@@ -50,20 +59,27 @@ function App() {
   
   const handleLogin = () => {
     setIsAppLoading(true);
-    chrome.runtime.sendMessage({ type: 'login' }, (response) => {
-      if (response && response.success) setUser(response.user);
-      else console.error('Login failed:', response?.error);
-      setIsAppLoading(false);
-    });
+    if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ type: 'login' }, (response) => {
+          if (response && response.success) setUser(response.user);
+          else console.error('Login failed:', response?.error);
+          setIsAppLoading(false);
+        });
+    }
   };
 
   const handleLogout = () => {
     setRepos([]); setSelectedRepo('');
     setIsAppLoading(true);
-    chrome.runtime.sendMessage({ type: 'logout' }, () => {
-      setUser(null);
-      setIsAppLoading(false);
-    });
+    if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage({ type: 'logout' }, () => {
+          setUser(null);
+          setIsAppLoading(false);
+        });
+    } else {
+        setUser(null);
+        setIsAppLoading(false);
+    }
   };
   
   // --- Renderizado de la UI ---
@@ -91,7 +107,7 @@ function App() {
         <p>¡Bienvenido, {user.login}!</p>
       </div>
       <div className="select-container">
-        <select id="repo-select" value={selectedRepo} onChange={handleRepoSelect}>
+        <select id="repo-select" value={selectedRepo} onChange={handleRepoSelect} aria-label="Seleccionar Repositorio">
           <option value="">-- Selecciona un Repositorio --</option>
           {repos.map((repo: Repo) => (<option key={repo.id} value={repo.full_name}>{repo.name}</option>))}
         </select>
@@ -103,7 +119,8 @@ function App() {
       {selectedRepo && (
         <>
           <div className="tab-container">
-            {(['Commits', 'Issues', 'PRs', 'Actions'] as Tab[]).map(tab => (
+            {/* AÑADIR 'Releases' a la lista de pestañas */}
+            {(['Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} className={activeTab === tab ? 'active' : ''}>{tab}</button>
             ))}
           </div>
@@ -121,9 +138,11 @@ function App() {
         issues={issues}
         pullRequests={pullRequests}
         actions={actions}
+        releases={releases} // <-- Pasar 'releases' como prop
       />
       
-      {selectedRepo && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0) && (
+      {/* Actualizar la condición para mostrar la paginación */}
+      {selectedRepo && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       )}
 
@@ -133,13 +152,31 @@ function App() {
 }
 
 // Componente para mostrar el contenido de la pestaña activa
-const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, issues, pullRequests, actions } : any) => {
+const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, issues, pullRequests, actions, releases } : any) => { // <-- Recibir 'releases'
   if (isContentLoading) return <p className="loading-text">Cargando...</p>;
     
   const renderItemList = (items: (IssueInfo | PullRequestInfo)[]) => (
     <ul className="item-list">
       {items.map((item) => (
-        <li key={item.id}><div className="item-title-container"><a href={item.html_url} target="_blank" rel="noopener noreferrer">#{item.number} {item.title}</a><ItemStatus item={item} /></div><div className="item-meta"><span>Creado por <strong>{item.user.login}</strong></span>{item.assignees.length > 0 && (<div className="assignee-info"><span>Asignado a:</span>{item.assignees.map(assignee => (<a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}><img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" /></a>))}</div>)}</div></li>
+        <li key={item.id}>
+            <div className="item-title-container">
+                <a href={item.html_url} target="_blank" rel="noopener noreferrer">#{item.number} {item.title}</a>
+                <ItemStatus item={item} />
+            </div>
+            <div className="item-meta">
+                <span>Creado por <strong>{item.user.login}</strong></span>
+                {item.assignees && item.assignees.length > 0 && (
+                    <div className="assignee-info">
+                        <span>Asignado a:</span>
+                        {item.assignees.map(assignee => (
+                            <a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}>
+                                <img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" />
+                            </a>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </li>
       ))}
     </ul>
   );
@@ -161,6 +198,29 @@ const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, is
   if (activeTab === 'PRs' && pullRequests.length > 0) return renderItemList(pullRequests);
   if (activeTab === 'Actions' && actions.length > 0) {
     return (<ul className="item-list">{actions.map((action: ActionInfo) => (<li key={action.id}><a href={action.html_url} target="_blank" rel="noopener noreferrer">{getStatusIcon(action.status, action.conclusion)} {action.name}</a><div className="action-meta"><span>Iniciado por <strong>{action.actor.login}</strong></span>{action.pull_requests.length > 0 && (<a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">(PR #{action.pull_requests[0].number})</a>)}</div></li>))}</ul>);
+  }
+  
+  // --- AÑADIR ESTE BLOQUE PARA RENDERIZAR RELEASES ---
+  if (activeTab === 'Releases' && releases.length > 0) {
+    return (
+      <ul className="item-list">
+        {releases.map((release: ReleaseInfo) => (
+          <li key={release.id}>
+            <a href={release.html_url} target="_blank" rel="noopener noreferrer">
+              {release.name || release.tag_name}
+            </a>
+            <div className="item-meta">
+              <span>
+                Publicado por <strong>{release.author.login}</strong>
+              </span>
+              <span style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                {new Date(release.published_at).toLocaleDateString()}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
   }
     
   if(selectedRepo) return <p className="loading-text">No se encontraron datos para esta pestaña.</p>;
