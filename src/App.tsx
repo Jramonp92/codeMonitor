@@ -28,6 +28,7 @@ interface PullRequestInfo extends IssueInfo {
   merged_at: string | null;
 }
 
+// --- Interfaz de Action actualizada para incluir el PR ---
 interface ActionInfo {
   id: number;
   name: string;
@@ -36,17 +37,16 @@ interface ActionInfo {
   html_url: string;
   created_at: string;
   actor: { login: string; };
+  pull_requests: { html_url: string; number: number; }[]; // Array de PRs asociados
 }
 
 type Tab = 'Commits' | 'Issues' | 'PRs' | 'Actions';
 type IssueState = 'open' | 'closed' | 'all';
 type PRState = 'all' | 'open' | 'closed' | 'draft' | 'merged' | 'assigned_to_me';
 
-// --- Componente de estado mejorado ---
 const ItemStatus: React.FC<{ item: IssueInfo | PullRequestInfo }> = ({ item }) => {
   let backgroundColor = '';
   let text = '';
-
   const isPR = 'draft' in item;
 
   if (isPR) {
@@ -83,7 +83,6 @@ const ItemStatus: React.FC<{ item: IssueInfo | PullRequestInfo }> = ({ item }) =
 
   return <span style={style}>{text}</span>;
 };
-
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -162,15 +161,10 @@ function App() {
             break;
           case 'PRs': 
             let prs = response.pullRequests || [];
-            if (prStateFilter === 'draft') {
-              prs = prs.filter((pr: PullRequestInfo) => pr.draft);
-            } else if (prStateFilter === 'open') {
-              prs = prs.filter((pr: PullRequestInfo) => !pr.draft);
-            } else if (prStateFilter === 'merged') {
-              prs = prs.filter((pr: PullRequestInfo) => pr.merged_at !== null);
-            } else if (prStateFilter === 'closed') {
-              prs = prs.filter((pr: PullRequestInfo) => pr.merged_at === null);
-            }
+            if (prStateFilter === 'draft') prs = prs.filter((pr: PullRequestInfo) => pr.draft);
+            else if (prStateFilter === 'open') prs = prs.filter((pr: PullRequestInfo) => !pr.draft);
+            else if (prStateFilter === 'merged') prs = prs.filter((pr: PullRequestInfo) => pr.merged_at !== null);
+            else if (prStateFilter === 'closed') prs = prs.filter((pr: PullRequestInfo) => pr.merged_at === null);
             setPullRequests(prs);
             break;
           case 'Actions': setActions(response.actions || []); break;
@@ -206,14 +200,6 @@ function App() {
     });
   };
 
-  // --- Nueva función para manejar el refresh ---
-  const handleRefresh = () => {
-    if (selectedRepo) {
-      console.log('UI: Refrescando datos para', activeTab);
-      fetchDataForTab(activeTab);
-    }
-  };
-
   const getStatusIcon = (status: ActionInfo['status'], conclusion: ActionInfo['conclusion']) => {
     if (status === 'completed') {
       switch (conclusion) {
@@ -226,7 +212,6 @@ function App() {
     if (status === 'in_progress') return '⏳';
     return '🕒';
   };
-
   const renderTabs = () => (
     <div className="tab-container">
       <button onClick={() => setActiveTab('Commits')} className={activeTab === 'Commits' ? 'active' : ''}>Commits</button>
@@ -268,8 +253,9 @@ function App() {
         ))}
       </div>
     );
-  }
+  };
 
+  // Renderiza el contenido de la pestaña activa
   const renderContentForTab = () => {
     if (isContentLoading) return <p className="loading-text">Cargando...</p>;
     
@@ -301,8 +287,8 @@ function App() {
       </ul>
     );
 
-    if (activeTab === 'Commits') {
-      if (commits.length > 0) return (
+    if (activeTab === 'Commits' && commits.length > 0) {
+      return (
         <ul className="item-list">
           {commits.map((c) => (<li key={c.sha}><a href={c.html_url} target="_blank" rel="noopener noreferrer">{c.commit.message.split('\n')[0]}</a><p className="item-meta"><strong>{c.commit.author.name}</strong></p></li>))}
         </ul>
@@ -310,10 +296,25 @@ function App() {
     }
     if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues);
     if (activeTab === 'PRs' && pullRequests.length > 0) return renderItemList(pullRequests);
+    
     if (activeTab === 'Actions' && actions.length > 0) {
       return (
         <ul className="item-list">
-          {actions.map((action) => (<li key={action.id}><a href={action.html_url} target="_blank" rel="noopener noreferrer">{getStatusIcon(action.status, action.conclusion)} {action.name}</a><p className="item-meta">Iniciado por <strong>{action.actor.login}</strong></p></li>))}
+          {actions.map((action) => (
+            <li key={action.id}>
+              <a href={action.html_url} target="_blank" rel="noopener noreferrer">
+                {getStatusIcon(action.status, action.conclusion)} {action.name}
+              </a>
+              <div className="action-meta">
+                <span>Iniciado por <strong>{action.actor.login}</strong></span>
+                {action.pull_requests.length > 0 && (
+                  <a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">
+                    (en PR #{action.pull_requests[0].number})
+                  </a>
+                )}
+              </div>
+            </li>
+          ))}
         </ul>
       );
     }
@@ -335,8 +336,7 @@ function App() {
             <option key={repo.id} value={repo.full_name}>{repo.name}</option>
           ))}
         </select>
-        {/* --- Botón de Refresh --- */}
-        <button onClick={handleRefresh} className="refresh-button" title="Refrescar datos" disabled={isContentLoading}>
+        <button onClick={() => { if (selectedRepo) fetchDataForTab(activeTab) }} className="refresh-button" title="Refrescar datos" disabled={!selectedRepo || isContentLoading}>
           🔄
         </button>
       </div>

@@ -15,7 +15,7 @@ const mockCommits = Array.from({ length: 5 }, (_, i) => ({
 
 const mockIssues = [
   // 3 Abiertos (1 asignado)
-  { id: 1, title: 'Open issue 1', state: 'open', assignees: [{ login: 'assignee1', avatar_url: '', html_url: '' }], user: { login: 'creator', avatar_url: '', html_url: '' }, number: 1, html_url: '' },
+  { id: 1, title: 'Open issue 1', state: 'open', assignees: [{ login: 'assignee1', avatar_url: 'http://example.com/assignee.png', html_url: '' }], user: { login: 'creator', avatar_url: '', html_url: '' }, number: 1, html_url: '' },
   { id: 2, title: 'Open issue 2', state: 'open', assignees: [], user: { login: 'creator', avatar_url: '', html_url: '' }, number: 2, html_url: '' },
   { id: 3, title: 'Open issue 3', state: 'open', assignees: [], user: { login: 'creator', avatar_url: '', html_url: '' }, number: 3, html_url: '' },
   // 2 Cerrados
@@ -101,9 +101,14 @@ describe('when authenticated', () => {
     });
   });
 
+  test('renders refresh button', async () => {
+    render(<App />);
+    await screen.findByTitle(`Refrescar datos`);
+  });
+
   test('renders disconnect button', async () => {
     render(<App />);
-    await screen.findByText(`Cerrar Sesión`);    
+    await screen.findByText(`Cerrar Sesión`);
   });
 
   test('renders 5 items on each tab', async () => {
