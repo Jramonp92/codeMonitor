@@ -1,102 +1,134 @@
-// fetchRepositories (sin cambios)
+async function getAuthToken() {
+    const result = await chrome.storage.local.get('token');
+    if (!result.token) throw new Error('No authentication token found.');
+    return result.token;
+}
+
+// --- TODAS LAS FUNCIONES AHORA DEVUELVEN UN OBJETO CON LOS ITEMS Y EL TOTAL DE PÁGINAS ---
+
 export async function fetchRepositories() {
-    const result = await chrome.storage.local.get('token');
-    const token = result.token;
-    if (!token) throw new Error('No authentication token found.');
+    const token = await getAuthToken();
     const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
-      headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+        headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
-    if (!response.ok) throw new Error('Failed to fetch repositories from GitHub API.');
+    if (!response.ok) throw new Error('Failed to fetch repositories.');
     return await response.json();
-  }
-  
-  // fetchCommits (sin cambios)
-  export async function fetchCommits(repoFullName: string) {
-    const result = await chrome.storage.local.get('token');
-    const token = result.token;
-    if (!token) throw new Error('No authentication token found.');
-    const response = await fetch(`https://api.github.com/repos/${repoFullName}/commits?per_page=5`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+}
+
+export async function fetchCommits(repoFullName: string, page: number = 1) {
+    const token = await getAuthToken();
+    const response = await fetch(`https://api.github.com/repos/${repoFullName}/commits?per_page=5&page=${page}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
-    if (!response.ok) throw new Error(`Failed to fetch commits for ${repoFullName}.`);
-    return await response.json();
-  }
-  
-  // fetchIssues (sin cambios)
-  export async function fetchIssues(repoFullName: string, state: 'open' | 'closed' | 'all' = 'all') {
-    const result = await chrome.storage.local.get('token');
-    const token = result.token;
-    if (!token) throw new Error('No authentication token found.');
-    const response = await fetch(`https://api.github.com/repos/${repoFullName}/issues?state=${state}&sort=updated&per_page=30`, {
-      headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
-    });
-    if (!response.ok) throw new Error(`Failed to fetch issues for ${repoFullName}.`);
-    return await response.json();
-  }
-  
-  // --- fetchPullRequests ACTUALIZADO ---
-  export async function fetchPullRequests(repoFullName: string, state: 'open' | 'closed' | 'all' = 'all') {
-    const result = await chrome.storage.local.get('token');
-    const token = result.token;
-    if (!token) throw new Error('No authentication token found.');
-  
-    // Se añaden los parámetros sort y direction para ordenar por fecha de creación descendente
-    const response = await fetch(`https://api.github.com/repos/${repoFullName}/pulls?state=${state}&sort=created&direction=desc&per_page=30`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'X-GitHub-Api-Version': '2022-11-28'
-      }
-    });
-  
-    if (!response.ok) {
-      throw new Error(`Failed to fetch pull requests for ${repoFullName}.`);
+    if (!response.ok) throw new Error(`Failed to fetch commits.`);
+    const items = await response.json();
+
+    const linkHeader = response.headers.get('Link');
+
+    if (linkHeader) {
+        // Escenario 1: El mejor caso. Si existe 'rel="last"', lo usamos.
+        const lastLinkMatch = linkHeader.match(/<.*?page=(\d+)>; rel="last"/);
+        if (lastLinkMatch) {
+            const totalPages = parseInt(lastLinkMatch[1], 10);
+            return { items, totalPages };
+        }
+
+        // Escenario 2: No hay 'last', pero sí 'next'. Repositorio grande.
+        if (linkHeader.includes('rel="next"')) {
+            return { items, totalPages: page + 1 };
+        }
+
+        // Escenario 3: No hay 'next'. Hemos llegado a la última página.
+        return { items, totalPages: page };
     }
-    return await response.json();
-  }
-  
-  // --- fetchMyAssignedPullRequests ACTUALIZADO ---
-  export async function fetchMyAssignedPullRequests(repoFullName: string) {
+
+    // Escenario 4: No hay encabezado 'Link'. Solo hay una página.
+    return { items, totalPages: page };
+}
+
+export async function fetchIssues(repoFullName: string, state: 'open' | 'closed' | 'all' = 'all', page: number = 1) {
+    const token = await getAuthToken();
+    let query = `is:issue repo:${repoFullName}`;
+    if (state !== 'all') {
+        query += ` is:${state}`;
+    }
+
+    const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=5&page=${page}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+    });
+    if (!response.ok) throw new Error(`Failed to fetch issues.`);
+    const data = await response.json();
+    const totalPages = Math.ceil((data.total_count || 0) / 5);
+    return { items: data.items, totalPages: totalPages > 0 ? totalPages : 1 };
+}
+
+
+
+export async function fetchPullRequests(repoFullName: string, state: 'open' | 'closed' | 'all' = 'all', page: number = 1) {
+    const token = await getAuthToken();
+    const response = await fetch(`https://api.github.com/repos/${repoFullName}/pulls?state=${state}&sort=created&direction=desc&per_page=5&page=${page}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+    });
+    if (!response.ok) throw new Error(`Failed to fetch pull requests.`);
+    const items = await response.json();
+
+    const linkHeader = response.headers.get('Link');
+    
+    if (linkHeader) {
+        // Escenario 1: El mejor caso. Si existe 'rel="last"', lo usamos.
+        const lastLinkMatch = linkHeader.match(/<.*?page=(\d+)>; rel="last"/);
+        if (lastLinkMatch) {
+            const totalPages = parseInt(lastLinkMatch[1], 10);
+            return { items, totalPages };
+        }
+
+        // Escenario 2: No hay 'last', pero sí 'next'. Repositorio grande.
+        if (linkHeader.includes('rel="next"')) {
+            return { items, totalPages: page + 1 };
+        }
+
+        // Escenario 3: No hay 'next'. Hemos llegado a la última página.
+        return { items, totalPages: page };
+    }
+
+    // Escenario 4: No hay encabezado 'Link'. Solo hay una página.
+    return { items, totalPages: page };
+}
+
+export async function fetchMyAssignedPullRequests(repoFullName: string, page: number = 1) {
     const result = await chrome.storage.local.get(['token', 'user']);
     const token = result.token;
     const user = result.user;
     if (!token || !user || !user.login) throw new Error('Authentication token or user info not found.');
-  
     const username = user.login;
     const query = `is:pr state:open repo:${repoFullName} assignee:${username}`;
-  
-    // Se añaden los parámetros sort y direction para ordenar por fecha de creación descendente
-    const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=created&direction=desc&per_page=5`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'X-GitHub-Api-Version': '2022-11-28'
-      }
+    const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=created&direction=desc&per_page=5&page=${page}`, {
+        headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
-  
-    if (!response.ok) {
-      throw new Error(`Failed to fetch assigned pull requests for ${repoFullName}.`);
-    }
+    if (!response.ok) throw new Error(`Failed to fetch assigned PRs.`);
     const data = await response.json();
-    return data.items;
-  }
-  
-  // fetchActions (sin cambios)
-  export async function fetchActions(repoFullName: string, status?: string) {
-    const result = await chrome.storage.local.get('token');
-    const token = result.token;
-    if (!token) throw new Error('No authentication token found.');
-    
-    let url = `https://api.github.com/repos/${repoFullName}/actions/runs?per_page=5`;
+    const totalPages = Math.ceil((data.total_count || 0) / 5);
+    return { items: data.items, totalPages: totalPages > 0 ? totalPages : 1 };
+}
+
+export async function fetchActions(repoFullName: string, status?: string, page: number = 1) {
+    const token = await getAuthToken();
+    let url = `https://api.github.com/repos/${repoFullName}/actions/runs?per_page=5&page=${page}`;
     if (status && status !== 'all') {
-      url += `&status=${status}`;
+        url += `&status=${status}`;
     }
-  
     const response = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+        headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
-  
-    if (!response.ok) {
-      throw new Error(`Failed to fetch actions for ${repoFullName}.`);
-    }
+    if (!response.ok) throw new Error(`Failed to fetch actions.`);
     const data = await response.json();
-    return data.workflow_runs;
-  }
+    
+    // --- LÓGICA CORREGIDA ---
+    // Usar data.total_count para un cálculo preciso, igual que en Issues.
+    const totalPages = Math.ceil((data.total_count || 0) / 5);
+
+    return {
+        items: data.workflow_runs,
+        totalPages: totalPages > 0 ? totalPages : 1
+    };
+}

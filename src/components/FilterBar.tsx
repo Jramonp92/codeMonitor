@@ -2,16 +2,13 @@
 import React from 'react';
 
 interface FilterBarProps {
-  activeTab: string;
   filters: { label: string; value: string }[];
   currentFilter: string;
   onFilterChange: (value: any) => void;
   name: string;
 }
 
-export const FilterBar: React.FC<FilterBarProps> = ({ activeTab, filters, currentFilter, onFilterChange, name }) => {
-  if (activeTab !== name) return null;
-  
+export const FilterBar: React.FC<FilterBarProps> = ({ filters, currentFilter, onFilterChange, name }) => {
   return (
     <div className="filter-container">
       {filters.map(filter => (
