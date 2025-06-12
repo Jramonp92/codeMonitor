@@ -1,8 +1,18 @@
 import { useState, useEffect } from 'react';
 
-// Importamos los tipos que definimos en App.tsx
-// En un proyecto más grande, estos tipos vivirían en su propio archivo (ej. types.ts)
-import type { Tab, IssueState, PRState, ActionStatus, Repo, CommitInfo, IssueInfo, PullRequestInfo, ActionInfo } from '../App';
+// --- Tipos (Se exportan desde aquí para que otros archivos los usen) ---
+export type Tab = 'Commits' | 'Issues' | 'PRs' | 'Actions';
+export type IssueState = 'open' | 'closed' | 'all';
+export type PRState = 'all' | 'open' | 'closed' | 'draft' | 'merged' | 'assigned_to_me';
+export type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
+
+export interface Repo { id: number; name: string; full_name: string; }
+export interface CommitInfo { sha: string; commit: { author: { name: string; date: string; }; message: string; }; html_url: string; }
+export interface GitHubUser { login: string; avatar_url: string; html_url: string; }
+export interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
+export interface PullRequestInfo extends IssueInfo { draft: boolean; merged_at: string | null; }
+export interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; actor: { login: string; }; pull_requests: { html_url: string; number: number; }[]; }
+
 
 export function useGithubData() {
   const [user, setUser] = useState<any>(null);
@@ -23,22 +33,29 @@ export function useGithubData() {
   const [pullRequests, setPullRequests] = useState<PullRequestInfo[]>([]);
   const [actions, setActions] = useState<ActionInfo[]>([]);
 
+  // --- ESTADOS PARA PAGINACIÓN ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   // Efecto que pide datos cada vez que cambia una dependencia
   useEffect(() => {
     if (selectedRepo) {
-      fetchDataForTab(activeTab);
+      fetchDataForTab(activeTab, currentPage);
     } else {
-      // Limpia todo si no hay repo seleccionado
       setCommits([]); setIssues([]); setPullRequests([]); setActions([]);
     }
+  }, [selectedRepo, activeTab, issueStateFilter, prStateFilter, actionStatusFilter, currentPage]);
+
+  // Efecto que resetea la página a 1 cuando cambia la pestaña o los filtros
+  useEffect(() => {
+    setCurrentPage(1);
   }, [selectedRepo, activeTab, issueStateFilter, prStateFilter, actionStatusFilter]);
 
-  const fetchDataForTab = (tab: Tab) => {
-    setIsContentLoading(true);
-    setCommits([]); setIssues([]); setPullRequests([]); setActions([]);
 
+  const fetchDataForTab = (tab: Tab, page: number) => {
+    setIsContentLoading(true);
     let messageType: string = '';
-    let payload: any = { repoFullName: selectedRepo };
+    let payload: any = { repoFullName: selectedRepo, page };
 
     switch(tab) {
       case 'Commits': messageType = 'getCommits'; break;
@@ -61,24 +78,33 @@ export function useGithubData() {
 
     chrome.runtime.sendMessage({ type: messageType, ...payload }, (response) => {
       if (response?.success) {
+        const { items, totalPages: newTotalPages } = response.data;
+        
         switch(tab) {
-          case 'Commits': setCommits(response.commits || []); break;
+          case 'Commits': 
+            setCommits(items || []); 
+            break;
           case 'Issues': 
-            const onlyIssues = response.issues?.filter((item: IssueInfo) => !item.pull_request) || [];
+            // BUG FIX: La API de búsqueda devuelve PRs también, los filtramos
+            const onlyIssues = items?.filter((item: IssueInfo) => !item.pull_request) || [];
             setIssues(onlyIssues);
             break;
           case 'PRs': 
-            let prs = response.pullRequests || [];
+            let prs = items || [];
             if (prStateFilter === 'draft') prs = prs.filter((pr: PullRequestInfo) => pr.draft);
             else if (prStateFilter === 'open') prs = prs.filter((pr: PullRequestInfo) => !pr.draft);
             else if (prStateFilter === 'merged') prs = prs.filter((pr: PullRequestInfo) => pr.merged_at !== null);
             else if (prStateFilter === 'closed') prs = prs.filter((pr: PullRequestInfo) => pr.merged_at === null);
             setPullRequests(prs);
             break;
-          case 'Actions': setActions(response.actions || []); break;
+          case 'Actions': 
+            setActions(items || []); 
+            break;
         }
+        setTotalPages(newTotalPages || 1);
       } else {
         console.error(`Error al obtener ${tab}:`, response?.error);
+        setTotalPages(1); 
       }
       setIsContentLoading(false);
     });
@@ -95,6 +121,7 @@ export function useGithubData() {
     prStateFilter, setPrStateFilter,
     actionStatusFilter, setActionStatusFilter,
     commits, issues, pullRequests, actions,
-    fetchDataForTab,
+    currentPage, setCurrentPage,
+    totalPages
   };
 }

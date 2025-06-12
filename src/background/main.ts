@@ -9,6 +9,7 @@ import {
 } from './githubClient';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  // login, logout, checkAuthStatus, getRepositories (sin cambios)
   if (message.type === 'login') {
     (async () => {
       try {
@@ -22,52 +23,29 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
   
   if (message.type === 'logout') {
-    (async () => {
-      try {
-        await logout();
-        sendResponse({ success: true });
-      } catch (error: any) {
-        sendResponse({ success: false, error: error.message });
-      }
-    })();
+    (async () => { try { await logout(); sendResponse({ success: true }); } catch (error: any) { sendResponse({ success: false, error: error.message }); } })();
     return true;
   }
 
   if (message.type === 'checkAuthStatus') {
-    (async () => {
-      try {
-        const result = await chrome.storage.local.get(['user', 'token']);
-        if (result.user && result.token) {
-          sendResponse({ loggedIn: true, user: result.user });
-        } else {
-          sendResponse({ loggedIn: false });
-        }
-      } catch (error: any) {
-        sendResponse({ loggedIn: false, error: error.message });
-      }
-    })();
+    (async () => { try { const result = await chrome.storage.local.get(['user', 'token']); if (result.user && result.token) { sendResponse({ loggedIn: true, user: result.user }); } else { sendResponse({ loggedIn: false }); } } catch (error: any) { sendResponse({ loggedIn: false, error: error.message }); } })();
     return true;
   }
   
   if (message.type === 'getRepositories') {
-    (async () => {
-      try {
-        const repos = await fetchRepositories();
-        sendResponse({ success: true, repos });
-      } catch (error: any) {
-        sendResponse({ success: false, error: error.message });
-      }
-    })();
+    (async () => { try { const repos = await fetchRepositories(); sendResponse({ success: true, repos }); } catch (error: any) { sendResponse({ success: false, error: error.message }); } })();
     return true;
   }
+
+  // --- MANEJADORES ACTUALIZADOS PARA DEVOLVER EL OBJETO COMPLETO DE DATOS ---
 
   if (message.type === 'getCommits') {
     (async () => {
       try {
-        const { repoFullName } = message;
+        const { repoFullName, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
-        const commits = await fetchCommits(repoFullName);
-        sendResponse({ success: true, commits });
+        const data = await fetchCommits(repoFullName, page); 
+        sendResponse({ success: true, data }); // Devuelve el objeto completo
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
       }
@@ -78,10 +56,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'getIssues') {
     (async () => {
       try {
-        const { repoFullName, state } = message;
+        const { repoFullName, state, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
-        const issues = await fetchIssues(repoFullName, state);
-        sendResponse({ success: true, issues });
+        const data = await fetchIssues(repoFullName, state, page);
+        sendResponse({ success: true, data });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
       }
@@ -92,16 +70,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'getPullRequests') {
     (async () => {
       try {
-        const { repoFullName, state } = message;
+        const { repoFullName, state, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
         
-        let pullRequests;
+        let data;
         if (state === 'assigned_to_me') {
-          pullRequests = await fetchMyAssignedPullRequests(repoFullName);
+          data = await fetchMyAssignedPullRequests(repoFullName, page);
         } else {
-          pullRequests = await fetchPullRequests(repoFullName, state);
+          data = await fetchPullRequests(repoFullName, state, page);
         }
-        sendResponse({ success: true, pullRequests });
+        sendResponse({ success: true, data });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
       }
@@ -112,10 +90,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'getActions') {
     (async () => {
       try {
-        const { repoFullName, status } = message;
+        const { repoFullName, status, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
-        const actions = await fetchActions(repoFullName, status);
-        sendResponse({ success: true, actions });
+        const data = await fetchActions(repoFullName, status, page);
+        sendResponse({ success: true, data });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
       }

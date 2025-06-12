@@ -1,8 +1,9 @@
-// --- Ruta: src/components/StatusPill.tsx ---
+// --- Ruta: src/components/ItemStatus.tsx ---
 import React from 'react';
-import type { IssueInfo, PullRequestInfo } from '../App';
+// --- CORRECCIÓN: La ruta de importación ahora apunta al custom hook ---
+import type { IssueInfo, PullRequestInfo } from '../hooks/useGithubData';
 
-export const StatusPill: React.FC<{ item: IssueInfo | PullRequestInfo }> = ({ item }) => {
+export const ItemStatus: React.FC<{ item: IssueInfo | PullRequestInfo }> = ({ item }) => {
   let backgroundColor = '';
   let text = '';
   const isPR = 'draft' in item;
@@ -23,6 +24,5 @@ export const StatusPill: React.FC<{ item: IssueInfo | PullRequestInfo }> = ({ it
     borderRadius: '12px', fontSize: '0.75em', fontWeight: 'bold',
     color: 'white', textTransform: 'capitalize' as 'capitalize', backgroundColor,
   };
-
   return <span style={style}>{text}</span>;
 };

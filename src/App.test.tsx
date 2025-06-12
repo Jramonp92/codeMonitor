@@ -83,37 +83,41 @@ describe('when authenticated', () => {
         } else if (message.type === 'getRepositories') {
           callback({ success: true, repos: mockRepos });
         } else if (message.type === 'getCommits') {
-          callback({ success: true, commits: mockCommits });
+          // CORRECCIÓN: Envolver en 'data' y usar 'items'
+          callback({ success: true, data: { items: mockCommits, totalPages: 1 } });
         } else if (message.type === 'getIssues') {
           const state = message.state || 'all';
           const filteredIssues = state === 'all' 
             ? mockIssues 
             : mockIssues.filter(issue => issue.state === state);
-          callback({ success: true, issues: filteredIssues });
+          // CORRECCIÓN: Envolver en 'data' y usar 'items'
+          callback({ success: true, data: { items: filteredIssues, totalPages: 1 } });
         } else if (message.type === 'getPullRequests') {
-          const state = message.state || 'all';
-          let prsToReturn;
-          if (state === 'all') {
-              prsToReturn = mockPRs;
-          } else {
-               prsToReturn = message.state === 'open' 
-                  ? mockPRs.filter(p => p.state === 'open')
-                  : mockPRs.filter(p => p.state === 'closed');
-          }
-          callback({ success: true, pullRequests: prsToReturn });
+            const state = message.state || 'all';
+            let prsToReturn;
+            if (state === 'all') {
+                prsToReturn = mockPRs;
+            } else if (message.prStateFilter === 'merged') { // Simular lógica del hook
+                prsToReturn = mockPRs.filter(p => p.merged_at !== null);
+            } else if (message.prStateFilter === 'closed') { // Simular lógica del hook
+                prsToReturn = mockPRs.filter(p => p.state === 'closed' && p.merged_at === null);
+            } else {
+                 prsToReturn = mockPRs.filter(p => p.state === state && !p.draft);
+            }
+            // CORRECCIÓN: Envolver en 'data' y usar 'items'
+            callback({ success: true, data: { items: prsToReturn, totalPages: 1 } });
         } else if (message.type === 'getActions') {
-          const status = message.status || 'all';
-          // Simula la lógica de filtrado de la API de GitHub
-          const filteredActions = status === 'all'
-              ? mockActions
-              : mockActions.filter(action => {
-                  // La API filtra por 'conclusion' para ciertos estados 'completed'
-                  if(status === 'success' || status === 'failure' || status === 'cancelled') {
-                      return action.conclusion === status;
-                  }
-                  return action.status === status;
-              });
-          callback({ success: true, actions: filteredActions });
+            const status = message.status || 'all';
+            const filteredActions = status === 'all'
+                ? mockActions
+                : mockActions.filter(action => {
+                    if(status === 'success' || status === 'failure' || status === 'cancelled') {
+                        return action.conclusion === status;
+                    }
+                    return action.status === status;
+                });
+            // CORRECCIÓN: Envolver en 'data' y usar 'items'
+            callback({ success: true, data: { items: filteredActions, totalPages: 1 } });
         }
     });
 });
