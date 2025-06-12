@@ -5,7 +5,8 @@ import {
   fetchIssues, 
   fetchPullRequests, 
   fetchActions,
-  fetchMyAssignedPullRequests
+  fetchMyAssignedPullRequests,
+  fetchReleases
 } from './githubClient';
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -93,6 +94,20 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         const { repoFullName, status, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
         const data = await fetchActions(repoFullName, status, page);
+        sendResponse({ success: true, data });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === 'getReleases') {
+    (async () => {
+      try {
+        const { repoFullName, page } = message;
+        if (!repoFullName) throw new Error('repoFullName is required.');
+        const data = await fetchReleases(repoFullName, page);
         sendResponse({ success: true, data });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });

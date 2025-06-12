@@ -132,3 +132,28 @@ export async function fetchActions(repoFullName: string, status?: string, page: 
         totalPages: totalPages > 0 ? totalPages : 1
     };
 }
+
+export async function fetchReleases(repoFullName: string, page: number = 1) {
+    const token = await getAuthToken();
+    const response = await fetch(`https://api.github.com/repos/${repoFullName}/releases?per_page=10&page=${page}`, {
+      headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+    });
+    if (!response.ok) throw new Error(`Failed to fetch releases.`);
+    const items = await response.json();
+  
+    // Reutilizamos la lógica de paginación de los commits/PRs
+    const linkHeader = response.headers.get('Link');
+      
+    if (linkHeader) {
+        const lastLinkMatch = linkHeader.match(/<.*?page=(\d+)>; rel="last"/);
+        if (lastLinkMatch) {
+            return { items, totalPages: parseInt(lastLinkMatch[1], 10) };
+        }
+        if (linkHeader.includes('rel="next"')) {
+            return { items, totalPages: page + 1 };
+        }
+        return { items, totalPages: page };
+    }
+  
+    return { items, totalPages: page };
+  }
