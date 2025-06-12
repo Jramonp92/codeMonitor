@@ -1,17 +1,14 @@
 import { login, logout } from './auth';
-// Importamos la nueva función del cliente de GitHub
 import { 
   fetchRepositories, 
   fetchCommits, 
   fetchIssues, 
   fetchPullRequests, 
   fetchActions,
-  fetchMyAssignedPullRequests 
+  fetchMyAssignedPullRequests
 } from './githubClient';
 
-// Hacemos que la función del listener sea async para usar await dentro
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  // --- Manejador para el login ---
   if (message.type === 'login') {
     (async () => {
       try {
@@ -21,10 +18,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({ success: false, error: error.message });
       }
     })();
-    return true; // Indica que la respuesta será asíncrona
+    return true; 
   }
   
-  // --- Manejador para el logout ---
   if (message.type === 'logout') {
     (async () => {
       try {
@@ -37,7 +33,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- Manejador para verificar el estado de la autenticación ---
   if (message.type === 'checkAuthStatus') {
     (async () => {
       try {
@@ -54,7 +49,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
   
-  // --- Manejador para obtener la lista de repositorios ---
   if (message.type === 'getRepositories') {
     (async () => {
       try {
@@ -67,14 +61,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- Manejador para obtener los commits ---
   if (message.type === 'getCommits') {
     (async () => {
       try {
         const { repoFullName } = message;
-        if (!repoFullName) {
-          throw new Error('repoFullName is required.');
-        }
+        if (!repoFullName) throw new Error('repoFullName is required.');
         const commits = await fetchCommits(repoFullName);
         sendResponse({ success: true, commits });
       } catch (error: any) {
@@ -84,14 +75,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- Manejador para obtener los issues ---
   if (message.type === 'getIssues') {
     (async () => {
       try {
         const { repoFullName, state } = message;
-        if (!repoFullName) {
-          throw new Error('repoFullName is required.');
-        }
+        if (!repoFullName) throw new Error('repoFullName is required.');
         const issues = await fetchIssues(repoFullName, state);
         sendResponse({ success: true, issues });
       } catch (error: any) {
@@ -101,24 +89,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- MANEJADOR DE PULL REQUESTS ACTUALIZADO ---
   if (message.type === 'getPullRequests') {
     (async () => {
       try {
         const { repoFullName, state } = message;
-        if (!repoFullName) {
-          throw new Error('repoFullName is required.');
-        }
+        if (!repoFullName) throw new Error('repoFullName is required.');
         
         let pullRequests;
         if (state === 'assigned_to_me') {
-          // Si el filtro es "asignados a mi", llama a la nueva función de búsqueda
           pullRequests = await fetchMyAssignedPullRequests(repoFullName);
         } else {
-          // De lo contrario, usa la función original
           pullRequests = await fetchPullRequests(repoFullName, state);
         }
-
         sendResponse({ success: true, pullRequests });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
@@ -127,15 +109,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- Manejador para obtener las Actions ---
   if (message.type === 'getActions') {
     (async () => {
       try {
-        const { repoFullName } = message;
-        if (!repoFullName) {
-          throw new Error('repoFullName is required.');
-        }
-        const actions = await fetchActions(repoFullName);
+        const { repoFullName, status } = message;
+        if (!repoFullName) throw new Error('repoFullName is required.');
+        const actions = await fetchActions(repoFullName, status);
         sendResponse({ success: true, actions });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
