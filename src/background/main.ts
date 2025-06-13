@@ -9,8 +9,8 @@ import {
   fetchReleases
 } from './githubClient';
 
+// LISTENER PARA MENSAJES DESDE LA UI (REACT)
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  // login, logout, checkAuthStatus, getRepositories (sin cambios)
   if (message.type === 'login') {
     (async () => {
       try {
@@ -24,21 +24,44 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
   
   if (message.type === 'logout') {
-    (async () => { try { await logout(); sendResponse({ success: true }); } catch (error: any) { sendResponse({ success: false, error: error.message }); } })();
+    (async () => { 
+      try { 
+        await logout(); 
+        sendResponse({ success: true }); 
+      } catch (error: any) { 
+        sendResponse({ success: false, error: error.message }); 
+      } 
+    })();
     return true;
   }
 
   if (message.type === 'checkAuthStatus') {
-    (async () => { try { const result = await chrome.storage.local.get(['user', 'token']); if (result.user && result.token) { sendResponse({ loggedIn: true, user: result.user }); } else { sendResponse({ loggedIn: false }); } } catch (error: any) { sendResponse({ loggedIn: false, error: error.message }); } })();
+    (async () => { 
+      try { 
+        const result = await chrome.storage.local.get(['user', 'token']); 
+        if (result.user && result.token) { 
+          sendResponse({ loggedIn: true, user: result.user }); 
+        } else { 
+          sendResponse({ loggedIn: false }); 
+        } 
+      } catch (error: any) { 
+        sendResponse({ loggedIn: false, error: error.message }); 
+      } 
+    })();
     return true;
   }
   
   if (message.type === 'getRepositories') {
-    (async () => { try { const repos = await fetchRepositories(); sendResponse({ success: true, repos }); } catch (error: any) { sendResponse({ success: false, error: error.message }); } })();
+    (async () => { 
+      try { 
+        const repos = await fetchRepositories(); 
+        sendResponse({ success: true, repos }); 
+      } catch (error: any) { 
+        sendResponse({ success: false, error: error.message }); 
+      } 
+    })();
     return true;
   }
-
-  // --- MANEJADORES ACTUALIZADOS PARA DEVOLVER EL OBJETO COMPLETO DE DATOS ---
 
   if (message.type === 'getCommits') {
     (async () => {
@@ -46,7 +69,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         const { repoFullName, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
         const data = await fetchCommits(repoFullName, page); 
-        sendResponse({ success: true, data }); // Devuelve el objeto completo
+        sendResponse({ success: true, data });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
       }
@@ -115,4 +138,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })();
     return true;
   }
+});
+
+// LISTENER PARA EL CLIC EN EL ICONO DE LA EXTENSIÓN
+chrome.action.onClicked.addListener(async (tab) => {
+  // Asegúrate de que el panel se abra en la ventana actual.
+  await chrome.sidePanel.open({ windowId: tab.windowId });
 });
