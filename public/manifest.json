@@ -27,7 +27,7 @@
     "oauth2": {
     "client_id": "Ov23liJxOBldJkvfBnOm",
     "scopes": [
-        "repo"
+      "repo"
     ]
     }
-  }
+}
