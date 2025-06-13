@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; // <-- CAMBIO 1: 'React' eliminado
 import './App.css'; 
 import { useGithubData } from './hooks/useGithubData';
 // Asumiendo que estos componentes existen y están correctamente importados
 import { ItemStatus } from './components/ItemStatus'; 
 import { FilterBar } from './components/FilterBar';
 import { Pagination } from './components/Pagination';
-import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, Repo, ReleaseInfo } from './hooks/useGithubData';
+import { SearchableRepoDropdown } from './components/SearchableRepoDropdown';
+import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from './hooks/useGithubData'; // <-- CAMBIO 2: 'Repo' eliminado
 
 // --- Componente Principal de la App ---
 
@@ -21,7 +22,7 @@ function App() {
     issueStateFilter, setIssueStateFilter,
     prStateFilter, setPrStateFilter,
     actionStatusFilter, setActionStatusFilter,
-    commits, issues, pullRequests, actions, releases, // <-- Obtener 'releases' del hook
+    commits, issues, pullRequests, actions, releases,
     currentPage, setCurrentPage,
     totalPages,
   } = useGithubData();
@@ -29,7 +30,6 @@ function App() {
 
   // Efecto para verificar la sesión al inicio
   useEffect(() => {
-    // Esta es una API de ejemplo, en una app real sería chrome.runtime.sendMessage
     if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
           if (response?.loggedIn) setUser(response.user);
@@ -44,41 +44,51 @@ function App() {
 
   // Efecto para obtener los repositorios cuando el usuario se loguea
   useEffect(() => {
-    if (user && window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
-      chrome.runtime.sendMessage({ type: 'getRepositories' }, (response) => {
-        if (response?.success) setRepos(response.repos);
-      });
+    // Usamos el hook useGithubData que ya tiene esta lógica de carga local/remota
+    // por lo que no es necesario duplicarla aquí.
+    if (user && repos.length === 0) { // Solo busca si no hay repos cargados
+        if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({ type: 'getRepositories' }, (response) => {
+                if (response?.success) setRepos(response.repos);
+            });
+        }
     }
-  }, [user]);
+  }, [user, repos.length, setRepos]);
   
   // --- Manejadores de eventos ---
-  const handleRepoSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setActiveTab('Commits');
-    setSelectedRepo(event.target.value);
+
+  const handleRepoSelection = (repoFullName: string) => {
+    setActiveTab('Commits'); // Resetea la pestaña al seleccionar nuevo repo
+    setCurrentPage(1);    // Resetea la página también
+    setSelectedRepo(repoFullName);
   };
   
   const handleLogin = () => {
     setIsAppLoading(true);
     if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ type: 'login' }, (response) => {
-          if (response && response.success) setUser(response.user);
-          else console.error('Login failed:', response?.error);
-          setIsAppLoading(false);
+          if (response && response.success) {
+            // Recargar la ventana para que el hook useGithubData se reinicie
+            window.location.reload();
+          }
+          else {
+            console.error('Login failed:', response?.error);
+            setIsAppLoading(false);
+          }
         });
     }
   };
 
   const handleLogout = () => {
-    setRepos([]); setSelectedRepo('');
-    setIsAppLoading(true);
     if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ type: 'logout' }, () => {
-          setUser(null);
-          setIsAppLoading(false);
+          // Recargar la ventana para limpiar todo el estado
+          window.location.reload();
         });
     } else {
         setUser(null);
-        setIsAppLoading(false);
+        setRepos([]);
+        setSelectedRepo('');
     }
   };
   
@@ -107,10 +117,12 @@ function App() {
         <p>¡Bienvenido, {user.login}!</p>
       </div>
       <div className="select-container">
-        <select id="repo-select" value={selectedRepo} onChange={handleRepoSelect} aria-label="Seleccionar Repositorio">
-          <option value="">-- Selecciona un Repositorio --</option>
-          {repos.map((repo: Repo) => (<option key={repo.id} value={repo.full_name}>{repo.name}</option>))}
-        </select>
+        <SearchableRepoDropdown
+            repos={repos}
+            selectedRepo={selectedRepo}
+            onSelect={handleRepoSelection}
+            disabled={!user || repos.length === 0}
+        />
         <button onClick={() => setCurrentPage(1)} className="refresh-button" title="Refrescar datos" disabled={!selectedRepo || isContentLoading}>
           🔄
         </button>
@@ -119,7 +131,6 @@ function App() {
       {selectedRepo && (
         <>
           <div className="tab-container">
-            {/* AÑADIR 'Releases' a la lista de pestañas */}
             {(['Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)} className={activeTab === tab ? 'active' : ''}>{tab}</button>
             ))}
@@ -138,10 +149,9 @@ function App() {
         issues={issues}
         pullRequests={pullRequests}
         actions={actions}
-        releases={releases} // <-- Pasar 'releases' como prop
+        releases={releases}
       />
       
-      {/* Actualizar la condición para mostrar la paginación */}
       {selectedRepo && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
       )}
@@ -151,8 +161,8 @@ function App() {
   );
 }
 
-// Componente para mostrar el contenido de la pestaña activa
-const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, issues, pullRequests, actions, releases } : any) => { // <-- Recibir 'releases'
+// El componente ContentDisplay se mantiene igual
+const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, issues, pullRequests, actions, releases } : any) => {
   if (isContentLoading) return <p className="loading-text">Cargando...</p>;
     
   const renderItemList = (items: (IssueInfo | PullRequestInfo)[]) => (
@@ -200,7 +210,6 @@ const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, is
     return (<ul className="item-list">{actions.map((action: ActionInfo) => (<li key={action.id}><a href={action.html_url} target="_blank" rel="noopener noreferrer">{getStatusIcon(action.status, action.conclusion)} {action.name}</a><div className="action-meta"><span>Iniciado por <strong>{action.actor.login}</strong></span>{action.pull_requests.length > 0 && (<a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">(PR #{action.pull_requests[0].number})</a>)}</div></li>))}</ul>);
   }
   
-  // --- AÑADIR ESTE BLOQUE PARA RENDERIZAR RELEASES ---
   if (activeTab === 'Releases' && releases.length > 0) {
     return (
       <ul className="item-list">

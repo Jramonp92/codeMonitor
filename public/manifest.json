@@ -1,29 +1,33 @@
 {
-    "manifest_version": 3,
-    "name": "codeMonitor",
-    "version": "0.1.0",
-    "description": "Una extensión para monitorear rápidamente el estado de tus repositorios de GitHub.",
-    "action": {
-      "default_popup": "index.html"
-    },
-    "icons": {
-      "16": "favicon16.png",
-      "48": "favicon48.png",
-      "128": "favicon128.png"
-    },
-    "background": {
-      "service_worker": "background.js",
-      "type": "module"
-    },
-    "permissions": [
-      "identity",
-      "storage",
-      "activeTab"
-    ],
-    "oauth2": {
+  "manifest_version": 3,
+  "name": "codeMonitor",
+  "version": "1.0.0",
+  "description": "Una extensión para monitorear rápidamente el estado de tus repositorios de GitHub.",
+  "permissions": [
+    "identity",
+    "storage",
+    "activeTab",
+    "sidePanel"
+  ],
+  "action": {
+    "default_title": "Abrir codeMonitor"
+  },
+  "side_panel": {
+    "default_path": "index.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "oauth2": {
     "client_id": "Ov23liJxOBldJkvfBnOm",
     "scopes": [
-        "repo"
+      "repo"
     ]
-    }
+  },
+  "icons": {
+    "16": "favicon16.png",
+    "48": "favicon48.png",
+    "128": "favicon128.png"
   }
+}

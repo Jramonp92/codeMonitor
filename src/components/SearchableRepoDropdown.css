@@ -1,0 +1,55 @@
+/* src/components/SearchableRepoDropdown.css */
+
+.searchable-dropdown {
+    position: relative;
+    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  
+  .search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    background-color: #fff;
+  }
+  
+  .search-input:disabled {
+    background-color: #f3f3f3;
+    cursor: not-allowed;
+  }
+  
+  .repo-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .repo-list li {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  
+  .repo-list li:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .repo-list li.no-results {
+    cursor: default;
+    color: #888;
+  }
