@@ -1,21 +1,25 @@
-import { useState, useEffect } from 'react'; // <-- CAMBIO 1: 'React' eliminado
+import { useState, useEffect } from 'react';
 import './App.css'; 
 import { useGithubData } from './hooks/useGithubData';
-// Asumiendo que estos componentes existen y están correctamente importados
 import { ItemStatus } from './components/ItemStatus'; 
 import { FilterBar } from './components/FilterBar';
 import { Pagination } from './components/Pagination';
 import { SearchableRepoDropdown } from './components/SearchableRepoDropdown';
-import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from './hooks/useGithubData'; // <-- CAMBIO 2: 'Repo' eliminado
-
-// --- Componente Principal de la App ---
+import { RepoManagerModal } from './components/RepoManagerModal';
+import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from './hooks/useGithubData';
 
 function App() {
+  // Estado para la carga inicial de la app y visibilidad del modal
   const [isAppLoading, setIsAppLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
+  // Extraer todos los estados y funciones necesarios del hook
   const {
-    user, setUser,
-    repos, setRepos,
+    user,
+    allRepos,
+    managedRepos,
+    addRepoToManagedList,
+    removeRepoFromManagedList,
     selectedRepo, setSelectedRepo,
     isContentLoading,
     activeTab, setActiveTab,
@@ -27,51 +31,32 @@ function App() {
     totalPages,
   } = useGithubData();
 
-
-  // Efecto para verificar la sesión al inicio
+  // Efecto para simular la carga inicial (o verificar auth)
   useEffect(() => {
-    if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
-          if (response?.loggedIn) setUser(response.user);
-          setIsAppLoading(false);
-        });
+    // La lógica de `useGithubData` ya maneja la verificación de auth.
+    // Este efecto solo gestiona el estado de carga visual de la app.
+    if (!user) {
+        setTimeout(() => setIsAppLoading(false), 500); // Dar tiempo a que el hook verifique
     } else {
-        // Mock para desarrollo fuera de la extensión
-        // setUser({ login: 'test-user', avatar_url: 'https://placehold.co/40x40' });
         setIsAppLoading(false);
     }
-  }, []);
-
-  // Efecto para obtener los repositorios cuando el usuario se loguea
-  useEffect(() => {
-    // Usamos el hook useGithubData que ya tiene esta lógica de carga local/remota
-    // por lo que no es necesario duplicarla aquí.
-    if (user && repos.length === 0) { // Solo busca si no hay repos cargados
-        if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
-            chrome.runtime.sendMessage({ type: 'getRepositories' }, (response) => {
-                if (response?.success) setRepos(response.repos);
-            });
-        }
-    }
-  }, [user, repos.length, setRepos]);
+  }, [user]);
   
-  // --- Manejadores de eventos ---
-
+  // Manejador para la selección de un repositorio desde el dropdown de búsqueda
   const handleRepoSelection = (repoFullName: string) => {
-    setActiveTab('Commits'); // Resetea la pestaña al seleccionar nuevo repo
-    setCurrentPage(1);    // Resetea la página también
+    setActiveTab('Commits');
+    setCurrentPage(1);
     setSelectedRepo(repoFullName);
   };
   
+  // Manejadores de login y logout (sin cambios)
   const handleLogin = () => {
     setIsAppLoading(true);
     if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ type: 'login' }, (response) => {
           if (response && response.success) {
-            // Recargar la ventana para que el hook useGithubData se reinicie
             window.location.reload();
-          }
-          else {
+          } else {
             console.error('Login failed:', response?.error);
             setIsAppLoading(false);
           }
@@ -82,17 +67,13 @@ function App() {
   const handleLogout = () => {
     if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
         chrome.runtime.sendMessage({ type: 'logout' }, () => {
-          // Recargar la ventana para limpiar todo el estado
           window.location.reload();
         });
-    } else {
-        setUser(null);
-        setRepos([]);
-        setSelectedRepo('');
     }
   };
   
   // --- Renderizado de la UI ---
+
   if (isAppLoading) {
     return (
       <div className="app-container">
@@ -111,57 +92,67 @@ function App() {
   }
 
   return (
-    <div className="app-container">
-      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
-        <img src={user.avatar_url} alt="User Avatar" width="40" style={{ borderRadius: '50%' }} />
-        <p>¡Bienvenido, {user.login}!</p>
-      </div>
-      <div className="select-container">
-        <SearchableRepoDropdown
-            repos={repos}
-            selectedRepo={selectedRepo}
-            onSelect={handleRepoSelection}
-            disabled={!user || repos.length === 0}
-        />
-        <button onClick={() => setCurrentPage(1)} className="refresh-button" title="Refrescar datos" disabled={!selectedRepo || isContentLoading}>
-          🔄
-        </button>
-      </div>
-      
-      {selectedRepo && (
-        <>
-          <div className="tab-container">
-            {(['Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => (
-              <button key={tab} onClick={() => setActiveTab(tab)} className={activeTab === tab ? 'active' : ''}>{tab}</button>
-            ))}
-          </div>
-          {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}]} currentFilter={issueStateFilter} onFilterChange={setIssueStateFilter} />}
-          {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}, {label: 'Draft', value: 'draft'}, {label: 'Merged', value: 'merged'}, {label: 'Asignados a mi', value: 'assigned_to_me'}]} currentFilter={prStateFilter} onFilterChange={setPrStateFilter} />}
-          {activeTab === 'Actions' && <FilterBar name="Actions" filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} currentFilter={actionStatusFilter} onFilterChange={setActionStatusFilter} />}
-        </>
-      )}
-
-      <ContentDisplay 
-        activeTab={activeTab}
-        isContentLoading={isContentLoading}
-        selectedRepo={selectedRepo}
-        commits={commits}
-        issues={issues}
-        pullRequests={pullRequests}
-        actions={actions}
-        releases={releases}
+    <>
+      <RepoManagerModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        allRepos={allRepos}
+        managedRepos={managedRepos}
+        onAdd={addRepoToManagedList}
+        onRemove={removeRepoFromManagedList}
       />
-      
-      {selectedRepo && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
-        <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-      )}
+      <div className="app-container">
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
+          <img src={user.avatar_url} alt="User Avatar" width="40" style={{ borderRadius: '50%' }} />
+          <p>¡Bienvenido, {user.login}!</p>
+        </div>
+        <div className="select-container">
+          <SearchableRepoDropdown
+              repos={managedRepos}
+              selectedRepo={selectedRepo}
+              onSelect={handleRepoSelection}
+              disabled={!user || managedRepos.length === 0}
+          />
+          <button onClick={() => setIsModalOpen(true)} className="manage-button" title="Manage Repositories">
+            ⚙️
+          </button>
+        </div>
+        
+        {selectedRepo && (
+          <>
+            <div className="tab-container">
+              {(['Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => (
+                <button key={tab} onClick={() => setActiveTab(tab)} className={activeTab === tab ? 'active' : ''}>{tab}</button>
+              ))}
+            </div>
+            {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}]} currentFilter={issueStateFilter} onFilterChange={setIssueStateFilter} />}
+            {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}, {label: 'Draft', value: 'draft'}, {label: 'Merged', value: 'merged'}, {label: 'Asignados a mi', value: 'assigned_to_me'}]} currentFilter={prStateFilter} onFilterChange={setPrStateFilter} />}
+            {activeTab === 'Actions' && <FilterBar name="Actions" filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} currentFilter={actionStatusFilter} onFilterChange={setActionStatusFilter} />}
+          </>
+        )}
 
-      <button onClick={handleLogout} style={{ marginTop: '1.5rem' }}>Cerrar Sesión</button>
-    </div>
+        <ContentDisplay 
+          activeTab={activeTab}
+          isContentLoading={isContentLoading}
+          selectedRepo={selectedRepo}
+          commits={commits}
+          issues={issues}
+          pullRequests={pullRequests}
+          actions={actions}
+          releases={releases}
+        />
+        
+        {selectedRepo && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
+          <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+        )}
+
+        <button onClick={handleLogout} style={{ marginTop: '1.5rem' }}>Cerrar Sesión</button>
+      </div>
+    </>
   );
 }
 
-// El componente ContentDisplay se mantiene igual
+// Componente para mostrar el contenido de la pestaña activa (sin cambios)
 const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, issues, pullRequests, actions, releases } : any) => {
   if (isContentLoading) return <p className="loading-text">Cargando...</p>;
     
@@ -198,7 +189,7 @@ const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, is
         case 'cancelled': return '🚫'; default: return '⚪️';
       }
     }
-    if (status === 'in_progress') return '⏳'; return '🕒';
+    if (status === 'in_progress') return '⏳'; return '�';
   };
 
   if (activeTab === 'Commits' && commits.length > 0) {

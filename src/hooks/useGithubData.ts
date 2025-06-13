@@ -1,31 +1,24 @@
-// src/hooks/useGithubData.ts - VERSIÓN ACTUALIZADA
+import { useState, useEffect, useCallback } from 'react';
 
-import { useState, useEffect } from 'react';
-
-// --- Tipos (Se exportan desde aquí para que otros archivos los usen) ---
+// Interfaces
 export type Tab = 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
 export type IssueState = 'open' | 'closed' | 'all';
 export type PRState = 'all' | 'open' | 'closed' | 'draft' | 'merged' | 'assigned_to_me';
 export type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
-
-export interface Repo { id: number; name: string; full_name: string; }
+export interface Repo { id: number; name: string; full_name: string; private: boolean; owner: { login: string; } }
 export interface CommitInfo { sha: string; commit: { author: { name: string; date: string; }; message: string; }; html_url: string; }
 export interface GitHubUser { login: string; avatar_url: string; html_url: string; }
 export interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
 export interface PullRequestInfo extends IssueInfo { draft: boolean; merged_at: string | null; }
 export interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; actor: { login: string; }; pull_requests: { html_url: string; number: number; }[]; }
-export interface ReleaseInfo { 
-    id: number; 
-    name: string; 
-    tag_name: string; 
-    html_url: string; 
-    author: { login: string; }; 
-    published_at: string; 
-}
+export interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; }; published_at: string; }
 
 export function useGithubData() {
   const [user, setUser] = useState<any>(null);
-  const [repos, setRepos] = useState<Repo[]>([]);
+  
+  const [managedRepos, setManagedRepos] = useState<Repo[]>([]);
+  const [allRepos, setAllRepos] = useState<Repo[]>([]);
+  
   const [selectedRepo, setSelectedRepo] = useState<string>('');
   
   const [isContentLoading, setIsContentLoading] = useState<boolean>(false);
@@ -44,116 +37,122 @@ export function useGithubData() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   
-  // --- LÓGICA DE CARGA INICIAL MODIFICADA ---
-  // Este useEffect se ejecuta una vez para autenticar y cargar la lista de repos.
   useEffect(() => {
-    // 1. Comprueba si el usuario está autenticado.
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
       if (response?.loggedIn) {
         setUser(response.user);
         
-        // 2. Intenta cargar los repositorios desde el almacenamiento local.
         chrome.storage.local.get('userRepos', (result) => {
-          if (result.userRepos && result.userRepos.length > 0) {
-            console.log("Repositorios cargados desde el almacenamiento local.");
-            setRepos(result.userRepos);
-          } else {
-            // 3. Si no hay repos en local, los pide a la API.
-            console.log("No se encontraron repos en local, pidiendo a la API.");
-            chrome.runtime.sendMessage({ type: 'getRepositories' }, (repoResponse) => {
-              if (repoResponse?.success) {
-                setRepos(repoResponse.repos);
-              } else {
-                console.error("Error al obtener repositorios:", repoResponse?.error);
+          if (result.userRepos) {
+            setManagedRepos(result.userRepos);
+          }
+        });
+
+        chrome.runtime.sendMessage({ type: 'getRepositories' }, (repoResponse) => {
+          if (repoResponse?.success) {
+            setAllRepos(repoResponse.repos);
+            chrome.storage.local.get('userRepos', (result) => {
+              if (!result.userRepos) {
+                setManagedRepos(repoResponse.repos);
               }
             });
           }
         });
       }
     });
-  }, []); // El array vacío [] asegura que se ejecute solo una vez.
+  }, []);
 
-  // Este useEffect se encarga de buscar los datos de la pestaña activa cuando cambia una dependencia.
+  const updateManagedRepos = useCallback((updatedRepos: Repo[]) => {
+    setManagedRepos(updatedRepos);
+    chrome.storage.local.set({ userRepos: updatedRepos });
+  }, []);
+
+  const addRepoToManagedList = (repoToAdd: Repo) => {
+    if (managedRepos.some(repo => repo.id === repoToAdd.id)) return;
+    const newRepos = [...managedRepos, repoToAdd].sort((a, b) => a.name.localeCompare(b.name));
+    updateManagedRepos(newRepos);
+  };
+  
+  const removeRepoFromManagedList = (repoToRemove: Repo) => {
+    const newRepos = managedRepos.filter(repo => repo.id !== repoToRemove.id);
+    updateManagedRepos(newRepos);
+    if (selectedRepo === repoToRemove.full_name) {
+        setSelectedRepo('');
+    }
+  };
+  
   useEffect(() => {
-    if (selectedRepo) {
-      fetchDataForTab(activeTab, currentPage);
-    } else {
-        // Limpia los datos si no hay un repositorio seleccionado
-        setCommits([]); setIssues([]); setPullRequests([]); setActions([]); setReleases([]);
-    }
-  }, [selectedRepo, activeTab, issueStateFilter, prStateFilter, actionStatusFilter, currentPage]); 
+    if (!selectedRepo) return;
 
-  // Este efecto resetea la página a 1 cuando cambia un filtro.
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedRepo, activeTab, issueStateFilter, prStateFilter, actionStatusFilter]);
+    const fetchDataForTab = (tab: Tab, page: number) => {
+        setIsContentLoading(true);
+        let message: any = { repoFullName: selectedRepo, page };
+        let messageType = '';
 
-
-  const fetchDataForTab = (tab: Tab, page: number) => {
-    setIsContentLoading(true);
-    let messageType: string = '';
-    let payload: any = { repoFullName: selectedRepo, page };
-
-    switch(tab) {
-      case 'Commits': messageType = 'getCommits'; break;
-      case 'Issues': 
-        messageType = 'getIssues';
-        payload.state = issueStateFilter;
-        break;
-      case 'PRs': 
-        messageType = 'getPullRequests';
-        if (prStateFilter === 'draft' || prStateFilter === 'open') payload.state = 'open';
-        else if (prStateFilter === 'merged' || prStateFilter === 'closed') payload.state = 'closed';
-        else if (prStateFilter === 'assigned_to_me') payload.state = 'assigned_to_me';
-        else payload.state = 'all'; 
-        break;
-      case 'Actions': 
-        messageType = 'getActions';
-        payload.status = actionStatusFilter;
-        break;
-      case 'Releases':
-        messageType = 'getReleases';
-        break;
-    }
-
-    if (!messageType) {
-      setIsContentLoading(false);
-      return;
-    }
-
-    chrome.runtime.sendMessage({ type: messageType, ...payload }, (response) => {
-      if (response?.success) {
-        const { items, totalPages: newTotalPages } = response.data;
-        
         switch(tab) {
-          case 'Commits': setCommits(items || []); break;
+          case 'Commits': 
+            messageType = 'getCommits'; 
+            break;
           case 'Issues': 
-            const onlyIssues = items?.filter((item: IssueInfo) => !item.pull_request) || [];
-            setIssues(onlyIssues);
+            messageType = 'getIssues';
+            message.state = issueStateFilter;
             break;
           case 'PRs': 
-            let prs = items || [];
-            if (prStateFilter === 'draft') prs = prs.filter((pr: PullRequestInfo) => pr.draft);
-            else if (prStateFilter === 'open') prs = prs.filter((pr: PullRequestInfo) => !pr.draft);
-            else if (prStateFilter === 'merged') prs = prs.filter((pr: PullRequestInfo) => pr.merged_at !== null);
-            else if (prStateFilter === 'closed') prs = prs.filter((pr: PullRequestInfo) => pr.merged_at === null);
-            setPullRequests(prs);
+            messageType = 'getPullRequests';
+            message.state = prStateFilter;
             break;
-          case 'Actions': setActions(items || []); break;
-          case 'Releases': setReleases(items || []); break;
+          case 'Actions': 
+            messageType = 'getActions';
+            message.status = actionStatusFilter;
+            break;
+          case 'Releases':
+            messageType = 'getReleases';
+            break;
         }
-        setTotalPages(newTotalPages || 1);
-      } else {
-        console.error(`Error al obtener ${tab}:`, response?.error);
-        setTotalPages(1); 
-      }
-      setIsContentLoading(false);
-    });
-  };
+
+        if (!messageType) {
+            setIsContentLoading(false);
+            return;
+        }
+        
+        message.type = messageType;
+
+        chrome.runtime.sendMessage(message, (response) => {
+            if (response?.success) {
+                const { items, totalPages: newTotalPages } = response.data;
+                switch(tab) {
+                  case 'Commits': setCommits(items || []); break;
+                  case 'Issues': 
+                    const onlyIssues = items?.filter((item: IssueInfo) => !item.pull_request) || [];
+                    setIssues(onlyIssues);
+                    break;
+                  case 'PRs': 
+                    setPullRequests(items || []);
+                    break;
+                  case 'Actions': setActions(items || []); break;
+                  case 'Releases': setReleases(items || []); break;
+                }
+                setTotalPages(newTotalPages || 1);
+            } else {
+                console.error(`Error fetching ${tab}:`, response?.error);
+                // Limpiar datos en caso de error
+                setCommits([]); setIssues([]); setPullRequests([]); setActions([]); setReleases([]);
+                setTotalPages(1); 
+            }
+            setIsContentLoading(false);
+        });
+    };
+
+    fetchDataForTab(activeTab, currentPage);
+  }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter]);
+
 
   return {
-    user, setUser,
-    repos, setRepos,
+    user,
+    allRepos,
+    managedRepos,
+    addRepoToManagedList,
+    removeRepoFromManagedList,
     selectedRepo, setSelectedRepo,
     isContentLoading,
     activeTab, setActiveTab,
