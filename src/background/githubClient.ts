@@ -1,23 +1,15 @@
+const GITHUB_API_URL = "https://api.github.com";
+
 async function getAuthToken() {
     const result = await chrome.storage.local.get('token');
     if (!result.token) throw new Error('No authentication token found.');
     return result.token;
 }
 
-// --- TODAS LAS FUNCIONES AHORA DEVUELVEN UN OBJETO CON LOS ITEMS Y EL TOTAL DE PÁGINAS ---
-
-export async function fetchRepositories() {
-    const token = await getAuthToken();
-    const response = await fetch('https://api.github.com/user/repos?sort=updated&per_page=100', {
-        headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
-    });
-    if (!response.ok) throw new Error('Failed to fetch repositories.');
-    return await response.json();
-}
 
 export async function fetchCommits(repoFullName: string, page: number = 1) {
     const token = await getAuthToken();
-    const response = await fetch(`https://api.github.com/repos/${repoFullName}/commits?per_page=5&page=${page}`, {
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/commits?per_page=5&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch commits.`);
@@ -46,6 +38,47 @@ export async function fetchCommits(repoFullName: string, page: number = 1) {
     return { items, totalPages: page };
 }
 
+export async function fetchRepositories() {
+    const token = await getAuthToken();
+    const response = await fetch(`${GITHUB_API_URL}/user/repos?per_page=100`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch repositories");
+    }
+
+    const repos: any[] = await response.json();
+
+    const simplifiedRepos = repos.map(repo => ({
+        id: repo.id,
+        full_name: repo.full_name,
+        name: repo.name,
+        private: repo.private,
+        owner: {
+            login: repo.owner.login,
+        },
+    }));
+
+    try {
+
+        await new Promise<void>((resolve, reject) => {
+            chrome.storage.local.set({ userRepos: simplifiedRepos }, () => {
+                if (chrome.runtime.lastError) {
+                    return reject(chrome.runtime.lastError);
+                }
+                resolve();
+            });
+        });
+    } catch (error) {
+        console.error("Error saving repositories in local:", error);
+    }
+
+    return simplifiedRepos;
+}
+
 export async function fetchIssues(repoFullName: string, state: 'open' | 'closed' | 'all' = 'all', page: number = 1) {
     const token = await getAuthToken();
     let query = `is:issue repo:${repoFullName}`;
@@ -53,7 +86,7 @@ export async function fetchIssues(repoFullName: string, state: 'open' | 'closed'
         query += ` is:${state}`;
     }
 
-    const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=5&page=${page}`, {
+    const response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=5&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch issues.`);
@@ -66,7 +99,7 @@ export async function fetchIssues(repoFullName: string, state: 'open' | 'closed'
 
 export async function fetchPullRequests(repoFullName: string, state: 'open' | 'closed' | 'all' = 'all', page: number = 1) {
     const token = await getAuthToken();
-    const response = await fetch(`https://api.github.com/repos/${repoFullName}/pulls?state=${state}&sort=created&direction=desc&per_page=5&page=${page}`, {
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/pulls?state=${state}&sort=created&direction=desc&per_page=5&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch pull requests.`);
@@ -113,7 +146,7 @@ export async function fetchMyAssignedPullRequests(repoFullName: string, page: nu
 
 export async function fetchActions(repoFullName: string, status?: string, page: number = 1) {
     const token = await getAuthToken();
-    let url = `https://api.github.com/repos/${repoFullName}/actions/runs?per_page=5&page=${page}`;
+    let url = `${GITHUB_API_URL}/repos/${repoFullName}/actions/runs?per_page=5&page=${page}`;
     if (status && status !== 'all') {
         url += `&status=${status}`;
     }
@@ -135,7 +168,7 @@ export async function fetchActions(repoFullName: string, status?: string, page: 
 
 export async function fetchReleases(repoFullName: string, page: number = 1) {
     const token = await getAuthToken();
-    const response = await fetch(`https://api.github.com/repos/${repoFullName}/releases?per_page=10&page=${page}`, {
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/releases?per_page=10&page=${page}`, {
       headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch releases.`);
