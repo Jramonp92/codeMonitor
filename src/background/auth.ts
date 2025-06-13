@@ -13,7 +13,7 @@ async function getUserInfo(token: string): Promise<any> {
     return response.json();
   }
   
-  // Función principal de login que implementa el flujo manual
+
   export async function login() {
     const manifest = chrome.runtime.getManifest();
     const clientId = manifest.oauth2?.client_id;
@@ -79,8 +79,7 @@ async function getUserInfo(token: string): Promise<any> {
       });
     });
   }
-  
-  // El nuevo logout es más simple
+
   export async function logout() {
     console.log('Auth: Cerrando sesión, borrando datos de storage...');
     await chrome.storage.local.remove(['user', 'token']);
