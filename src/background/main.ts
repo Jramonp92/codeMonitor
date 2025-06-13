@@ -1,17 +1,19 @@
 import { login, logout } from './auth';
 import { 
   fetchRepositories, 
+  fetchRepoDetails,
   fetchCommits, 
   fetchIssues, 
-  fetchPullRequests, 
-  fetchActions,
+  fetchPullRequests,
+  fetchMergedPullRequests,
+  fetchClosedUnmergedPullRequests,
   fetchMyAssignedPullRequests,
-  fetchReleases,
-  fetchRepoDetails // <-- CAMBIO: Importar la nueva función
+  fetchActions,
+  fetchReleases
 } from './githubClient';
 
-// LISTENER PARA MENSAJES DESDE LA UI (REACT)
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+
   if (message.type === 'login') {
     (async () => {
       try {
@@ -64,20 +66,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- CAMBIO: Añadir el nuevo manejador de mensajes ---
   if (message.type === 'getRepoDetails') {
     (async () => {
       try {
         const { repoFullName } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
-        
         const repo = await fetchRepoDetails(repoFullName);
         sendResponse({ success: true, repo });
       } catch (error: any) {
         sendResponse({ success: false, error: "Repository not found or access denied." });
       }
     })();
-    return true; // Esencial para respuestas asíncronas
+    return true;
   }
 
   if (message.type === 'getCommits') {
@@ -113,19 +113,55 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       try {
         const { repoFullName, state, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
-        
-        let data;
-        if (state === 'assigned_to_me') {
-          data = await fetchMyAssignedPullRequests(repoFullName, page);
-        } else {
-          data = await fetchPullRequests(repoFullName, state, page);
-        }
+        const data = await fetchPullRequests(repoFullName, state, page);
         sendResponse({ success: true, data });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
       }
     })();
     return true;
+  }
+  
+  if (message.type === 'getMergedPullRequests') {
+    (async () => {
+      try {
+        const { repoFullName, page } = message;
+        if (!repoFullName) throw new Error('repoFullName is required.');
+        const data = await fetchMergedPullRequests(repoFullName, page);
+        sendResponse({ success: true, data });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+  
+  if (message.type === 'getClosedUnmergedPullRequests') {
+    (async () => {
+      try {
+        const { repoFullName, page } = message;
+        if (!repoFullName) throw new Error('repoFullName is required.');
+        const data = await fetchClosedUnmergedPullRequests(repoFullName, page);
+        sendResponse({ success: true, data });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === 'getPullRequestsAssignedToMe') {
+      (async () => {
+          try {
+              const { repoFullName, page } = message;
+              if (!repoFullName) throw new Error('repoFullName is required.');
+              const data = await fetchMyAssignedPullRequests(repoFullName, page);
+              sendResponse({ success: true, data });
+          } catch (error: any) {
+              sendResponse({ success: false, error: error.message });
+          }
+      })();
+      return true;
   }
 
   if (message.type === 'getActions') {
@@ -157,9 +193,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 });
 
-// LISTENER PARA EL CLIC EN EL ICONO DE LA EXTENSIÓN
 chrome.action.onClicked.addListener(async (tab) => {
-  // Asegúrate de que el panel se abra en la ventana actual.
   if (tab.windowId) {
     await chrome.sidePanel.open({ windowId: tab.windowId });
   }
