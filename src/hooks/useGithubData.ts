@@ -1,7 +1,9 @@
+// src/hooks/useGithubData.ts - VERSIÓN ACTUALIZADA
+
 import { useState, useEffect } from 'react';
 
 // --- Tipos (Se exportan desde aquí para que otros archivos los usen) ---
-export type Tab = 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';;
+export type Tab = 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
 export type IssueState = 'open' | 'closed' | 'all';
 export type PRState = 'all' | 'open' | 'closed' | 'draft' | 'merged' | 'assigned_to_me';
 export type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
@@ -19,7 +21,7 @@ export interface ReleaseInfo {
     html_url: string; 
     author: { login: string; }; 
     published_at: string; 
-  }
+}
 
 export function useGithubData() {
   const [user, setUser] = useState<any>(null);
@@ -29,32 +31,59 @@ export function useGithubData() {
   const [isContentLoading, setIsContentLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<Tab>('Commits');
   
-  // Estados de los filtros
   const [issueStateFilter, setIssueStateFilter] = useState<IssueState>('all');
   const [prStateFilter, setPrStateFilter] = useState<PRState>('all');
   const [actionStatusFilter, setActionStatusFilter] = useState<ActionStatus>('all');
 
-  // Estados de los datos de las pestañas
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [issues, setIssues] = useState<IssueInfo[]>([]);
   const [pullRequests, setPullRequests] = useState<PullRequestInfo[]>([]);
   const [actions, setActions] = useState<ActionInfo[]>([]);
   const [releases, setReleases] = useState<ReleaseInfo[]>([]);
 
-  // --- ESTADOS PARA PAGINACIÓN ---
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  
+  // --- LÓGICA DE CARGA INICIAL MODIFICADA ---
+  // Este useEffect se ejecuta una vez para autenticar y cargar la lista de repos.
+  useEffect(() => {
+    // 1. Comprueba si el usuario está autenticado.
+    chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
+      if (response?.loggedIn) {
+        setUser(response.user);
+        
+        // 2. Intenta cargar los repositorios desde el almacenamiento local.
+        chrome.storage.local.get('userRepos', (result) => {
+          if (result.userRepos && result.userRepos.length > 0) {
+            console.log("Repositorios cargados desde el almacenamiento local.");
+            setRepos(result.userRepos);
+          } else {
+            // 3. Si no hay repos en local, los pide a la API.
+            console.log("No se encontraron repos en local, pidiendo a la API.");
+            chrome.runtime.sendMessage({ type: 'getRepositories' }, (repoResponse) => {
+              if (repoResponse?.success) {
+                setRepos(repoResponse.repos);
+              } else {
+                console.error("Error al obtener repositorios:", repoResponse?.error);
+              }
+            });
+          }
+        });
+      }
+    });
+  }, []); // El array vacío [] asegura que se ejecute solo una vez.
 
-  // Efecto que pide datos cada vez que cambia una dependencia
+  // Este useEffect se encarga de buscar los datos de la pestaña activa cuando cambia una dependencia.
   useEffect(() => {
     if (selectedRepo) {
       fetchDataForTab(activeTab, currentPage);
     } else {
-        setCommits([]); setIssues([]); setPullRequests([]); setActions([]); setReleases([]); // <-- AÑADIR setReleases
+        // Limpia los datos si no hay un repositorio seleccionado
+        setCommits([]); setIssues([]); setPullRequests([]); setActions([]); setReleases([]);
     }
   }, [selectedRepo, activeTab, issueStateFilter, prStateFilter, actionStatusFilter, currentPage]); 
 
-  // Efecto que resetea la página a 1 cuando cambia la pestaña o los filtros
+  // Este efecto resetea la página a 1 cuando cambia un filtro.
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedRepo, activeTab, issueStateFilter, prStateFilter, actionStatusFilter]);
@@ -87,16 +116,18 @@ export function useGithubData() {
         break;
     }
 
+    if (!messageType) {
+      setIsContentLoading(false);
+      return;
+    }
+
     chrome.runtime.sendMessage({ type: messageType, ...payload }, (response) => {
       if (response?.success) {
         const { items, totalPages: newTotalPages } = response.data;
         
         switch(tab) {
-          case 'Commits': 
-            setCommits(items || []); 
-            break;
+          case 'Commits': setCommits(items || []); break;
           case 'Issues': 
-            // BUG FIX: La API de búsqueda devuelve PRs también, los filtramos
             const onlyIssues = items?.filter((item: IssueInfo) => !item.pull_request) || [];
             setIssues(onlyIssues);
             break;
@@ -108,12 +139,8 @@ export function useGithubData() {
             else if (prStateFilter === 'closed') prs = prs.filter((pr: PullRequestInfo) => pr.merged_at === null);
             setPullRequests(prs);
             break;
-          case 'Actions': 
-            setActions(items || []); 
-            break;
-          case 'Releases':
-            setReleases(items || []);
-            break;
+          case 'Actions': setActions(items || []); break;
+          case 'Releases': setReleases(items || []); break;
         }
         setTotalPages(newTotalPages || 1);
       } else {
@@ -124,7 +151,6 @@ export function useGithubData() {
     });
   };
 
-  // El hook devuelve el estado y las funciones para que el componente las use
   return {
     user, setUser,
     repos, setRepos,
@@ -134,7 +160,7 @@ export function useGithubData() {
     issueStateFilter, setIssueStateFilter,
     prStateFilter, setPrStateFilter,
     actionStatusFilter, setActionStatusFilter,
-    commits, issues, pullRequests, actions, releases, // <-- AÑADIR releases
+    commits, issues, pullRequests, actions, releases,
     currentPage, setCurrentPage,
     totalPages
   };
