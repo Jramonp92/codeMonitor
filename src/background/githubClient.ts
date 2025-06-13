@@ -1,4 +1,5 @@
 const GITHUB_API_URL = "https://api.github.com";
+const ELEMENTS_PER_VIEW = 7;
 
 async function getAuthToken() {
     const result = await chrome.storage.local.get('token');
@@ -9,7 +10,7 @@ async function getAuthToken() {
 
 export async function fetchCommits(repoFullName: string, page: number = 1) {
     const token = await getAuthToken();
-    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/commits?per_page=5&page=${page}`, {
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/commits?per_page=${ELEMENTS_PER_VIEW}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch commits.`);
@@ -79,6 +80,33 @@ export async function fetchRepositories() {
     return simplifiedRepos;
 }
 
+export async function fetchRepoDetails(repoFullName: string) {
+    const token = await getAuthToken();
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28'
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch repository details for ${repoFullName}`);
+    }
+
+    const repo = await response.json();
+
+    // Devuelve el mismo formato simplificado que usamos en otros lugares
+    return {
+        id: repo.id,
+        full_name: repo.full_name,
+        name: repo.name,
+        private: repo.private,
+        owner: {
+            login: repo.owner.login,
+        },
+    };
+}
+
 export async function fetchIssues(repoFullName: string, state: 'open' | 'closed' | 'all' = 'all', page: number = 1) {
     const token = await getAuthToken();
     let query = `is:issue repo:${repoFullName}`;
@@ -86,7 +114,7 @@ export async function fetchIssues(repoFullName: string, state: 'open' | 'closed'
         query += ` is:${state}`;
     }
 
-    const response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=5&page=${page}`, {
+    const response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=${ELEMENTS_PER_VIEW}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch issues.`);
@@ -99,7 +127,7 @@ export async function fetchIssues(repoFullName: string, state: 'open' | 'closed'
 
 export async function fetchPullRequests(repoFullName: string, state: 'open' | 'closed' | 'all' = 'all', page: number = 1) {
     const token = await getAuthToken();
-    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/pulls?state=${state}&sort=created&direction=desc&per_page=5&page=${page}`, {
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/pulls?state=${state}&sort=created&direction=desc&per_page=${ELEMENTS_PER_VIEW}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch pull requests.`);
@@ -135,7 +163,7 @@ export async function fetchMyAssignedPullRequests(repoFullName: string, page: nu
     if (!token || !user || !user.login) throw new Error('Authentication token or user info not found.');
     const username = user.login;
     const query = `is:pr state:open repo:${repoFullName} assignee:${username}`;
-    const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=created&direction=desc&per_page=5&page=${page}`, {
+    const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}&sort=created&direction=desc&per_page=${ELEMENTS_PER_VIEW}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch assigned PRs.`);
@@ -146,7 +174,7 @@ export async function fetchMyAssignedPullRequests(repoFullName: string, page: nu
 
 export async function fetchActions(repoFullName: string, status?: string, page: number = 1) {
     const token = await getAuthToken();
-    let url = `${GITHUB_API_URL}/repos/${repoFullName}/actions/runs?per_page=5&page=${page}`;
+    let url = `${GITHUB_API_URL}/repos/${repoFullName}/actions/runs?per_page=${ELEMENTS_PER_VIEW}&page=${page}`;
     if (status && status !== 'all') {
         url += `&status=${status}`;
     }
@@ -168,7 +196,7 @@ export async function fetchActions(repoFullName: string, status?: string, page: 
 
 export async function fetchReleases(repoFullName: string, page: number = 1) {
     const token = await getAuthToken();
-    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/releases?per_page=10&page=${page}`, {
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/releases?per_page=${ELEMENTS_PER_VIEW}&page=${page}`, {
       headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch releases.`);

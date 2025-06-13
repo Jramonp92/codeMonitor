@@ -6,7 +6,8 @@ import {
   fetchPullRequests, 
   fetchActions,
   fetchMyAssignedPullRequests,
-  fetchReleases
+  fetchReleases,
+  fetchRepoDetails // <-- CAMBIO: Importar la nueva función
 } from './githubClient';
 
 // LISTENER PARA MENSAJES DESDE LA UI (REACT)
@@ -61,6 +62,22 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       } 
     })();
     return true;
+  }
+
+  // --- CAMBIO: Añadir el nuevo manejador de mensajes ---
+  if (message.type === 'getRepoDetails') {
+    (async () => {
+      try {
+        const { repoFullName } = message;
+        if (!repoFullName) throw new Error('repoFullName is required.');
+        
+        const repo = await fetchRepoDetails(repoFullName);
+        sendResponse({ success: true, repo });
+      } catch (error: any) {
+        sendResponse({ success: false, error: "Repository not found or access denied." });
+      }
+    })();
+    return true; // Esencial para respuestas asíncronas
   }
 
   if (message.type === 'getCommits') {
@@ -143,5 +160,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 // LISTENER PARA EL CLIC EN EL ICONO DE LA EXTENSIÓN
 chrome.action.onClicked.addListener(async (tab) => {
   // Asegúrate de que el panel se abra en la ventana actual.
-  await chrome.sidePanel.open({ windowId: tab.windowId });
+  if (tab.windowId) {
+    await chrome.sidePanel.open({ windowId: tab.windowId });
+  }
 });
