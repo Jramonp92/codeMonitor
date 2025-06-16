@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 
 // Interfaces
-export type Tab = 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
+// 1. Add 'README' to the Tab type
+export type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
 export type IssueState = 'open' | 'closed' | 'all';
 export type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
 export type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
@@ -22,12 +23,15 @@ export function useGithubData() {
   const [selectedRepo, setSelectedRepo] = useState<string>('');
   
   const [isContentLoading, setIsContentLoading] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<Tab>('Commits');
+  // 2. Set 'README' as the default active tab
+  const [activeTab, setActiveTab] = useState<Tab>('README');
   
   const [issueStateFilter, setIssueStateFilter] = useState<IssueState>('all');
   const [prStateFilter, setPrStateFilter] = useState<PRState>('all');
   const [actionStatusFilter, setActionStatusFilter] = useState<ActionStatus>('all');
 
+  // 3. Add state for the README content
+  const [readmeHtml, setReadmeHtml] = useState<string>('');
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [issues, setIssues] = useState<IssueInfo[]>([]);
   const [pullRequests, setPullRequests] = useState<PullRequestInfo[]>([]);
@@ -92,10 +96,19 @@ export function useGithubData() {
     if (!selectedRepo) return;
 
     setIsContentLoading(true);
-    let message: any = { repoFullName: selectedRepo, page: currentPage };
+    // For README, page is not needed, so we handle it separately
+    let message: any = { repoFullName: selectedRepo };
+    if (activeTab !== 'README') {
+      message.page = currentPage;
+    }
+    
     let messageType = '';
 
     switch(activeTab) {
+      // 4. Add case for 'README'
+      case 'README':
+        messageType = 'getReadme';
+        break;
       case 'Commits': 
         messageType = 'getCommits'; 
         break;
@@ -132,22 +145,29 @@ export function useGithubData() {
 
     chrome.runtime.sendMessage(message, (response) => {
         if (response?.success) {
-            const { items, totalPages: newTotalPages } = response.data;
-            switch(activeTab) {
-              case 'Commits': setCommits(items || []); break;
-              case 'Issues': 
-                const onlyIssues = items?.filter((item: IssueInfo) => !item.pull_request) || [];
-                setIssues(onlyIssues);
-                break;
-              case 'PRs': 
-                setPullRequests(items || []);
-                break;
-              case 'Actions': setActions(items || []); break;
-              case 'Releases': setReleases(items || []); break;
+            // 5. Handle the response for 'getReadme'
+            if (activeTab === 'README') {
+              setReadmeHtml(response.data || '');
+            } else {
+              const { items, totalPages: newTotalPages } = response.data;
+              switch(activeTab) {
+                case 'Commits': setCommits(items || []); break;
+                case 'Issues': 
+                  const onlyIssues = items?.filter((item: IssueInfo) => !item.pull_request) || [];
+                  setIssues(onlyIssues);
+                  break;
+                case 'PRs': 
+                  setPullRequests(items || []);
+                  break;
+                case 'Actions': setActions(items || []); break;
+                case 'Releases': setReleases(items || []); break;
+              }
+              setTotalPages(newTotalPages || 1);
             }
-            setTotalPages(newTotalPages || 1);
         } else {
             console.error(`Error fetching ${activeTab}:`, response?.error);
+            // On error, clear all content states
+            setReadmeHtml('');
             setCommits([]); setIssues([]); setPullRequests([]); setActions([]); setReleases([]);
             setTotalPages(1); 
         }
@@ -163,8 +183,6 @@ export function useGithubData() {
     fetchDataForTab();
   };
 
-  // --- LÓGICA PARA RESETEAR LA PÁGINA ---
-  // Creamos funciones "manejadoras" que cambian el estado Y resetean la página.
   const handleTabChange = (newTab: Tab) => {
     setActiveTab(newTab);
     setCurrentPage(1);
@@ -193,16 +211,15 @@ export function useGithubData() {
     removeRepoFromManagedList,
     selectedRepo, setSelectedRepo,
     isContentLoading,
-    // Ya no exportamos los 'setters' directamente.
     activeTab, 
     issueStateFilter,
     prStateFilter,
     actionStatusFilter,
-    // Exportamos los nuevos manejadores.
     handleTabChange,
     handleIssueFilterChange,
     handlePrFilterChange,
     handleActionStatusChange,
+    readmeHtml,
     commits, issues, pullRequests, actions, releases,
     currentPage, setCurrentPage,
     totalPages,

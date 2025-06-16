@@ -1,5 +1,6 @@
 import { login, logout } from './auth';
 import { 
+  fetchReadme, // <-- Importamos la nueva función
   fetchRepositories, 
   fetchRepoDetails,
   fetchCommits, 
@@ -50,6 +51,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       } catch (error: any) { 
         sendResponse({ loggedIn: false, error: error.message }); 
       } 
+    })();
+    return true;
+  }
+
+  // --- NUEVO MANEJADOR DE MENSAJE ---
+  if (message.type === 'getReadme') {
+    (async () => {
+      try {
+        const { repoFullName } = message;
+        if (!repoFullName) throw new Error('repoFullName is required for getReadme.');
+        const readmeHtml = await fetchReadme(repoFullName);
+        sendResponse({ success: true, data: readmeHtml });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
     })();
     return true;
   }

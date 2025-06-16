@@ -13,6 +13,23 @@ const normalizePRData = (item: any) => ({
     merged_at: item.pull_request?.merged_at || null,
 });
 
+// --- NUEVA FUNCIÓN ---
+// Obtiene el contenido del README para un repositorio.
+export async function fetchReadme(repoFullName: string) {
+    const token = await getAuthToken();
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/readme`, {
+        headers: { 
+            Authorization: `Bearer ${token}`,
+            // Usamos el formato 'html' para que GitHub nos devuelva el README renderizado.
+            Accept: 'application/vnd.github.html+json',
+        },
+    });
+    if (!response.ok) throw new Error(`Failed to fetch README for ${repoFullName}`);
+    // La respuesta directa es el contenido HTML del README.
+    const readmeHtml = await response.text();
+    return readmeHtml;
+}
+
 export async function fetchRepositories() {
     const token = await getAuthToken();
     const response = await fetch(`${GITHUB_API_URL}/user/repos?per_page=100`, {
@@ -27,7 +44,6 @@ export async function fetchRepositories() {
         private: repo.private,
         owner: { login: repo.owner.login },
     }));
-    // El bloque try-catch que guardaba en chrome.storage.local ha sido eliminado.
     return simplifiedRepos;
 }
 
@@ -105,7 +121,6 @@ export async function fetchMergedPullRequests(repoFullName: string, page: number
     if (!response.ok) throw new Error(`Failed to fetch merged PRs.`);
     const data = await response.json();
     const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE);
-    // --- CAMBIO: Normalizar los datos ---
     const items = data.items.map(normalizePRData);
     return { items, totalPages: totalPages > 0 ? totalPages : 1 };
 }
@@ -119,7 +134,6 @@ export async function fetchClosedUnmergedPullRequests(repoFullName: string, page
     if (!response.ok) throw new Error(`Failed to fetch closed and unmerged PRs.`);
     const data = await response.json();
     const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE);
-    // --- CAMBIO: Normalizar los datos ---
     const items = data.items.map(normalizePRData);
     return { items, totalPages: totalPages > 0 ? totalPages : 1 };
 }
@@ -137,7 +151,6 @@ export async function fetchMyAssignedPullRequests(repoFullName: string, page: nu
     if (!response.ok) throw new Error(`Failed to fetch assigned PRs.`);
     const data = await response.json();
     const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE);
-    // --- CAMBIO: Normalizar los datos ---
     const items = data.items.map(normalizePRData);
     return { items, totalPages: totalPages > 0 ? totalPages : 1 };
 }

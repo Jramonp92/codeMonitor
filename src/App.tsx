@@ -12,7 +12,6 @@ function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Destructure the new handler functions from the hook
   const {
     user,
     allRepos,
@@ -29,6 +28,7 @@ function App() {
     handleIssueFilterChange,
     handlePrFilterChange,
     handleActionStatusChange,
+    readmeHtml,
     commits, issues, pullRequests, actions, releases,
     currentPage, setCurrentPage,
     totalPages,
@@ -44,8 +44,7 @@ function App() {
   }, [user]);
   
   const handleRepoSelection = (repoFullName: string) => {
-    // This correctly resets the tab and page
-    handleTabChange('Commits');
+    handleTabChange('README');
     setSelectedRepo(repoFullName);
   };
   
@@ -123,12 +122,10 @@ function App() {
         {selectedRepo && (
           <>
             <div className="tab-container">
-              {/* Use handleTabChange instead of setActiveTab */}
-              {(['Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => (
+              {(['README', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => (
                 <button key={tab} onClick={() => handleTabChange(tab)} className={activeTab === tab ? 'active' : ''}>{tab}</button>
               ))}
             </div>
-            {/* Use the new handlers for filter changes */}
             {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
             {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}, {label: 'Merged', value: 'merged'}, {label: 'Asignados a mi', value: 'assigned_to_me'}]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
             {activeTab === 'Actions' && <FilterBar name="Actions" filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} currentFilter={actionStatusFilter} onFilterChange={handleActionStatusChange} />}
@@ -139,6 +136,7 @@ function App() {
           activeTab={activeTab}
           isContentLoading={isContentLoading}
           selectedRepo={selectedRepo}
+          readmeHtml={readmeHtml}
           commits={commits}
           issues={issues}
           pullRequests={pullRequests}
@@ -146,22 +144,29 @@ function App() {
           releases={releases}
         />
         
-        {selectedRepo && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
+        {selectedRepo && activeTab !== 'README' && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         )}
 
-        <button onClick={handleLogout} style={{ marginTop: '1.5rem' }}>Cerrar Sesión</button>
+        <button onClick={handleLogout} style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>Cerrar Sesión</button>
       </div>
     </>
   );
 }
 
-const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, issues, pullRequests, actions, releases } : any) => {
+const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, readmeHtml, commits, issues, pullRequests, actions, releases } : any) => {
   if (!selectedRepo) {
     return null;
   }
   
   if (isContentLoading) return <p className="loading-text">Cargando...</p>;
+    
+  if (activeTab === 'README') {
+    if (readmeHtml) {
+      return <div className="readme-content" dangerouslySetInnerHTML={{ __html: readmeHtml }} />;
+    }
+    return <p className="loading-text">No se encontró un archivo README para este repositorio.</p>;
+  }
     
   const renderItemList = (items: (IssueInfo | PullRequestInfo)[]) => (
     <ul className="item-list">
