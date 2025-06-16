@@ -12,7 +12,7 @@ function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Extraer todos los estados y funciones, incluyendo la nueva 'handleRefresh'
+  // Destructure the new handler functions from the hook
   const {
     user,
     allRepos,
@@ -21,14 +21,18 @@ function App() {
     removeRepoFromManagedList,
     selectedRepo, setSelectedRepo,
     isContentLoading,
-    activeTab, setActiveTab,
-    issueStateFilter, setIssueStateFilter,
-    prStateFilter, setPrStateFilter,
-    actionStatusFilter, setActionStatusFilter,
+    activeTab,
+    issueStateFilter,
+    prStateFilter,
+    actionStatusFilter,
+    handleTabChange,
+    handleIssueFilterChange,
+    handlePrFilterChange,
+    handleActionStatusChange,
     commits, issues, pullRequests, actions, releases,
     currentPage, setCurrentPage,
     totalPages,
-    handleRefresh, // <-- Importamos la nueva función
+    handleRefresh,
   } = useGithubData();
 
   useEffect(() => {
@@ -40,8 +44,8 @@ function App() {
   }, [user]);
   
   const handleRepoSelection = (repoFullName: string) => {
-    setActiveTab('Commits');
-    setCurrentPage(1);
+    // This correctly resets the tab and page
+    handleTabChange('Commits');
     setSelectedRepo(repoFullName);
   };
   
@@ -109,8 +113,6 @@ function App() {
           <button onClick={() => setIsModalOpen(true)} className="manage-button" title="Manage Repositories">
             ⚙️
           </button>
-          {/* --- CAMBIO CLAVE --- */}
-          {/* Conectamos la función handleRefresh al onClick del botón */}
           {selectedRepo && (
              <button onClick={handleRefresh} className="refresh-button" title="Refrescar datos">
                 🔄
@@ -121,13 +123,15 @@ function App() {
         {selectedRepo && (
           <>
             <div className="tab-container">
+              {/* Use handleTabChange instead of setActiveTab */}
               {(['Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)} className={activeTab === tab ? 'active' : ''}>{tab}</button>
+                <button key={tab} onClick={() => handleTabChange(tab)} className={activeTab === tab ? 'active' : ''}>{tab}</button>
               ))}
             </div>
-            {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}]} currentFilter={issueStateFilter} onFilterChange={setIssueStateFilter} />}
-            {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}, {label: 'Merged', value: 'merged'}, {label: 'Asignados a mi', value: 'assigned_to_me'}]} currentFilter={prStateFilter} onFilterChange={setPrStateFilter} />}
-            {activeTab === 'Actions' && <FilterBar name="Actions" filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} currentFilter={actionStatusFilter} onFilterChange={setActionStatusFilter} />}
+            {/* Use the new handlers for filter changes */}
+            {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
+            {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}, {label: 'Merged', value: 'merged'}, {label: 'Asignados a mi', value: 'assigned_to_me'}]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
+            {activeTab === 'Actions' && <FilterBar name="Actions" filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} currentFilter={actionStatusFilter} onFilterChange={handleActionStatusChange} />}
           </>
         )}
 

@@ -37,7 +37,6 @@ export function useGithubData() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   
-  // Efecto para la carga inicial de datos (auth, repos gestionados, y todos los repos)
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
       if (response?.loggedIn && response.user) {
@@ -67,7 +66,6 @@ export function useGithubData() {
     });
   }, []);
 
-  // Función para guardar los repositorios gestionados en el estado y en local
   const updateManagedRepos = useCallback((updatedRepos: Repo[]) => {
     if (user?.login) {
       const userReposKey = `userRepos_${user.login}`;
@@ -90,8 +88,6 @@ export function useGithubData() {
     }
   };
   
-  // --- LÓGICA DE REFRESCAR ---
-  // 1. Envolvemos la lógica de fetch en un useCallback para poder llamarla desde varios sitios.
   const fetchDataForTab = useCallback(() => {
     if (!selectedRepo) return;
 
@@ -159,15 +155,34 @@ export function useGithubData() {
     });
   }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter]);
 
-  // 2. Este useEffect ahora solo se encarga de llamar a la función cuando cambia un filtro.
   useEffect(() => {
     fetchDataForTab();
   }, [fetchDataForTab]);
 
-  // 3. Creamos una función explícita para el botón de refrescar.
   const handleRefresh = () => {
-    // Simplemente vuelve a ejecutar la misma lógica de fetch.
     fetchDataForTab();
+  };
+
+  // --- LÓGICA PARA RESETEAR LA PÁGINA ---
+  // Creamos funciones "manejadoras" que cambian el estado Y resetean la página.
+  const handleTabChange = (newTab: Tab) => {
+    setActiveTab(newTab);
+    setCurrentPage(1);
+  };
+
+  const handleIssueFilterChange = (newFilter: IssueState) => {
+    setIssueStateFilter(newFilter);
+    setCurrentPage(1);
+  };
+
+  const handlePrFilterChange = (newFilter: PRState) => {
+    setPrStateFilter(newFilter);
+    setCurrentPage(1);
+  };
+
+  const handleActionStatusChange = (newStatus: ActionStatus) => {
+    setActionStatusFilter(newStatus);
+    setCurrentPage(1);
   };
 
   return {
@@ -178,13 +193,19 @@ export function useGithubData() {
     removeRepoFromManagedList,
     selectedRepo, setSelectedRepo,
     isContentLoading,
-    activeTab, setActiveTab,
-    issueStateFilter, setIssueStateFilter,
-    prStateFilter, setPrStateFilter,
-    actionStatusFilter, setActionStatusFilter,
+    // Ya no exportamos los 'setters' directamente.
+    activeTab, 
+    issueStateFilter,
+    prStateFilter,
+    actionStatusFilter,
+    // Exportamos los nuevos manejadores.
+    handleTabChange,
+    handleIssueFilterChange,
+    handlePrFilterChange,
+    handleActionStatusChange,
     commits, issues, pullRequests, actions, releases,
     currentPage, setCurrentPage,
     totalPages,
-    handleRefresh, // 4. Exportamos la nueva función.
+    handleRefresh,
   };
 }
