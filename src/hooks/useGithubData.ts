@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
+import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 
-// Interfaces
-// 1. Add 'README' to the Tab type
+// --- CORRECCIÓN: Exportar las interfaces y tipos ---
 export type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
 export type IssueState = 'open' | 'closed' | 'all';
 export type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
@@ -13,6 +13,9 @@ export interface IssueInfo { id: number; title: string; html_url: string; number
 export interface PullRequestInfo extends IssueInfo { merged_at: string | null; }
 export interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; actor: { login: string; }; pull_requests: { html_url: string; number: number; }[]; }
 export interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; }; published_at: string; }
+export type { ActiveNotifications }; // Re-exportar el tipo desde alarms
+
+const ALARM_NAME = 'github-check-alarm';
 
 export function useGithubData() {
   const [user, setUser] = useState<GitHubUser | null>(null);
@@ -23,14 +26,12 @@ export function useGithubData() {
   const [selectedRepo, setSelectedRepo] = useState<string>('');
   
   const [isContentLoading, setIsContentLoading] = useState<boolean>(false);
-  // 2. Set 'README' as the default active tab
   const [activeTab, setActiveTab] = useState<Tab>('README');
   
   const [issueStateFilter, setIssueStateFilter] = useState<IssueState>('all');
   const [prStateFilter, setPrStateFilter] = useState<PRState>('all');
   const [actionStatusFilter, setActionStatusFilter] = useState<ActionStatus>('all');
 
-  // 3. Add state for the README content
   const [readmeHtml, setReadmeHtml] = useState<string>('');
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [issues, setIssues] = useState<IssueInfo[]>([]);
@@ -40,7 +41,11 @@ export function useGithubData() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  
+
+  const [alertSettings, setAlertSettings] = useState<AlertSettings>({});
+  const [activeNotifications, setActiveNotifications] = useState<ActiveNotifications>({});
+  const [alertFrequency, setAlertFrequency] = useState<number>(10);
+
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
       if (response?.loggedIn && response.user) {
@@ -48,12 +53,18 @@ export function useGithubData() {
         setUser(currentUser);
         
         const userReposKey = `userRepos_${currentUser.login}`;
+        const alertsConfigKey = `alertsConfig_${currentUser.login}`;
+        const notificationsKey = `notifications_${currentUser.login}`;
+        const frequencyKey = 'alertFrequency';
 
-        chrome.storage.local.get(userReposKey, (result) => {
-          if (result[userReposKey]) {
-            setManagedRepos(result[userReposKey]);
-          }
+        chrome.storage.local.get([userReposKey, alertsConfigKey, notificationsKey, frequencyKey], (result) => {
+          if (result[userReposKey]) setManagedRepos(result[userReposKey]);
+          if (result[alertsConfigKey]) setAlertSettings(result[alertsConfigKey]);
+          if (result[notificationsKey]) setActiveNotifications(result[notificationsKey]);
+          if (result[frequencyKey]) setAlertFrequency(result[frequencyKey]);
         });
+
+        chrome.action.setBadgeText({ text: '' });
 
         chrome.runtime.sendMessage({ type: 'getRepositories' }, (repoResponse) => {
           if (repoResponse?.success) {
@@ -91,12 +102,53 @@ export function useGithubData() {
         setSelectedRepo('');
     }
   };
+
+  const handleAlertSettingsChange = (repoFullName: string, setting: keyof AlertSettings[string], value: boolean) => {
+    if (!user) return;
+    const newSettings = { ...alertSettings };
+    if (!newSettings[repoFullName]) {
+      newSettings[repoFullName] = {};
+    }
+    newSettings[repoFullName][setting] = value;
+    setAlertSettings(newSettings);
+    chrome.storage.local.set({ [`alertsConfig_${user.login}`]: newSettings });
+  };
+
+  const handleFrequencyChange = (frequency: number) => {
+    setAlertFrequency(frequency);
+    chrome.storage.local.set({ alertFrequency: frequency });
+    chrome.alarms.create(ALARM_NAME, {
+        delayInMinutes: 1,
+        periodInMinutes: frequency,
+    });
+  };
+
+  const clearNotificationsForTab = useCallback((repo: string, tabKey: keyof ActiveNotifications[string] | (keyof ActiveNotifications[string])[]) => {
+    if (!user) return;
+    
+    const keysToClear = Array.isArray(tabKey) ? tabKey : [tabKey];
+    
+    const newNotifications = { ...activeNotifications };
+    if (!newNotifications[repo]) return;
+
+    keysToClear.forEach(key => {
+      if (newNotifications[repo] && newNotifications[repo][key]) {
+        delete newNotifications[repo][key];
+      }
+    });
+
+    if (Object.keys(newNotifications[repo]).length === 0) {
+      delete newNotifications[repo];
+    }
+    
+    setActiveNotifications(newNotifications);
+    chrome.storage.local.set({ [`notifications_${user.login}`]: newNotifications });
+  }, [activeNotifications, user]);
   
   const fetchDataForTab = useCallback(() => {
     if (!selectedRepo) return;
 
     setIsContentLoading(true);
-    // For README, page is not needed, so we handle it separately
     let message: any = { repoFullName: selectedRepo };
     if (activeTab !== 'README') {
       message.page = currentPage;
@@ -105,13 +157,8 @@ export function useGithubData() {
     let messageType = '';
 
     switch(activeTab) {
-      // 4. Add case for 'README'
-      case 'README':
-        messageType = 'getReadme';
-        break;
-      case 'Commits': 
-        messageType = 'getCommits'; 
-        break;
+      case 'README': messageType = 'getReadme'; break;
+      case 'Commits': messageType = 'getCommits'; break;
       case 'Issues': 
         messageType = 'getIssues';
         message.state = issueStateFilter;
@@ -145,7 +192,6 @@ export function useGithubData() {
 
     chrome.runtime.sendMessage(message, (response) => {
         if (response?.success) {
-            // 5. Handle the response for 'getReadme'
             if (activeTab === 'README') {
               setReadmeHtml(response.data || '');
             } else {
@@ -166,7 +212,6 @@ export function useGithubData() {
             }
         } else {
             console.error(`Error fetching ${activeTab}:`, response?.error);
-            // On error, clear all content states
             setReadmeHtml('');
             setCommits([]); setIssues([]); setPullRequests([]); setActions([]); setReleases([]);
             setTotalPages(1); 
@@ -186,6 +231,19 @@ export function useGithubData() {
   const handleTabChange = (newTab: Tab) => {
     setActiveTab(newTab);
     setCurrentPage(1);
+
+    if (selectedRepo) {
+        const notificationMap: { [key in Tab]?: keyof ActiveNotifications[string] | (keyof ActiveNotifications[string])[] } = {
+            'Issues': 'issues',
+            'PRs': ['newPRs', 'assignedPRs'],
+            'Actions': 'actionFailures',
+            'Releases': 'newReleases'
+        };
+        const keyToClear = notificationMap[newTab];
+        if(keyToClear) {
+            clearNotificationsForTab(selectedRepo, keyToClear);
+        }
+    }
   };
 
   const handleIssueFilterChange = (newFilter: IssueState) => {
@@ -224,5 +282,10 @@ export function useGithubData() {
     currentPage, setCurrentPage,
     totalPages,
     handleRefresh,
+    alertSettings,
+    activeNotifications,
+    alertFrequency,
+    handleAlertSettingsChange,
+    handleFrequencyChange,
   };
 }

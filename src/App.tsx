@@ -6,12 +6,15 @@ import { FilterBar } from './components/FilterBar';
 import { Pagination } from './components/Pagination';
 import { SearchableRepoDropdown } from './components/SearchableRepoDropdown';
 import { RepoManagerModal } from './components/RepoManagerModal';
+import { AlertsManagerModal } from './components/AlertsManagerModal';
+// --- CORRECCIÓN: Se elimina 'ActiveNotifications' de la importación ya que no se usa directamente en este archivo. ---
 import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from './hooks/useGithubData';
 
 function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  
+  const [isRepoModalOpen, setIsRepoModalOpen] = useState(false);
+  const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
+
   const {
     user,
     allRepos,
@@ -33,13 +36,18 @@ function App() {
     currentPage, setCurrentPage,
     totalPages,
     handleRefresh,
+    alertSettings,
+    activeNotifications,
+    alertFrequency,
+    handleAlertSettingsChange,
+    handleFrequencyChange,
   } = useGithubData();
 
   useEffect(() => {
-    if (!user) {
-        setTimeout(() => setIsAppLoading(false), 500);
+    if (user) {
+      setIsAppLoading(false);
     } else {
-        setIsAppLoading(false);
+      setTimeout(() => setIsAppLoading(false), 500);
     }
   }, [user]);
   
@@ -50,32 +58,24 @@ function App() {
   
   const handleLogin = () => {
     setIsAppLoading(true);
-    if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ type: 'login' }, (response) => {
-          if (response && response.success) {
-            window.location.reload();
-          } else {
-            console.error('Login failed:', response?.error);
-            setIsAppLoading(false);
-          }
-        });
-    }
+    chrome.runtime.sendMessage({ type: 'login' }, (response) => {
+      if (response?.success) {
+        window.location.reload();
+      } else {
+        console.error('Login failed:', response?.error);
+        setIsAppLoading(false);
+      }
+    });
   };
 
   const handleLogout = () => {
-    if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
-        chrome.runtime.sendMessage({ type: 'logout' }, () => {
-          window.location.reload();
-        });
-    }
+    chrome.runtime.sendMessage({ type: 'logout' }, () => {
+      window.location.reload();
+    });
   };
 
   if (isAppLoading) {
-    return (
-      <div className="app-container">
-        <p>Cargando...</p>
-      </div>
-    );
+    return <div className="app-container"><p>Cargando...</p></div>;
   }
 
   if (!user) {
@@ -90,13 +90,23 @@ function App() {
   return (
     <>
       <RepoManagerModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isRepoModalOpen}
+        onClose={() => setIsRepoModalOpen(false)}
         allRepos={allRepos}
         managedRepos={managedRepos}
         onAdd={addRepoToManagedList}
         onRemove={removeRepoFromManagedList}
       />
+      <AlertsManagerModal
+        isOpen={isAlertsModalOpen}
+        onClose={() => setIsAlertsModalOpen(false)}
+        managedRepos={managedRepos}
+        alertSettings={alertSettings}
+        onSettingsChange={handleAlertSettingsChange}
+        alertFrequency={alertFrequency}
+        onFrequencyChange={handleFrequencyChange}
+      />
+
       <div className="app-container">
         <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
           <img src={user.avatar_url} alt="User Avatar" width="40" style={{ borderRadius: '50%' }} />
@@ -108,9 +118,13 @@ function App() {
               selectedRepo={selectedRepo}
               onSelect={handleRepoSelection}
               disabled={!user || managedRepos.length === 0}
+              notifications={activeNotifications}
           />
-          <button onClick={() => setIsModalOpen(true)} className="manage-button" title="Manage Repositories">
+          <button onClick={() => setIsRepoModalOpen(true)} className="manage-button" title="Manage Repositories">
             ⚙️
+          </button>
+          <button onClick={() => setIsAlertsModalOpen(true)} className="manage-button" title="Manage Alerts">
+            🔔
           </button>
           {selectedRepo && (
              <button onClick={handleRefresh} className="refresh-button" title="Refrescar datos">
@@ -122,9 +136,16 @@ function App() {
         {selectedRepo && (
           <>
             <div className="tab-container">
-              {(['README', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => (
-                <button key={tab} onClick={() => handleTabChange(tab)} className={activeTab === tab ? 'active' : ''}>{tab}</button>
-              ))}
+              {(['README', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => {
+                const hasNotification = activeNotifications[selectedRepo] && 
+                                        Object.keys(activeNotifications[selectedRepo]).some(key => tab.toLowerCase().includes(key.toLowerCase()));
+                return (
+                  <button key={tab} onClick={() => handleTabChange(tab)} className={activeTab === tab ? 'active' : ''}>
+                    {tab}
+                    {hasNotification && <span className="notification-dot"></span>}
+                  </button>
+                )
+              })}
             </div>
             {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
             {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{label: 'All', value: 'all'}, {label: 'Open', value: 'open'}, {label: 'Closed', value: 'closed'}, {label: 'Merged', value: 'merged'}, {label: 'Asignados a mi', value: 'assigned_to_me'}]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
@@ -148,17 +169,14 @@ function App() {
           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         )}
 
-        <button onClick={handleLogout} style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>Cerrar Sesión</button>
+        <button onClick={handleLogout} style={{ marginTop: '1.5rem' }}>Cerrar Sesión</button>
       </div>
     </>
   );
 }
 
 const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, readmeHtml, commits, issues, pullRequests, actions, releases } : any) => {
-  if (!selectedRepo) {
-    return null;
-  }
-  
+  if (!selectedRepo) return null;
   if (isContentLoading) return <p className="loading-text">Cargando...</p>;
     
   if (activeTab === 'README') {
@@ -178,7 +196,7 @@ const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, readmeHtml,
             </div>
             <div className="item-meta">
                 <span>Creado por <strong>{item.user.login}</strong></span>
-                {item.assignees && item.assignees.length > 0 && (
+                {item.assignees?.length > 0 && (
                     <div className="assignee-info">
                         <span>Asignado a:</span>
                         {item.assignees.map(assignee => (
@@ -210,7 +228,7 @@ const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, readmeHtml,
   if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues);
   if (activeTab === 'PRs' && pullRequests.length > 0) return renderItemList(pullRequests);
   if (activeTab === 'Actions' && actions.length > 0) {
-    return (<ul className="item-list">{actions.map((action: ActionInfo) => (<li key={action.id}><a href={action.html_url} target="_blank" rel="noopener noreferrer">{getStatusIcon(action.status, action.conclusion)} {action.name}</a><div className="action-meta"><span>Iniciado por <strong>{action.actor.login}</strong></span>{action.pull_requests.length > 0 && (<a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">(PR #{action.pull_requests[0].number})</a>)}</div></li>))}</ul>);
+    return (<ul className="item-list">{actions.map((action: ActionInfo) => (<li key={action.id}><a href={action.html_url} target="_blank" rel="noopener noreferrer">{getStatusIcon(action.status, action.conclusion)} {action.name}</a><div className="action-meta"><span>Iniciado por <strong>{action.actor.login}</strong></span>{action.pull_requests?.length > 0 && (<a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">(PR #{action.pull_requests[0].number})</a>)}</div></li>))}</ul>);
   }
   
   if (activeTab === 'Releases' && releases.length > 0) {

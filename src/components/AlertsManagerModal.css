@@ -1,0 +1,110 @@
+/* Estilos para el modal de gestión de alertas */
+
+/* El overlay oscuro que cubre toda la pantalla */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* El contenedor principal del contenido del modal */
+.modal-content.alerts-modal {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 700px; /* Un ancho mayor para acomodar la tabla */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Configuración de la frecuencia de alertas */
+.frequency-settings {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.frequency-settings label {
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.frequency-settings select {
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+}
+
+/* Contenedor de la tabla para permitir scroll si es necesario */
+.alerts-table-container {
+    max-height: 400px; /* Altura máxima antes de que aparezca el scroll */
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+}
+
+/* Estilos de la tabla de alertas */
+.alerts-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.alerts-table th,
+.alerts-table td {
+    padding: 10px 12px;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.alerts-table th {
+    background-color: #e9ecef;
+    font-weight: 600;
+    position: sticky; /* Encabezados fijos al hacer scroll */
+    top: 0;
+}
+
+/* La primera columna (nombre del repo) alineada a la izquierda */
+.alerts-table th:first-child,
+.alerts-table td:first-child {
+    text-align: left;
+    font-weight: bold;
+    min-width: 150px;
+}
+
+.alerts-table tr:last-child td {
+    border-bottom: none;
+}
+
+.alerts-table tr:hover {
+    background-color: #f1f3f5;
+}
+
+/* Estilos para los checkboxes */
+.alerts-table input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* Mensaje para cuando no hay repositorios */
+.no-repos-message {
+    margin-top: 20px;
+    color: #6c757d;
+    text-align: center;
+    padding: 20px;
+    background-color: #f1f3f5;
+    border-radius: 6px;
+}

@@ -265,3 +265,21 @@ border-left: .25em solid #dfe2e5;
 .readme-content img {
 max-width: 100%;
 }
+
+/* --- ESTILOS PARA NOTIFICACIONES --- */
+.notification-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #d93f3f; /* Un rojo notorio */
+  border-radius: 50%;
+  margin-left: 6px;
+}
+
+/* Posicionamiento específico para el punto en el dropdown de repos */
+.repo-dot {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}

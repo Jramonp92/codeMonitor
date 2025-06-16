@@ -19,7 +19,9 @@
       "identity",
       "storage",
       "activeTab",
-      "sidePanel"
+      "sidePanel",
+      "alarms",
+      "notifications"
     ],
     "side_panel": {
       "default_path": "index.html"
@@ -27,7 +29,8 @@
     "oauth2": {
     "client_id": "Ov23liJxOBldJkvfBnOm",
     "scopes": [
-      "repo"
+      "repo",
+      "read:org"
     ]
     }
 }

@@ -1,6 +1,7 @@
 import { login, logout } from './auth';
+import { initializeAlarms } from './alarms'; // <-- 1. Importamos la función
 import { 
-  fetchReadme, // <-- Importamos la nueva función
+  fetchReadme,
   fetchRepositories, 
   fetchRepoDetails,
   fetchCommits, 
@@ -12,6 +13,9 @@ import {
   fetchActions,
   fetchReleases
 } from './githubClient';
+
+// 2. Iniciamos el sistema de alarmas tan pronto como el service worker arranca.
+initializeAlarms();
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
@@ -55,7 +59,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- NUEVO MANEJADOR DE MENSAJE ---
   if (message.type === 'getReadme') {
     (async () => {
       try {
