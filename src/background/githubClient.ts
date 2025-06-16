@@ -27,16 +27,7 @@ export async function fetchRepositories() {
         private: repo.private,
         owner: { login: repo.owner.login },
     }));
-    try {
-        await new Promise<void>((resolve, reject) => {
-            chrome.storage.local.set({ userRepos: simplifiedRepos }, () => {
-                if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
-                resolve();
-            });
-        });
-    } catch (error) {
-        console.error("Error saving repositories in local:", error);
-    }
+    // El bloque try-catch que guardaba en chrome.storage.local ha sido eliminado.
     return simplifiedRepos;
 }
 
