@@ -9,11 +9,10 @@ import { RepoManagerModal } from './components/RepoManagerModal';
 import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from './hooks/useGithubData';
 
 function App() {
-  // Estado para la carga inicial de la app y visibilidad del modal
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Extraer todos los estados y funciones necesarios del hook
+  // Extraer todos los estados y funciones, incluyendo la nueva 'handleRefresh'
   const {
     user,
     allRepos,
@@ -29,27 +28,23 @@ function App() {
     commits, issues, pullRequests, actions, releases,
     currentPage, setCurrentPage,
     totalPages,
+    handleRefresh, // <-- Importamos la nueva función
   } = useGithubData();
 
-  // Efecto para simular la carga inicial (o verificar auth)
   useEffect(() => {
-    // La lógica de `useGithubData` ya maneja la verificación de auth.
-    // Este efecto solo gestiona el estado de carga visual de la app.
     if (!user) {
-        setTimeout(() => setIsAppLoading(false), 500); // Dar tiempo a que el hook verifique
+        setTimeout(() => setIsAppLoading(false), 500);
     } else {
         setIsAppLoading(false);
     }
   }, [user]);
   
-  // Manejador para la selección de un repositorio desde el dropdown de búsqueda
   const handleRepoSelection = (repoFullName: string) => {
     setActiveTab('Commits');
     setCurrentPage(1);
     setSelectedRepo(repoFullName);
   };
   
-  // Manejadores de login y logout (sin cambios)
   const handleLogin = () => {
     setIsAppLoading(true);
     if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
@@ -71,8 +66,6 @@ function App() {
         });
     }
   };
-  
-  // --- Renderizado de la UI ---
 
   if (isAppLoading) {
     return (
@@ -116,6 +109,13 @@ function App() {
           <button onClick={() => setIsModalOpen(true)} className="manage-button" title="Manage Repositories">
             ⚙️
           </button>
+          {/* --- CAMBIO CLAVE --- */}
+          {/* Conectamos la función handleRefresh al onClick del botón */}
+          {selectedRepo && (
+             <button onClick={handleRefresh} className="refresh-button" title="Refrescar datos">
+                🔄
+             </button>
+          )}
         </div>
         
         {selectedRepo && (
@@ -152,8 +152,11 @@ function App() {
   );
 }
 
-// Componente para mostrar el contenido de la pestaña activa (sin cambios)
 const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, issues, pullRequests, actions, releases } : any) => {
+  if (!selectedRepo) {
+    return null;
+  }
+  
   if (isContentLoading) return <p className="loading-text">Cargando...</p>;
     
   const renderItemList = (items: (IssueInfo | PullRequestInfo)[]) => (
@@ -189,7 +192,7 @@ const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, is
         case 'cancelled': return '🚫'; default: return '⚪️';
       }
     }
-    if (status === 'in_progress') return '⏳'; return '�';
+    if (status === 'in_progress') return '⏳'; return '큐';
   };
 
   if (activeTab === 'Commits' && commits.length > 0) {
@@ -223,8 +226,7 @@ const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, commits, is
     );
   }
     
-  if(selectedRepo) return <p className="loading-text">No se encontraron datos para esta pestaña.</p>;
-  return null;
+  return <p className="loading-text">No se encontraron datos para esta pestaña.</p>;
 }
 
 export default App;
