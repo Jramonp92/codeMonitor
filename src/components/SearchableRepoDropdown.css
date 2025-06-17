@@ -43,6 +43,9 @@
     padding: 10px 12px;
     cursor: pointer;
     font-size: 14px;
+    /* --- CORRECCIÓN CLAVE --- */
+    /* Se establece el contexto de posicionamiento para el punto rojo. */
+    position: relative; 
   }
   
   .repo-list li:hover {

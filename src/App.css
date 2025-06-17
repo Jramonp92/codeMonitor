@@ -11,7 +11,8 @@
 /* Contenedor de las pestañas */
 .tab-container {
   display: flex;
-  flex-wrap: wrap; /* <-- ESTA ES LA CORRECCIÓN */
+  flex-wrap: wrap;
+  justify-content: center; /* Centra las pestañas si se envuelven en otra línea */
   border-bottom: 1px solid #d1d5da;
   margin-top: 1rem;
 }
@@ -25,6 +26,7 @@
   color: #586069;
   border-bottom: 3px solid transparent;
   margin-bottom: -1px;
+  position: relative; /* Ancla para el punto de notificación */
 }
 
 .tab-container button.active {
@@ -35,7 +37,7 @@
 
 .tab-container button:hover { color: #24292e; }
 
-/* Contenedor del selector y refresh */
+/* Contenedor del selector y botones */
 .select-container { 
   margin-top: 1rem;
   display: flex;
@@ -43,14 +45,8 @@
   align-items: center;
   gap: 8px;
 }
-.select-container select {
-  flex-grow: 1;
-  max-width: 100%;
-  padding: 0.5rem;
-  border-radius: 6px;
-  border: 1px solid #d1d5da;
-}
-.refresh-button {
+
+.manage-button, .refresh-button {
   background: none;
   border: none;
   font-size: 1.2rem;
@@ -58,8 +54,8 @@
   padding: 0.4rem;
   line-height: 1;
 }
-.refresh-button:disabled { cursor: not-allowed; opacity: 0.5; }
 
+.refresh-button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 /* Filtros de Issues y PRs */
 .filter-container {
@@ -83,11 +79,14 @@
 .loading-text { color: #586069; }
 
 /* Lista de ítems (commits/issues/prs) */
-.item-list { list-style: none; padding: 1rem; margin: 0; text-align: left; }
+.item-list { list-style: none; padding: 0; margin: 0; text-align: left; }
 .item-list li {
   padding-bottom: 0.75rem;
   margin-bottom: 0.75rem;
   border-bottom: 1px solid #e1e4e8;
+  /* --- CORRECCIÓN CLAVE --- */
+  /* Se establece el contexto de posicionamiento para el punto rojo del ítem. */
+  position: relative; 
 }
 .item-list li:last-child { border-bottom: none; }
 
@@ -149,9 +148,7 @@
     margin-top: 1rem;
     padding-top: 1rem;
     border-top: 1px solid #e1e4e8;
-    flex-wrap: wrap;
 }
-
 .pagination-container button {
     padding: 0.3rem 0.8rem;
     border-radius: 6px;
@@ -159,32 +156,26 @@
     background-color: #f6f8fa;
     cursor: pointer;
 }
-
 .pagination-container button:hover:not(:disabled) {
     background-color: #f3f4f6;
 }
-
 .pagination-container button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
 }
-
 .pagination-pages {
     display: flex;
     gap: 4px;
 }
-
 .pagination-pages button {
     padding: 0.3rem 0.6rem;
     min-width: 28px;
 }
-
 .pagination-pages button.active {
     background-color: #0366d6;
     color: white;
     border-color: #0366d6;
 }
-
 .pagination-pages span {
     padding: 0.3rem 0.2rem;
     align-self: center;
@@ -192,76 +183,108 @@
 
 /* --- ESTILOS PARA EL README --- */
 .readme-content {
-padding: 1rem;
-background-color: #ffffff;
-border: 1px solid #d1d5da;
-border-radius: 6px;
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-line-height: 1.6;
-color: #24292e;
-text-align: left; /* Alineamos el texto a la izquierda para mejor lectura */
+  padding: 1rem;
+  background-color: #ffffff;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  line-height: 1.6;
+  color: #24292e;
+  text-align: left;
 }
 .readme-content h1, .readme-content h2, .readme-content h3 {
-border-bottom: 1px solid #eaecef;
-padding-bottom: 0.3em;
-margin-top: 24px;
-margin-bottom: 16px;
+  border-bottom: 1px solid #eaecef;
+  padding-bottom: 0.3em;
+  margin-top: 24px;
+  margin-bottom: 16px;
 }
 .readme-content h1 { font-size: 2em; }
 .readme-content h2 { font-size: 1.5em; }
 .readme-content h3 { font-size: 1.25em; }
 .readme-content p {
-margin-bottom: 16px;
+  margin-bottom: 16px;
 }
 .readme-content a {
-color: #0366d6;
-text-decoration: none;
+  color: #0366d6;
+  text-decoration: none;
 }
 .readme-content a:hover {
-text-decoration: underline;
+  text-decoration: underline;
 }
 .readme-content ul, .readme-content ol {
-padding-left: 2em;
-margin-bottom: 16px;
+  padding-left: 2em;
+  margin-bottom: 16px;
 }
 .readme-content li {
-margin-bottom: 0.25em;
+  margin-bottom: 0.25em;
 }
 .readme-content pre {
-background-color: #f6f8fa;
-border-radius: 6px;
-font-size: 85%;
-line-height: 1.45;
-overflow: auto;
-padding: 16px;
-margin-bottom: 16px;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  font-size: 85%;
+  line-height: 1.45;
+  overflow: auto;
+  padding: 16px;
+  margin-bottom: 16px;
 }
 .readme-content code {
-font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-font-size: 12px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+  font-size: 12px;
 }
 .readme-content pre > code {
-padding: 0;
-margin: 0;
-font-size: 100%;
-word-break: normal;
-white-space: pre;
-background: transparent;
-border: 0;
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+  word-break: normal;
+  white-space: pre;
+  background: transparent;
+  border: 0;
 }
 .readme-content :not(pre) > code {
-padding: .2em .4em;
-margin: 0;
-font-size: 85%;
-background-color: rgba(27,31,35,.05);
-border-radius: 3px;
+  padding: .2em .4em;
+  margin: 0;
+  font-size: 85%;
+  background-color: rgba(27,31,35,.05);
+  border-radius: 3px;
 }
 .readme-content blockquote {
-margin: 0 0 16px 0;
-padding: 0 1em;
-color: #6a737d;
-border-left: .25em solid #dfe2e5;
+  margin: 0 0 16px 0;
+  padding: 0 1em;
+  color: #6a737d;
+  border-left: .25em solid #dfe2e5;
 }
 .readme-content img {
-max-width: 100%;
+  max-width: 100%;
+}
+
+/* --- ESTILOS PARA NOTIFICACIONES --- */
+.notification-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #d93f3f;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+/* El punto en la pestaña va a la derecha del texto */
+.tab-container .notification-dot {
+  margin-left: 6px;
+}
+
+/* --- CORRECCIÓN --- */
+/* El punto en un ítem de la lista va a la DERECHA del título. */
+/* Se elimina el margen derecho y se añade un margen izquierdo. */
+.item-title-container .notification-dot {
+  margin-left: 8px; 
+  margin-right: 0;
+}
+
+/* Posicionamiento absoluto SOLO para el punto en el dropdown de repos */
+.repo-dot {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0; /* Asegurarse de que no tenga margen */
 }
