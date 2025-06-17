@@ -125,6 +125,7 @@ export function useGithubData() {
     });
   };
 
+  // --> CAMBIO: Función corregida para actualizar el badge del ícono de la extensión.
   const clearNotificationsForTab = useCallback((repo: string, tabKey: keyof ActiveNotifications[string] | (keyof ActiveNotifications[string])[]) => {
     const repoNotifications = activeNotifications[repo];
     if (!user || !repoNotifications) return;
@@ -138,6 +139,7 @@ export function useGithubData() {
 
     if (!needsClearing) return;
 
+    // 1. Clonamos el objeto de notificaciones para no mutar el estado directamente.
     const newNotifications = { ...activeNotifications };
     const newRepoNotifications = { ...newNotifications[repo] };
 
@@ -151,8 +153,30 @@ export function useGithubData() {
       newNotifications[repo] = newRepoNotifications;
     }
     
+    // 2. Actualizamos el estado de React para que los puntos rojos en la UI desaparezcan.
     setActiveNotifications(newNotifications);
+    
+    // 3. Guardamos el nuevo objeto de notificaciones en el storage.
     chrome.storage.local.set({ [`notifications_${user.login}`]: newNotifications });
+
+    // 4. Recalculamos el número total de notificaciones restantes.
+    let newTotalCount = 0;
+    Object.values(newNotifications).forEach(repoNots => {
+      if (repoNots) {
+        Object.values(repoNots).forEach(notArray => {
+          if (Array.isArray(notArray)) {
+            newTotalCount += notArray.length;
+          }
+        });
+      }
+    });
+
+    // 5. Actualizamos el badge del ícono de la extensión INMEDIATAMENTE.
+    if (newTotalCount > 0) {
+      chrome.action.setBadgeText({ text: `+${newTotalCount}` });
+    } else {
+      chrome.action.setBadgeText({ text: '' });
+    }
 
   }, [activeNotifications, user]);
   
@@ -256,7 +280,7 @@ export function useGithubData() {
         const keysToClear = notificationMap[activeTab];
         
         if (keysToClear) {
-            clearNotificationsForTab(selectedRepo, keysToClear);
+          clearNotificationsForTab(selectedRepo, keysToClear);
         }
       }
     }, 10000);
@@ -264,10 +288,6 @@ export function useGithubData() {
     return () => clearTimeout(timer);
   }, [activeTab, selectedRepo, clearNotificationsForTab]);
 
-  // =================================================================================
-  // --- BLOQUE AÑADIDO: LISTENER PARA ACTUALIZAR LA UI EN TIEMPO REAL ---
-  // Este es el bloque que soluciona el bug del refresco automático.
-  // =================================================================================
   useEffect(() => {
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
       if (areaName !== 'local' || !user?.login) {
@@ -276,12 +296,10 @@ export function useGithubData() {
       const notificationsKey = `notifications_${user.login}`;
 
       if (changes[notificationsKey]) {
-        // PARTE 1: Actualiza el estado de TODAS las notificaciones para mostrar los puntos rojos.
         console.log('Actualizando estado global de notificaciones...');
         const newNotifications = changes[notificationsKey].newValue || {};
         setActiveNotifications(newNotifications);
 
-        // PARTE 2: Refresca el contenido de la vista activa para mostrar nuevos items.
         console.log('Refrescando contenido de la vista activa...');
         handleRefresh();
       }
