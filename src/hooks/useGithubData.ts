@@ -1,19 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 
-// --- CORRECCIÓN: Exportar las interfaces y tipos ---
-export type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
-export type IssueState = 'open' | 'closed' | 'all';
-export type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
-export type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
-export interface Repo { id: number; name: string; full_name: string; private: boolean; owner: { login: string; } }
-export interface CommitInfo { sha: string; commit: { author: { name: string; date: string; }; message: string; }; html_url: string; }
-export interface GitHubUser { login: string; avatar_url: string; html_url: string; }
-export interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
-export interface PullRequestInfo extends IssueInfo { merged_at: string | null; }
-export interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; actor: { login: string; }; pull_requests: { html_url: string; number: number; }[]; }
-export interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; }; published_at: string; }
-export type { ActiveNotifications }; // Re-exportar el tipo desde alarms
+// Exportar los tipos para que otros archivos puedan usarlos.
+export type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo, ActiveNotifications };
+
+// Interfaces
+type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
+type IssueState = 'open' | 'closed' | 'all';
+type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
+type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
+interface Repo { id: number; name: string; full_name: string; private: boolean; owner: { login: string; } }
+interface CommitInfo { sha: string; commit: { author: { name: string; date: string; }; message: string; }; html_url: string; }
+interface GitHubUser { login: string; avatar_url: string; html_url: string; }
+interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
+interface PullRequestInfo extends IssueInfo { merged_at: string | null; }
+interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; actor: { login: string; }; pull_requests: { html_url: string; number: number; }[]; }
+interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; }; published_at: string; }
 
 const ALARM_NAME = 'github-check-alarm';
 
@@ -44,7 +46,7 @@ export function useGithubData() {
 
   const [alertSettings, setAlertSettings] = useState<AlertSettings>({});
   const [activeNotifications, setActiveNotifications] = useState<ActiveNotifications>({});
-  const [alertFrequency, setAlertFrequency] = useState<number>(10);
+  const [alertFrequency, setAlertFrequency] = useState<number>(1);
 
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
@@ -124,25 +126,34 @@ export function useGithubData() {
   };
 
   const clearNotificationsForTab = useCallback((repo: string, tabKey: keyof ActiveNotifications[string] | (keyof ActiveNotifications[string])[]) => {
-    if (!user) return;
-    
+    const repoNotifications = activeNotifications[repo];
+    if (!user || !repoNotifications) return;
+
     const keysToClear = Array.isArray(tabKey) ? tabKey : [tabKey];
     
-    const newNotifications = { ...activeNotifications };
-    if (!newNotifications[repo]) return;
-
-    keysToClear.forEach(key => {
-      if (newNotifications[repo] && newNotifications[repo][key]) {
-        delete newNotifications[repo][key];
-      }
+    const needsClearing = keysToClear.some(key => {
+        const category = repoNotifications[key];
+        return Array.isArray(category) && category.length > 0;
     });
 
-    if (Object.keys(newNotifications[repo]).length === 0) {
+    if (!needsClearing) return;
+
+    const newNotifications = { ...activeNotifications };
+    const newRepoNotifications = { ...newNotifications[repo] };
+
+    keysToClear.forEach(key => {
+      delete newRepoNotifications[key];
+    });
+
+    if (Object.keys(newRepoNotifications).length === 0) {
       delete newNotifications[repo];
+    } else {
+      newNotifications[repo] = newRepoNotifications;
     }
     
     setActiveNotifications(newNotifications);
     chrome.storage.local.set({ [`notifications_${user.login}`]: newNotifications });
+
   }, [activeNotifications, user]);
   
   const fetchDataForTab = useCallback(() => {
@@ -231,20 +242,39 @@ export function useGithubData() {
   const handleTabChange = (newTab: Tab) => {
     setActiveTab(newTab);
     setCurrentPage(1);
-
-    if (selectedRepo) {
-        const notificationMap: { [key in Tab]?: keyof ActiveNotifications[string] | (keyof ActiveNotifications[string])[] } = {
-            'Issues': 'issues',
-            'PRs': ['newPRs', 'assignedPRs'],
-            'Actions': 'actionFailures',
-            'Releases': 'newReleases'
-        };
-        const keyToClear = notificationMap[newTab];
-        if(keyToClear) {
-            clearNotificationsForTab(selectedRepo, keyToClear);
-        }
-    }
   };
+
+  useEffect(() => {
+    // --- CAMBIO CLAVE ---
+    // Aumentamos el retardo a 30 segundos (30000ms).
+    const timer = setTimeout(() => {
+      if (selectedRepo) {
+        const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
+            'Issues': ['issues'],
+            'PRs': ['newPRs', 'assignedPRs'],
+            'Actions': ['actionFailures'],
+            'Releases': ['newReleases']
+        };
+        const keysToClear = notificationMap[activeTab];
+        
+        if (keysToClear) {
+          const notificationsForRepo = activeNotifications[selectedRepo];
+          const hasNotifications = keysToClear.some(key => {
+            if (!notificationsForRepo) return false;
+            const category = notificationsForRepo[key];
+            return Array.isArray(category) && category.length > 0;
+          });
+
+          if (hasNotifications) {
+            clearNotificationsForTab(selectedRepo, keysToClear);
+          }
+        }
+      }
+    }, 10000); // 30 segundos
+
+    return () => clearTimeout(timer);
+  }, [activeTab, selectedRepo, activeNotifications, clearNotificationsForTab]);
+
 
   const handleIssueFilterChange = (newFilter: IssueState) => {
     setIssueStateFilter(newFilter);

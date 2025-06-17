@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Repo, ActiveNotifications } from '../hooks/useGithubData'; // <-- 1. Importar ActiveNotifications
+import type { Repo, ActiveNotifications } from '../hooks/useGithubData';
 import './SearchableRepoDropdown.css';
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
   selectedRepo: string;
   onSelect: (repoFullName: string) => void;
   disabled: boolean;
-  notifications: ActiveNotifications; // <-- 2. Añadir la nueva propiedad
+  notifications: ActiveNotifications;
 }
 
 export function SearchableRepoDropdown({ repos, selectedRepo, onSelect, disabled, notifications }: Props) {
@@ -55,12 +55,18 @@ export function SearchableRepoDropdown({ repos, selectedRepo, onSelect, disabled
         <ul className="repo-list">
           {filteredRepos.length > 0 ? (
             filteredRepos.map(repo => {
-              // 3. Lógica para determinar si hay notificación
-              const hasNotification = notifications && notifications[repo.full_name];
+              const repoNotifications = notifications && notifications[repo.full_name];
+              const hasNotification = repoNotifications && Object.values(repoNotifications).some(arr => Array.isArray(arr) && arr.length > 0);
+              
+              // --- LOG DE DEBUG AÑADIDO ---
+              // Este log se ejecutará por cada repositorio en la lista desplegable.
+              if (hasNotification) {
+                console.log(`%c[DEBUG] Repo "${repo.name}" DEBE tener punto rojo. Razón:`, 'color: purple; font-weight: bold;', repoNotifications);
+              }
+
               return (
                 <li key={repo.id} onClick={() => handleSelect(repo)}>
                   {repo.name}
-                  {/* 4. Renderizar el punto rojo si hay notificación */}
                   {hasNotification && <span className="notification-dot repo-dot"></span>}
                 </li>
               );

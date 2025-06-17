@@ -7,8 +7,20 @@ import { Pagination } from './components/Pagination';
 import { SearchableRepoDropdown } from './components/SearchableRepoDropdown';
 import { RepoManagerModal } from './components/RepoManagerModal';
 import { AlertsManagerModal } from './components/AlertsManagerModal';
-// --- CORRECCIÓN: Se elimina 'ActiveNotifications' de la importación ya que no se usa directamente en este archivo. ---
-import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from './hooks/useGithubData';
+import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, ActiveNotifications } from './hooks/useGithubData';
+
+interface ContentDisplayProps {
+  activeTab: Tab;
+  isContentLoading: boolean;
+  selectedRepo: string;
+  readmeHtml: string;
+  commits: CommitInfo[];
+  issues: IssueInfo[];
+  pullRequests: PullRequestInfo[];
+  actions: ActionInfo[];
+  releases: ReleaseInfo[];
+  activeNotifications: ActiveNotifications;
+}
 
 function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -42,6 +54,13 @@ function App() {
     handleAlertSettingsChange,
     handleFrequencyChange,
   } = useGithubData();
+
+  const notificationKeyMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
+    'Issues': ['issues'],
+    'PRs': ['newPRs', 'assignedPRs'],
+    'Actions': ['actionFailures'],
+    'Releases': ['newReleases']
+  };
 
   useEffect(() => {
     if (user) {
@@ -137,8 +156,14 @@ function App() {
           <>
             <div className="tab-container">
               {(['README', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'] as Tab[]).map(tab => {
-                const hasNotification = activeNotifications[selectedRepo] && 
-                                        Object.keys(activeNotifications[selectedRepo]).some(key => tab.toLowerCase().includes(key.toLowerCase()));
+                const notificationKeysForTab = notificationKeyMap[tab];
+                const hasNotification = notificationKeysForTab?.some(key => {
+                    const notificationsForRepo = activeNotifications[selectedRepo];
+                    if (!notificationsForRepo) return false;
+                    const notificationsForCategory = notificationsForRepo[key];
+                    return Array.isArray(notificationsForCategory) && notificationsForCategory.length > 0;
+                });
+
                 return (
                   <button key={tab} onClick={() => handleTabChange(tab)} className={activeTab === tab ? 'active' : ''}>
                     {tab}
@@ -163,6 +188,7 @@ function App() {
           pullRequests={pullRequests}
           actions={actions}
           releases={releases}
+          activeNotifications={activeNotifications}
         />
         
         {selectedRepo && activeTab !== 'README' && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
@@ -175,7 +201,19 @@ function App() {
   );
 }
 
-const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, readmeHtml, commits, issues, pullRequests, actions, releases } : any) => {
+const ContentDisplay = ({ 
+  activeTab, 
+  isContentLoading, 
+  selectedRepo, 
+  readmeHtml, 
+  commits, 
+  issues, 
+  pullRequests, 
+  actions, 
+  releases,
+  activeNotifications 
+}: ContentDisplayProps) => {
+
   if (!selectedRepo) return null;
   if (isContentLoading) return <p className="loading-text">Cargando...</p>;
     
@@ -186,29 +224,36 @@ const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, readmeHtml,
     return <p className="loading-text">No se encontró un archivo README para este repositorio.</p>;
   }
     
-  const renderItemList = (items: (IssueInfo | PullRequestInfo)[]) => (
+  const notificationsForRepo = activeNotifications[selectedRepo] || {};
+  
+  const renderItemList = (items: (IssueInfo | PullRequestInfo)[], notificationKeys: (keyof ActiveNotifications[string])[]) => (
     <ul className="item-list">
-      {items.map((item) => (
-        <li key={item.id}>
-            <div className="item-title-container">
-                <a href={item.html_url} target="_blank" rel="noopener noreferrer">#{item.number} {item.title}</a>
-                <ItemStatus item={item} />
-            </div>
-            <div className="item-meta">
-                <span>Creado por <strong>{item.user.login}</strong></span>
-                {item.assignees?.length > 0 && (
-                    <div className="assignee-info">
-                        <span>Asignado a:</span>
-                        {item.assignees.map(assignee => (
-                            <a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}>
-                                <img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" />
-                            </a>
-                        ))}
-                    </div>
-                )}
-            </div>
-        </li>
-      ))}
+      {items.map((item) => {
+        const isNew = notificationKeys.some(key => notificationsForRepo[key]?.includes(item.id));
+        return (
+          <li key={item.id}>
+              {/* --- CORRECCIÓN DE POSICIÓN --- */}
+              <div className="item-title-container">
+                  <a href={item.html_url} target="_blank" rel="noopener noreferrer">#{item.number} {item.title}</a>
+                  {isNew && <span className="notification-dot"></span>}
+                  <ItemStatus item={item} />
+              </div>
+              <div className="item-meta">
+                  <span>Creado por <strong>{item.user.login}</strong></span>
+                  {item.assignees?.length > 0 && (
+                      <div className="assignee-info">
+                          <span>Asignado a:</span>
+                          {item.assignees.map(assignee => (
+                              <a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}>
+                                  <img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" />
+                              </a>
+                          ))}
+                      </div>
+                  )}
+              </div>
+          </li>
+        );
+      })}
     </ul>
   );
 
@@ -225,30 +270,51 @@ const ContentDisplay = ({ activeTab, isContentLoading, selectedRepo, readmeHtml,
   if (activeTab === 'Commits' && commits.length > 0) {
     return (<ul className="item-list">{commits.map((c: CommitInfo) => (<li key={c.sha}><a href={c.html_url} target="_blank" rel="noopener noreferrer">{c.commit.message.split('\n')[0]}</a><p className="item-meta"><strong>{c.commit.author.name}</strong></p></li>))}</ul>);
   }
-  if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues);
-  if (activeTab === 'PRs' && pullRequests.length > 0) return renderItemList(pullRequests);
+  if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues, ['issues']);
+  if (activeTab === 'PRs' && pullRequests.length > 0) return renderItemList(pullRequests, ['newPRs', 'assignedPRs']);
+  
   if (activeTab === 'Actions' && actions.length > 0) {
-    return (<ul className="item-list">{actions.map((action: ActionInfo) => (<li key={action.id}><a href={action.html_url} target="_blank" rel="noopener noreferrer">{getStatusIcon(action.status, action.conclusion)} {action.name}</a><div className="action-meta"><span>Iniciado por <strong>{action.actor.login}</strong></span>{action.pull_requests?.length > 0 && (<a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">(PR #{action.pull_requests[0].number})</a>)}</div></li>))}</ul>);
+    return (<ul className="item-list">{actions.map((action: ActionInfo) => {
+        const isNew = notificationsForRepo.actionFailures?.includes(action.id);
+        return (
+          <li key={action.id}>
+              {/* --- CORRECCIÓN DE POSICIÓN --- */}
+              <div className="item-title-container">
+                  <a href={action.html_url} target="_blank" rel="noopener noreferrer">
+                      {getStatusIcon(action.status, action.conclusion)} {action.name}
+                  </a>
+                  {isNew && <span className="notification-dot"></span>}
+              </div>
+              <div className="action-meta">
+                  <span>Iniciado por <strong>{action.actor.login}</strong></span>
+                  {action.pull_requests?.length > 0 && (<a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">(PR #{action.pull_requests[0].number})</a>)}
+              </div>
+          </li>
+        );
+    })}</ul>);
   }
   
   if (activeTab === 'Releases' && releases.length > 0) {
     return (
       <ul className="item-list">
-        {releases.map((release: ReleaseInfo) => (
-          <li key={release.id}>
-            <a href={release.html_url} target="_blank" rel="noopener noreferrer">
-              {release.name || release.tag_name}
-            </a>
-            <div className="item-meta">
-              <span>
-                Publicado por <strong>{release.author.login}</strong>
-              </span>
-              <span style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
-                {new Date(release.published_at).toLocaleDateString()}
-              </span>
-            </div>
-          </li>
-        ))}
+        {releases.map((release: ReleaseInfo) => {
+          const isNew = notificationsForRepo.newReleases?.includes(release.id);
+          return (
+            <li key={release.id}>
+                {/* --- CORRECCIÓN DE POSICIÓN --- */}
+                <div className="item-title-container">
+                    <a href={release.html_url} target="_blank" rel="noopener noreferrer">
+                        {release.name || release.tag_name}
+                    </a>
+                    {isNew && <span className="notification-dot"></span>}
+                </div>
+              <div className="item-meta">
+                <span>Publicado por <strong>{release.author.login}</strong></span>
+                <span style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{new Date(release.published_at).toLocaleDateString()}</span>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     );
   }
