@@ -58,7 +58,7 @@ function App() {
   const notificationKeyMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
     'Issues': ['issues'],
     'PRs': ['newPRs', 'assignedPRs'],
-    'Actions': ['actionFailures'],
+    'Actions': ['actions'],
     'Releases': ['newReleases']
   };
 
@@ -275,7 +275,7 @@ const ContentDisplay = ({
   
   if (activeTab === 'Actions' && actions.length > 0) {
     return (<ul className="item-list">{actions.map((action: ActionInfo) => {
-        const isNew = notificationsForRepo.actionFailures?.includes(action.id);
+        const isNew = notificationsForRepo.actions?.includes(action.id);
         return (
           <li key={action.id}>
               {/* --- CORRECCIÓN DE POSICIÓN --- */}

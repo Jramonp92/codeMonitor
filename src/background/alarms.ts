@@ -7,7 +7,7 @@ export interface AlertSettings {
     issues?: boolean;
     newPRs?: boolean;
     assignedPRs?: boolean;
-    actionFailures?: boolean;
+    actions?: boolean;
     newReleases?: boolean;
   };
 }
@@ -19,7 +19,7 @@ interface LastCheckedData {
     issues?: number[];
     prs?: number[];
     assignedPRs?: number[];
-    failedActions?: number[];
+    actions?: { [runId: number]: string };
     releases?: number[];
   };
 }
@@ -30,7 +30,7 @@ export interface ActiveNotifications {
     issues?: number[];
     newPRs?: number[];
     assignedPRs?: number[];
-    actionFailures?: number[];
+    actions?: number[];
     newReleases?: number[];
   };
 }
@@ -116,17 +116,36 @@ async function checkForUpdates() {
         newLastData[repo].assignedPRs = newAssignedPRIds;
     }
     
-    // --- Check for failed actions ---
-    if (settings.actionFailures) {
-        const { items: failedActions } = await fetchActions(repo, 'failure', 1);
-        const newFailedActionIds = failedActions.map((action: { id: any; }) => action.id);
-        const lastFailedActionIds = lastData[repo]?.failedActions || [];
-        const foundNotifications = newFailedActionIds.filter((id: number) => !lastFailedActionIds.includes(id));
+    // --- Check for Actions status changes ---
+    if (settings.actions) {
+        // 1. Llama a fetchActions sin un estado para obtener todas las ejecuciones recientes.
+        const { items: actionRuns } = await fetchActions(repo, undefined, 1);
         
-        if (foundNotifications.length > 0) {
-            currentNotifications[repo].actionFailures = [...(currentNotifications[repo].actionFailures || []), ...foundNotifications];
+        // 2. Obtiene el mapa de ejecuciones de la última vez.
+        const lastRunStates = lastData[repo]?.actions || {}; // { runId: status }
+        const newRunStates: { [runId: number]: string } = {};
+
+        if (actionRuns) {
+            for (const run of actionRuns) {
+                const currentState = run.status === 'completed' ? run.conclusion : run.status;
+                newRunStates[run.id] = currentState;
+
+                const previousState = lastRunStates[run.id];
+
+                // 3. Comprueba si la ejecución es nueva o si su estado ha cambiado.
+                if (!previousState || previousState !== currentState) {
+                    if (!currentNotifications[repo].actions) {
+                        currentNotifications[repo].actions = [];
+                    }
+                    // 4. Añade una notificación si no existe ya para esa ejecución.
+                    if (!currentNotifications[repo].actions.includes(run.id)) {
+                        currentNotifications[repo].actions.push(run.id);
+                    }
+                }
+            }
         }
-        newLastData[repo].failedActions = newFailedActionIds;
+        // 5. Guarda el nuevo mapa de estados para la próxima comprobación.
+        newLastData[repo].actions = newRunStates;
     }
 
     // --- Check for new releases ---

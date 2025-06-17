@@ -16,7 +16,7 @@ const alertTypes = [
   { id: 'issues', label: 'Nuevos Issues' },
   { id: 'newPRs', label: 'Nuevos PRs' },
   { id: 'assignedPRs', label: 'PRs Asignados a Mí' },
-  { id: 'actionFailures', label: 'Actions Fallidas' },
+  { id: 'actions', label: 'Workflows de Actions' },
   { id: 'newReleases', label: 'Nuevos Releases' },
 ];
 
