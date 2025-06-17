@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 
 // Exportar los tipos para que otros archivos puedan usarlos.
-export type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo, ActiveNotifications };
+export type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
 
 // Interfaces
 type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
@@ -111,7 +111,7 @@ export function useGithubData() {
     if (!newSettings[repoFullName]) {
       newSettings[repoFullName] = {};
     }
-    newSettings[repoFullName][setting] = value;
+    (newSettings[repoFullName] as any)[setting] = value;
     setAlertSettings(newSettings);
     chrome.storage.local.set({ [`alertsConfig_${user.login}`]: newSettings });
   };
@@ -235,9 +235,9 @@ export function useGithubData() {
     fetchDataForTab();
   }, [fetchDataForTab]);
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     fetchDataForTab();
-  };
+  }, [fetchDataForTab]);
 
   const handleTabChange = (newTab: Tab) => {
     setActiveTab(newTab);
@@ -245,8 +245,6 @@ export function useGithubData() {
   };
 
   useEffect(() => {
-    // --- CAMBIO CLAVE ---
-    // Aumentamos el retardo a 30 segundos (30000ms).
     const timer = setTimeout(() => {
       if (selectedRepo) {
         const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
@@ -258,22 +256,43 @@ export function useGithubData() {
         const keysToClear = notificationMap[activeTab];
         
         if (keysToClear) {
-          const notificationsForRepo = activeNotifications[selectedRepo];
-          const hasNotifications = keysToClear.some(key => {
-            if (!notificationsForRepo) return false;
-            const category = notificationsForRepo[key];
-            return Array.isArray(category) && category.length > 0;
-          });
-
-          if (hasNotifications) {
             clearNotificationsForTab(selectedRepo, keysToClear);
-          }
         }
       }
-    }, 10000); // 30 segundos
+    }, 10000);
 
     return () => clearTimeout(timer);
-  }, [activeTab, selectedRepo, activeNotifications, clearNotificationsForTab]);
+  }, [activeTab, selectedRepo, clearNotificationsForTab]);
+
+  // =================================================================================
+  // --- BLOQUE AÑADIDO: LISTENER PARA ACTUALIZAR LA UI EN TIEMPO REAL ---
+  // Este es el bloque que soluciona el bug del refresco automático.
+  // =================================================================================
+  useEffect(() => {
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName !== 'local' || !user?.login) {
+        return;
+      }
+      const notificationsKey = `notifications_${user.login}`;
+
+      if (changes[notificationsKey]) {
+        // PARTE 1: Actualiza el estado de TODAS las notificaciones para mostrar los puntos rojos.
+        console.log('Actualizando estado global de notificaciones...');
+        const newNotifications = changes[notificationsKey].newValue || {};
+        setActiveNotifications(newNotifications);
+
+        // PARTE 2: Refresca el contenido de la vista activa para mostrar nuevos items.
+        console.log('Refrescando contenido de la vista activa...');
+        handleRefresh();
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, [user, handleRefresh]);
 
 
   const handleIssueFilterChange = (newFilter: IssueState) => {

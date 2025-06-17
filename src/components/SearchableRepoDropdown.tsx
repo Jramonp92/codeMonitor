@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import type { Repo, ActiveNotifications } from '../hooks/useGithubData';
+import type { Repo } from '../hooks/useGithubData'; // Repo viene del hook.
+import type { ActiveNotifications } from '../background/alarms'; // ActiveNotifications viene de las alarmas.
 import './SearchableRepoDropdown.css';
 
 interface Props {

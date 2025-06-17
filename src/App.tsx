@@ -7,7 +7,10 @@ import { Pagination } from './components/Pagination';
 import { SearchableRepoDropdown } from './components/SearchableRepoDropdown';
 import { RepoManagerModal } from './components/RepoManagerModal';
 import { AlertsManagerModal } from './components/AlertsManagerModal';
-import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, ActiveNotifications } from './hooks/useGithubData';
+
+// --> CAMBIO: Se limpia la importación de tipos para que cada uno venga de su fuente original.
+import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from './hooks/useGithubData';
+import type { ActiveNotifications } from './background/alarms';
 
 interface ContentDisplayProps {
   activeTab: Tab;
@@ -55,6 +58,7 @@ function App() {
     handleFrequencyChange,
   } = useGithubData();
 
+  // --> CAMBIO: Se actualiza la clave de 'actionFailures' a 'actions'.
   const notificationKeyMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
     'Issues': ['issues'],
     'PRs': ['newPRs', 'assignedPRs'],
@@ -177,19 +181,22 @@ function App() {
             {activeTab === 'Actions' && <FilterBar name="Actions" filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} currentFilter={actionStatusFilter} onFilterChange={handleActionStatusChange} />}
           </>
         )}
-
-        <ContentDisplay 
-          activeTab={activeTab}
-          isContentLoading={isContentLoading}
-          selectedRepo={selectedRepo}
-          readmeHtml={readmeHtml}
-          commits={commits}
-          issues={issues}
-          pullRequests={pullRequests}
-          actions={actions}
-          releases={releases}
-          activeNotifications={activeNotifications}
-        />
+        
+        {/* --> CAMBIO: Se añade un div contenedor para el efecto de opacidad de stale-while-revalidate */}
+        <div className={isContentLoading ? 'content-revalidating' : ''}>
+            <ContentDisplay 
+              activeTab={activeTab}
+              isContentLoading={isContentLoading}
+              selectedRepo={selectedRepo}
+              readmeHtml={readmeHtml}
+              commits={commits}
+              issues={issues}
+              pullRequests={pullRequests}
+              actions={actions}
+              releases={releases}
+              activeNotifications={activeNotifications}
+            />
+        </div>
         
         {selectedRepo && activeTab !== 'README' && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
@@ -215,7 +222,18 @@ const ContentDisplay = ({
 }: ContentDisplayProps) => {
 
   if (!selectedRepo) return null;
-  if (isContentLoading) return <p className="loading-text">Cargando...</p>;
+
+  // --> CAMBIO: Lógica de stale-while-revalidate para evitar el "blink".
+  const hasExistingData = commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0;
+
+  // Solo muestra "Cargando..." a pantalla completa si es la primera carga de una pestaña sin datos.
+  if (isContentLoading && !hasExistingData && activeTab !== 'README') {
+      return <p className="loading-text">Cargando...</p>;
+  }
+  
+  if (isContentLoading && activeTab === 'README') {
+    return <p className="loading-text">Cargando...</p>;
+  }
     
   if (activeTab === 'README') {
     if (readmeHtml) {
@@ -232,7 +250,6 @@ const ContentDisplay = ({
         const isNew = notificationKeys.some(key => notificationsForRepo[key]?.includes(item.id));
         return (
           <li key={item.id}>
-              {/* --- CORRECCIÓN DE POSICIÓN --- */}
               <div className="item-title-container">
                   <a href={item.html_url} target="_blank" rel="noopener noreferrer">#{item.number} {item.title}</a>
                   {isNew && <span className="notification-dot"></span>}
@@ -275,10 +292,10 @@ const ContentDisplay = ({
   
   if (activeTab === 'Actions' && actions.length > 0) {
     return (<ul className="item-list">{actions.map((action: ActionInfo) => {
+        // --> CAMBIO: Se actualiza la clave de 'actionFailures' a 'actions'.
         const isNew = notificationsForRepo.actions?.includes(action.id);
         return (
           <li key={action.id}>
-              {/* --- CORRECCIÓN DE POSICIÓN --- */}
               <div className="item-title-container">
                   <a href={action.html_url} target="_blank" rel="noopener noreferrer">
                       {getStatusIcon(action.status, action.conclusion)} {action.name}
@@ -287,7 +304,7 @@ const ContentDisplay = ({
               </div>
               <div className="action-meta">
                   <span>Iniciado por <strong>{action.actor.login}</strong></span>
-                  {action.pull_requests?.length > 0 && (<a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">(PR #{action.pull_requests[0].number})</a>)}
+                  {action.pull_requests?.length > 0 && action.pull_requests[0] && (<a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">(PR #{action.pull_requests[0].number})</a>)}
               </div>
           </li>
         );
@@ -301,7 +318,6 @@ const ContentDisplay = ({
           const isNew = notificationsForRepo.newReleases?.includes(release.id);
           return (
             <li key={release.id}>
-                {/* --- CORRECCIÓN DE POSICIÓN --- */}
                 <div className="item-title-container">
                     <a href={release.html_url} target="_blank" rel="noopener noreferrer">
                         {release.name || release.tag_name}
