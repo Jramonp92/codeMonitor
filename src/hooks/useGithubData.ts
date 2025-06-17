@@ -252,7 +252,7 @@ export function useGithubData() {
         const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
             'Issues': ['issues'],
             'PRs': ['newPRs', 'assignedPRs'],
-            'Actions': ['actionFailures'],
+            'Actions': ['actions'],
             'Releases': ['newReleases']
         };
         const keysToClear = notificationMap[activeTab];
