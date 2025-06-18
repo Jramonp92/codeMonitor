@@ -3,17 +3,18 @@ import './App.css';
 import { useGithubData } from './hooks/useGithubData';
 import { FilterBar } from './components/FilterBar';
 import { Pagination } from './components/Pagination';
-import { SearchableRepoDropdown } from './components/SearchableRepoDropdown';
 import { RepoManagerModal } from './components/RepoManagerModal';
 import { AlertsManagerModal } from './components/AlertsManagerModal';
 
-// Se importan los nuevos componentes
+// --- INICIO DE CAMBIOS ---
 import { AppHeader } from './components/AppHeader';
 import { ContentDisplay } from './components/ContentDisplay';
+import { RepoToolbar } from './components/RepoToolbar'; // 1. Se importa el nuevo componente
 
-// Se limpian los tipos que ya no se usan directamente en este archivo
+// 2. Se limpian los tipos que ya no se usan directamente en este archivo
 import type { Tab } from './hooks/useGithubData';
 import type { ActiveNotifications } from './background/alarms';
+// --- FIN DE CAMBIOS ---
 
 
 function App() {
@@ -104,7 +105,7 @@ function App() {
       <RepoManagerModal
         isOpen={isRepoModalOpen}
         onClose={() => setIsRepoModalOpen(false)}
-        allRepos={managedRepos} // Pasamos todos por si quiere añadir desde la lista
+        allRepos={managedRepos} 
         managedRepos={managedRepos}
         onAdd={addRepoToManagedList}
         onRemove={removeRepoFromManagedList}
@@ -121,7 +122,6 @@ function App() {
 
       <div className="app-container">
         
-        {/* --- INICIO DEL CAMBIO --- */}
         <AppHeader 
           user={user}
           onManageRepos={() => setIsRepoModalOpen(true)}
@@ -129,20 +129,17 @@ function App() {
           onLogout={handleLogout}
         />
 
-        <div className="select-container">
-          <SearchableRepoDropdown
-              repos={managedRepos}
-              selectedRepo={selectedRepo}
-              onSelect={handleRepoSelection}
-              disabled={!user || managedRepos.length === 0}
-              notifications={activeNotifications}
-          />
-          {selectedRepo && (
-             <button onClick={handleRefresh} className="refresh-button" title="Refrescar datos">
-                🔄
-             </button>
-          )}
-        </div>
+        {/* --- INICIO DEL CAMBIO: Se reemplaza el div por el nuevo componente --- */}
+        <RepoToolbar
+          managedRepos={managedRepos}
+          selectedRepo={selectedRepo}
+          user={user}
+          onSelectRepo={handleRepoSelection}
+          onRefresh={handleRefresh}
+          onOpenRepoManager={() => setIsRepoModalOpen(true)}
+          onOpenAlertsManager={() => setIsAlertsModalOpen(true)}
+          notifications={activeNotifications}
+        />
         {/* --- FIN DEL CAMBIO --- */}
         
         {selectedRepo && (

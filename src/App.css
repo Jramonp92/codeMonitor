@@ -37,25 +37,6 @@
 
 .tab-container button:hover { color: #24292e; }
 
-/* Contenedor del selector y botones */
-.select-container { 
-  margin-top: 1rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-}
-
-.manage-button, .refresh-button {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 0.4rem;
-  line-height: 1;
-}
-
-.refresh-button:disabled { cursor: not-allowed; opacity: 0.5; }
 
 
 /* Área de contenido */
@@ -80,16 +61,6 @@
 /* --- CORRECCIÓN --- */
 /* El punto en un ítem de la lista va a la DERECHA del título. */
 /* Se elimina el margen derecho y se añade un margen izquierdo. */
-.item-title-container .notification-dot {
-  margin-left: 8px; 
-  margin-right: 0;
-}
+
 
 /* Posicionamiento absoluto SOLO para el punto en el dropdown de repos */
-.repo-dot {
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  margin-left: 0; /* Asegurarse de que no tenga margen */
-}
