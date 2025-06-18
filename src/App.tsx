@@ -8,7 +8,6 @@ import { SearchableRepoDropdown } from './components/SearchableRepoDropdown';
 import { RepoManagerModal } from './components/RepoManagerModal';
 import { AlertsManagerModal } from './components/AlertsManagerModal';
 
-// --> CAMBIO: Se limpia la importación de tipos para que cada uno venga de su fuente original.
 import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from './hooks/useGithubData';
 import type { ActiveNotifications } from './background/alarms';
 
@@ -58,7 +57,6 @@ function App() {
     handleFrequencyChange,
   } = useGithubData();
 
-  // --> CAMBIO: Se actualiza la clave de 'actionFailures' a 'actions'.
   const notificationKeyMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
     'Issues': ['issues'],
     'PRs': ['newPRs', 'assignedPRs'],
@@ -182,7 +180,6 @@ function App() {
           </>
         )}
         
-        {/* --> CAMBIO: Se añade un div contenedor para el efecto de opacidad de stale-while-revalidate */}
         <div className={isContentLoading ? 'content-revalidating' : ''}>
             <ContentDisplay 
               activeTab={activeTab}
@@ -223,10 +220,17 @@ const ContentDisplay = ({
 
   if (!selectedRepo) return null;
 
-  // --> CAMBIO: Lógica de stale-while-revalidate para evitar el "blink".
+  const formatCommitDate = (dateString: string) => {
+    const commitDate = new Date(dateString);
+    const today = new Date();
+    if (commitDate.toDateString() === today.toDateString()) {
+      return `Today ${commitDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    }
+    return commitDate.toLocaleDateString();
+  };
+
   const hasExistingData = commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0;
 
-  // Solo muestra "Cargando..." a pantalla completa si es la primera carga de una pestaña sin datos.
   if (isContentLoading && !hasExistingData && activeTab !== 'README') {
       return <p className="loading-text">Cargando...</p>;
   }
@@ -248,6 +252,19 @@ const ContentDisplay = ({
     <ul className="item-list">
       {items.map((item) => {
         const isNew = notificationKeys.some(key => notificationsForRepo[key]?.includes(item.id));
+        
+        // --- INICIO DEL CAMBIO ---
+        // Determinar qué fecha mostrar con los datos disponibles
+        let dateInfo;
+        // La propiedad 'merged_at' solo existe en los PRs
+        if ('merged_at' in item && item.merged_at) {
+          dateInfo = `Mergeado el ${new Date(item.merged_at).toLocaleDateString()}`;
+        } else {
+          // Para todo lo demás (issues, PRs abiertos/cerrados), usamos la fecha de creación
+          dateInfo = `${item.state === 'open' ? 'Abierto' : 'Cerrado'} el ${new Date(item.created_at).toLocaleDateString()}`;
+        }
+        // --- FIN DEL CAMBIO ---
+
         return (
           <li key={item.id}>
               <div className="item-title-container">
@@ -256,10 +273,13 @@ const ContentDisplay = ({
                   <ItemStatus item={item} />
               </div>
               <div className="item-meta">
-                  <span>Creado por <strong>{item.user.login}</strong></span>
-                  
-                  {/* --- INICIO DEL CAMBIO --- */}
-                  {/* Verificamos si hay asignados para mostrar sus avatares */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <span>Creado por <strong>{item.user.login}</strong></span>
+                    <span style={{ fontSize: '0.8em', color: '#586069' }}>
+                      {dateInfo}
+                    </span>
+                  </div>
+
                   {item.assignees && item.assignees.length > 0 ? (
                       <div className="assignee-info">
                           <span>Asignado a:</span>
@@ -270,13 +290,10 @@ const ContentDisplay = ({
                           ))}
                       </div>
                   ) : (
-                      // Si no hay asignados, mostramos el nuevo texto
                       <div className="assignee-info">
                           <span>No asignado</span>
                       </div>
                   )}
-                  {/* --- FIN DEL CAMBIO --- */}
-
               </div>
           </li>
         );
@@ -295,14 +312,39 @@ const ContentDisplay = ({
   };
 
   if (activeTab === 'Commits' && commits.length > 0) {
-    return (<ul className="item-list">{commits.map((c: CommitInfo) => (<li key={c.sha}><a href={c.html_url} target="_blank" rel="noopener noreferrer">{c.commit.message.split('\n')[0]}</a><p className="item-meta"><strong>{c.commit.author.name}</strong></p></li>))}</ul>);
+    return (
+      <ul className="item-list">
+        {commits.map((c) => (
+          <li key={c.sha}>
+            <div className="item-title-container" style={{ marginBottom: '8px' }}>
+              <a href={c.html_url} target="_blank" rel="noopener noreferrer">
+                {c.commit.message.split('\n')[0]}
+              </a>
+            </div>
+            <div className="item-meta">
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', fontSize: '0.8em', color: '#586069' }}>
+                <a href={c.html_url} target="_blank" rel="noopener noreferrer" title="Ver commit en GitHub">
+                  <code>{c.sha.substring(0, 7)}</code>
+                </a>
+                <span title={new Date(c.commit.author.date).toLocaleString()}>
+                  {formatCommitDate(c.commit.author.date)}
+                </span>
+              </div>
+              <div className="assignee-info" title={c.commit.author.name}>
+                <span>Author: <strong>{c.commit.author.name}</strong></span>
+              </div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    );
   }
+  
   if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues, ['issues']);
   if (activeTab === 'PRs' && pullRequests.length > 0) return renderItemList(pullRequests, ['newPRs', 'assignedPRs']);
   
   if (activeTab === 'Actions' && actions.length > 0) {
     return (<ul className="item-list">{actions.map((action: ActionInfo) => {
-        // --> CAMBIO: Se actualiza la clave de 'actionFailures' a 'actions'.
         const isNew = notificationsForRepo.actions?.includes(action.id);
         return (
           <li key={action.id}>
