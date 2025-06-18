@@ -1,28 +1,21 @@
 import { useState, useEffect } from 'react';
 import './App.css'; 
 import { useGithubData } from './hooks/useGithubData';
-import { ItemStatus } from './components/ItemStatus'; 
+// Se eliminan los imports de componentes que solo usaba ContentDisplay
 import { FilterBar } from './components/FilterBar';
 import { Pagination } from './components/Pagination';
 import { SearchableRepoDropdown } from './components/SearchableRepoDropdown';
 import { RepoManagerModal } from './components/RepoManagerModal';
 import { AlertsManagerModal } from './components/AlertsManagerModal';
 
-import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from './hooks/useGithubData';
+// --- INICIO DEL CAMBIO ---
+// 1. Se importa el nuevo componente que creamos.
+import { ContentDisplay } from './components/ContentDisplay';
+// 2. Se limpian los tipos que ya no se usan directamente en este archivo.
+import type { Tab } from './hooks/useGithubData';
 import type { ActiveNotifications } from './background/alarms';
+// --- FIN DEL CAMBIO ---
 
-interface ContentDisplayProps {
-  activeTab: Tab;
-  isContentLoading: boolean;
-  selectedRepo: string;
-  readmeHtml: string;
-  commits: CommitInfo[];
-  issues: IssueInfo[];
-  pullRequests: PullRequestInfo[];
-  actions: ActionInfo[];
-  releases: ReleaseInfo[];
-  activeNotifications: ActiveNotifications;
-}
 
 function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -203,251 +196,6 @@ function App() {
       </div>
     </>
   );
-}
-
-const ContentDisplay = ({ 
-  activeTab, 
-  isContentLoading, 
-  selectedRepo, 
-  readmeHtml, 
-  commits, 
-  issues, 
-  pullRequests, 
-  actions, 
-  releases,
-  activeNotifications 
-}: ContentDisplayProps) => {
-
-  if (!selectedRepo) return null;
-
-  const formatCommitDate = (dateString: string) => {
-    const commitDate = new Date(dateString);
-    const today = new Date();
-    if (commitDate.toDateString() === today.toDateString()) {
-      return `Today ${commitDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    }
-    return commitDate.toLocaleDateString();
-  };
-
-  const hasExistingData = commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0;
-
-  if (isContentLoading && !hasExistingData && activeTab !== 'README') {
-      return <p className="loading-text">Cargando...</p>;
-  }
-  
-  if (isContentLoading && activeTab === 'README') {
-    return <p className="loading-text">Cargando...</p>;
-  }
-    
-  if (activeTab === 'README') {
-    if (readmeHtml) {
-      return <div className="readme-content" dangerouslySetInnerHTML={{ __html: readmeHtml }} />;
-    }
-    return <p className="loading-text">No se encontró un archivo README para este repositorio.</p>;
-  }
-    
-  const notificationsForRepo = activeNotifications[selectedRepo] || {};
-  
-  const renderItemList = (items: (IssueInfo | PullRequestInfo)[], notificationKeys: (keyof ActiveNotifications[string])[]) => (
-    <ul className="item-list">
-      {items.map((item) => {
-        const isNew = notificationKeys.some(key => notificationsForRepo[key]?.includes(item.id));
-        
-        let dateInfo;
-        if ('merged_at' in item && item.merged_at) {
-          dateInfo = `Mergeado el ${new Date(item.merged_at).toLocaleDateString()}`;
-        } else if (item.closed_at) {
-          dateInfo = `Cerrado el ${new Date(item.closed_at).toLocaleDateString()}`;
-        } else {
-          dateInfo = `Abierto el ${new Date(item.created_at).toLocaleDateString()}`;
-        }
-
-        return (
-          <li key={item.id}>
-              <div className="item-title-container">
-                  <a href={item.html_url} target="_blank" rel="noopener noreferrer">#{item.number} {item.title}</a>
-                  {isNew && <span className="notification-dot"></span>}
-                  <ItemStatus item={item} />
-              </div>
-              <div className="item-meta">
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <span>Creado por <strong>{item.user.login}</strong></span>
-                    <span style={{ fontSize: '0.8em', color: '#586069' }}>
-                      {dateInfo}
-                    </span>
-                  </div>
-
-                  {item.assignees && item.assignees.length > 0 ? (
-                      <div className="assignee-info">
-                          <span>Asignado a:</span>
-                          {item.assignees.map(assignee => (
-                              <a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}>
-                                  <img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" />
-                              </a>
-                          ))}
-                      </div>
-                  ) : (
-                      <div className="assignee-info">
-                          <span>No asignado</span>
-                      </div>
-                  )}
-              </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-
-  const getStatusIcon = (status: ActionInfo['status'], conclusion: ActionInfo['conclusion']) => {
-    if (status === 'completed') {
-      switch (conclusion) {
-        case 'success': return '✅'; case 'failure': return '❌';
-        case 'cancelled': return '🚫'; default: return '⚪️';
-      }
-    }
-    if (status === 'in_progress') return '⏳'; return '큐';
-  };
-
-  if (activeTab === 'Commits' && commits.length > 0) {
-    return (
-      <ul className="item-list">
-        {commits.map((c) => (
-          <li key={c.sha}>
-            <div className="item-title-container" style={{ marginBottom: '8px' }}>
-              <a href={c.html_url} target="_blank" rel="noopener noreferrer">
-                {c.commit.message.split('\n')[0]}
-              </a>
-            </div>
-            <div className="item-meta">
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', fontSize: '0.8em', color: '#586069' }}>
-                <a href={c.html_url} target="_blank" rel="noopener noreferrer" title="Ver commit en GitHub">
-                  <code>{c.sha.substring(0, 7)}</code>
-                </a>
-                <span title={new Date(c.commit.author.date).toLocaleString()}>
-                  {formatCommitDate(c.commit.author.date)}
-                </span>
-              </div>
-              
-              {/* --- INICIO DEL CAMBIO --- */}
-              <div className="assignee-info">
-                <span>Author:</span>
-                {/* Verificamos si tenemos el usuario de GitHub para mostrar el avatar */}
-                {c.author ? (
-                  <a href={c.author.html_url} target="_blank" rel="noopener noreferrer" title={c.author.login}>
-                    <img src={c.author.avatar_url} alt={`Avatar de ${c.author.login}`} className="assignee-avatar" />
-                  </a>
-                ) : (
-                  // Si no, mostramos solo el nombre del autor del commit
-                  <strong style={{marginLeft: '4px'}}>{c.commit.author.name}</strong>
-                )}
-              </div>
-              {/* --- FIN DEL CAMBIO --- */}
-
-            </div>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-  
-  if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues, ['issues']);
-  if (activeTab === 'PRs' && pullRequests.length > 0) return renderItemList(pullRequests, ['newPRs', 'assignedPRs']);
-  
-  if (activeTab === 'Actions' && actions.length > 0) {
-    return (
-      <ul className="item-list">
-        {actions.map((action: ActionInfo) => {
-            const isNew = notificationsForRepo.actions?.includes(action.id);
-            return (
-              <li key={action.id}>
-                  <div className="item-title-container">
-                      <a href={action.html_url} target="_blank" rel="noopener noreferrer" title={action.name}>
-                          {getStatusIcon(action.status, action.conclusion)} {action.name} #{action.run_number}
-                      </a>
-                      {isNew && <span className="notification-dot"></span>}
-                  </div>
-                  
-                  <div className="item-meta">
-                    {/* Columna Izquierda: Trigger, Branch y Fecha */}
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                      <div className="item-details" style={{ fontSize: '0.8em', color: '#586069' }}>
-                        <span>Triggered by <strong>{action.event.replace(/_/g, ' ')}</strong> on branch <code>{action.head_branch}</code></span>
-                        {action.pull_requests?.length > 0 && action.pull_requests[0] && (
-                          <a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link" style={{ marginLeft: '8px' }}>
-                            (PR #{action.pull_requests[0].number})
-                          </a>
-                        )}
-                      </div>
-                      <span style={{ fontSize: '0.8em', color: '#586069' }}>
-                        {formatCommitDate(action.created_at)}
-                      </span>
-                    </div>
-                    <div className="assignee-info">
-                      <span>Iniciado por:</span>
-                      <a href={`https://github.com/${action.actor.login}`} target="_blank" rel="noopener noreferrer" title={action.actor.login}>
-                        <img 
-                          src={action.actor.avatar_url} 
-                          alt={`Avatar de ${action.actor.login}`} 
-                          className="assignee-avatar"
-                        />
-                      </a>
-                    </div>
-                  </div>
-              </li>
-            );
-        })}
-      </ul>
-    );
-  }
-  
-  if (activeTab === 'Releases' && releases.length > 0) {
-    return (
-      <ul className="item-list">
-        {releases.map((release, index) => {
-          const isNew = notificationsForRepo.newReleases?.includes(release.id);
-          return (
-            <li key={release.id}>
-              {/* Bloque del Título */}
-              <div className="item-title-container">
-                <a href={release.html_url} target="_blank" rel="noopener noreferrer">
-                  {release.name || release.tag_name}
-                </a>
-                {isNew && <span className="notification-dot"></span>}
-              </div>
-
-              {/* Bloque de Metadatos */}
-              <div className="item-meta">
-                {/* Columna Izquierda: Etiquetas y Fecha */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    {index === 0 && <span className="status-badge latest">Latest</span>}
-                    {release.prerelease && <span className="status-badge prerelease">Pre-release</span>}
-                  </div>
-                  <span style={{ fontSize: '0.8em', color: '#586069' }}>
-                    Publicado el {new Date(release.published_at).toLocaleDateString()}
-                  </span>
-                </div>
-
-                {/* Columna Derecha: Author y Avatar */}
-                <div className="assignee-info">
-                  <span>Author:</span>
-                  <a href={release.author.html_url} target="_blank" rel="noopener noreferrer" title={release.author.login}>
-                    <img 
-                      src={release.author.avatar_url}
-                      alt={`Avatar de ${release.author.login}`}
-                      className="assignee-avatar"
-                    />
-                  </a>
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    );
-  }
-    
-  return <p className="loading-text">No se encontraron datos para esta pestaña.</p>;
 }
 
 export default App;
