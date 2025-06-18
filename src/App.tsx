@@ -257,7 +257,10 @@ const ContentDisplay = ({
               </div>
               <div className="item-meta">
                   <span>Creado por <strong>{item.user.login}</strong></span>
-                  {item.assignees?.length > 0 && (
+                  
+                  {/* --- INICIO DEL CAMBIO --- */}
+                  {/* Verificamos si hay asignados para mostrar sus avatares */}
+                  {item.assignees && item.assignees.length > 0 ? (
                       <div className="assignee-info">
                           <span>Asignado a:</span>
                           {item.assignees.map(assignee => (
@@ -266,7 +269,14 @@ const ContentDisplay = ({
                               </a>
                           ))}
                       </div>
+                  ) : (
+                      // Si no hay asignados, mostramos el nuevo texto
+                      <div className="assignee-info">
+                          <span>No asignado</span>
+                      </div>
                   )}
+                  {/* --- FIN DEL CAMBIO --- */}
+
               </div>
           </li>
         );
