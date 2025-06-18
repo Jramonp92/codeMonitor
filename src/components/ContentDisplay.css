@@ -1,0 +1,47 @@
+/* Estilos para el componente ContentDisplay.tsx */
+
+.item-title-container--with-margin {
+    margin-bottom: 8px;
+  }
+  
+  .item-meta-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .commit-meta-details {
+    font-size: 0.8em;
+    color: #586069;
+  }
+  
+  .commit-author-name {
+    margin-left: 4px;
+  }
+  
+  .item-date {
+    font-size: 0.8em;
+    color: #586069;
+  }
+  
+  .action-details-container {
+    margin: 4px 0;
+  }
+  
+  .action-details-text {
+    font-size: 0.8em;
+    color: #586069;
+  }
+  
+  .action-pr-link {
+    margin-left: 8px;
+  }
+  
+  .release-tags {
+    display: flex;
+    gap: 6px;
+    font-size: 0.8em;
+    font-weight: bold;
+  }
+  
