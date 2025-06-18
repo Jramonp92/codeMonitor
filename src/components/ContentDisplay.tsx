@@ -38,6 +38,7 @@ export const ContentDisplay = ({
 
   // --- Helpers ---
   const formatCommitDate = (dateString: string) => {
+    if (!dateString) return '';
     const commitDate = new Date(dateString);
     const today = new Date();
     if (commitDate.toDateString() === today.toDateString()) {
@@ -61,14 +62,21 @@ export const ContentDisplay = ({
       {items.map((item) => {
         const isNew = notificationKeys.some(key => notificationsForRepo[key]?.includes(item.id));
         
-        let dateInfo;
+        // --- INICIO DEL CAMBIO ---
+        let dateLabel = '';
+        let dateValue = '';
+
         if ('merged_at' in item && item.merged_at) {
-          dateInfo = `Mergeado el ${new Date(item.merged_at).toLocaleDateString()}`;
+          dateLabel = 'Mergeado';
+          dateValue = formatCommitDate(item.merged_at);
         } else if (item.closed_at) {
-          dateInfo = `Cerrado el ${new Date(item.closed_at).toLocaleDateString()}`;
+          dateLabel = 'Cerrado';
+          dateValue = formatCommitDate(item.closed_at);
         } else {
-          dateInfo = `Abierto el ${new Date(item.created_at).toLocaleDateString()}`;
+          dateLabel = 'Abierto';
+          dateValue = formatCommitDate(item.created_at);
         }
+        // --- FIN DEL CAMBIO ---
 
         return (
           <li key={item.id}>
@@ -80,7 +88,8 @@ export const ContentDisplay = ({
               <div className="item-meta">
                   <div className="item-meta-column">
                     <span>Creado por <strong>{item.user.login}</strong></span>
-                    <span className="item-date">{dateInfo}</span>
+                    {/* El span ahora usa las nuevas variables para mostrar la fecha formateada */}
+                    <span className="item-date">{dateLabel}: {dateValue}</span>
                   </div>
                   {item.assignees && item.assignees.length > 0 ? (
                       <div className="assignee-info">
@@ -227,12 +236,10 @@ export const ContentDisplay = ({
 
               <div className="item-meta item-meta--align-start">
                 <div className="item-meta-column">
-                  {/* --- INICIO DEL CAMBIO --- */}
                   <div className="release-tags">
                     {index === 0 && !release.prerelease && <span className="release-tag latest">Latest</span>}
                     {release.prerelease && <span className="release-tag prerelease">Pre-release</span>}
                   </div>
-                  {/* --- FIN DEL CAMBIO --- */}
                   <span className="item-date">
                     Publicado el {new Date(release.published_at).toLocaleDateString()}
                   </span>
