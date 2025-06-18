@@ -403,19 +403,42 @@ const ContentDisplay = ({
   if (activeTab === 'Releases' && releases.length > 0) {
     return (
       <ul className="item-list">
-        {releases.map((release: ReleaseInfo) => {
+        {releases.map((release, index) => {
           const isNew = notificationsForRepo.newReleases?.includes(release.id);
           return (
             <li key={release.id}>
-                <div className="item-title-container">
-                    <a href={release.html_url} target="_blank" rel="noopener noreferrer">
-                        {release.name || release.tag_name}
-                    </a>
-                    {isNew && <span className="notification-dot"></span>}
-                </div>
+              {/* Bloque del Título */}
+              <div className="item-title-container">
+                <a href={release.html_url} target="_blank" rel="noopener noreferrer">
+                  {release.name || release.tag_name}
+                </a>
+                {isNew && <span className="notification-dot"></span>}
+              </div>
+
+              {/* Bloque de Metadatos */}
               <div className="item-meta">
-                <span>Publicado por <strong>{release.author.login}</strong></span>
-                <span style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>{new Date(release.published_at).toLocaleDateString()}</span>
+                {/* Columna Izquierda: Etiquetas y Fecha */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {index === 0 && <span className="status-badge latest">Latest</span>}
+                    {release.prerelease && <span className="status-badge prerelease">Pre-release</span>}
+                  </div>
+                  <span style={{ fontSize: '0.8em', color: '#586069' }}>
+                    Publicado el {new Date(release.published_at).toLocaleDateString()}
+                  </span>
+                </div>
+
+                {/* Columna Derecha: Author y Avatar */}
+                <div className="assignee-info">
+                  <span>Author:</span>
+                  <a href={release.author.html_url} target="_blank" rel="noopener noreferrer" title={release.author.login}>
+                    <img 
+                      src={release.author.avatar_url}
+                      alt={`Avatar de ${release.author.login}`}
+                      className="assignee-avatar"
+                    />
+                  </a>
+                </div>
               </div>
             </li>
           );

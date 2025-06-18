@@ -65,7 +65,19 @@ interface ActionInfo {
 }
 // --- FIN DE TIPOS ACTUALIZADOS ---
 
-interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; }; published_at: string; }
+interface ReleaseInfo { 
+  id: number; 
+  name: string; 
+  tag_name: string; 
+  html_url: string; 
+  author: { 
+    login: string;
+    avatar_url: string; // <-- CAMBIO: Añadido para el avatar
+    html_url: string;
+  }; 
+  published_at: string; 
+  prerelease: boolean; // <-- CAMBIO: Añadido para la etiqueta de estado
+}
 
 const ALARM_NAME = 'github-check-alarm';
 
