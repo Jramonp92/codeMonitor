@@ -12,7 +12,21 @@ type IssueState = 'open' | 'closed' | 'all';
 type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
 type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
 interface Repo { id: number; name: string; full_name: string; private: boolean; owner: { login: string; } }
-interface CommitInfo { sha: string; commit: { author: { name: string; date: string; }; message: string; }; html_url: string; }
+interface CommitInfo {
+  sha: string;
+  html_url: string;
+  commit: {
+    author: { name: string; date: string; };
+    message: string;
+  };
+
+  author: {
+    login: string;
+    avatar_url: string;
+    html_url: string;
+  } | null;
+
+}
 interface GitHubUser { login: string; avatar_url: string; html_url: string; }
 
 // --- INICIO DE TIPOS ACTUALIZADOS ---

@@ -327,9 +327,22 @@ const ContentDisplay = ({
                   {formatCommitDate(c.commit.author.date)}
                 </span>
               </div>
-              <div className="assignee-info" title={c.commit.author.name}>
-                <span>Author: <strong>{c.commit.author.name}</strong></span>
+              
+              {/* --- INICIO DEL CAMBIO --- */}
+              <div className="assignee-info">
+                <span>Author:</span>
+                {/* Verificamos si tenemos el usuario de GitHub para mostrar el avatar */}
+                {c.author ? (
+                  <a href={c.author.html_url} target="_blank" rel="noopener noreferrer" title={c.author.login}>
+                    <img src={c.author.avatar_url} alt={`Avatar de ${c.author.login}`} className="assignee-avatar" />
+                  </a>
+                ) : (
+                  // Si no, mostramos solo el nombre del autor del commit
+                  <strong style={{marginLeft: '4px'}}>{c.commit.author.name}</strong>
+                )}
               </div>
+              {/* --- FIN DEL CAMBIO --- */}
+
             </div>
           </li>
         ))}
