@@ -1,0 +1,25 @@
+/* Estilos para AppHeader.tsx */
+.app-header {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    padding: 8px 12px;
+    /* La línea 'border-bottom' ha sido eliminada */
+  }
+  
+  .app-header__user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .app-header__avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+  }
+  
+  .app-header__username {
+    font-weight: 600;
+    font-size: 0.9em;
+  }
