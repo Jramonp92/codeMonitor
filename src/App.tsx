@@ -253,17 +253,14 @@ const ContentDisplay = ({
       {items.map((item) => {
         const isNew = notificationKeys.some(key => notificationsForRepo[key]?.includes(item.id));
         
-        // --- INICIO DEL CAMBIO ---
-        // Determinar qué fecha mostrar con los datos disponibles
         let dateInfo;
-        // La propiedad 'merged_at' solo existe en los PRs
         if ('merged_at' in item && item.merged_at) {
           dateInfo = `Mergeado el ${new Date(item.merged_at).toLocaleDateString()}`;
+        } else if (item.closed_at) {
+          dateInfo = `Cerrado el ${new Date(item.closed_at).toLocaleDateString()}`;
         } else {
-          // Para todo lo demás (issues, PRs abiertos/cerrados), usamos la fecha de creación
-          dateInfo = `${item.state === 'open' ? 'Abierto' : 'Cerrado'} el ${new Date(item.created_at).toLocaleDateString()}`;
+          dateInfo = `Abierto el ${new Date(item.created_at).toLocaleDateString()}`;
         }
-        // --- FIN DEL CAMBIO ---
 
         return (
           <li key={item.id}>
@@ -344,23 +341,50 @@ const ContentDisplay = ({
   if (activeTab === 'PRs' && pullRequests.length > 0) return renderItemList(pullRequests, ['newPRs', 'assignedPRs']);
   
   if (activeTab === 'Actions' && actions.length > 0) {
-    return (<ul className="item-list">{actions.map((action: ActionInfo) => {
-        const isNew = notificationsForRepo.actions?.includes(action.id);
-        return (
-          <li key={action.id}>
-              <div className="item-title-container">
-                  <a href={action.html_url} target="_blank" rel="noopener noreferrer">
-                      {getStatusIcon(action.status, action.conclusion)} {action.name}
-                  </a>
-                  {isNew && <span className="notification-dot"></span>}
-              </div>
-              <div className="action-meta">
-                  <span>Iniciado por <strong>{action.actor.login}</strong></span>
-                  {action.pull_requests?.length > 0 && action.pull_requests[0] && (<a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link">(PR #{action.pull_requests[0].number})</a>)}
-              </div>
-          </li>
-        );
-    })}</ul>);
+    return (
+      <ul className="item-list">
+        {actions.map((action: ActionInfo) => {
+            const isNew = notificationsForRepo.actions?.includes(action.id);
+            return (
+              <li key={action.id}>
+                  <div className="item-title-container">
+                      <a href={action.html_url} target="_blank" rel="noopener noreferrer" title={action.name}>
+                          {getStatusIcon(action.status, action.conclusion)} {action.name} #{action.run_number}
+                      </a>
+                      {isNew && <span className="notification-dot"></span>}
+                  </div>
+                  
+                  <div className="item-meta">
+                    {/* Columna Izquierda: Trigger, Branch y Fecha */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                      <div className="item-details" style={{ fontSize: '0.8em', color: '#586069' }}>
+                        <span>Triggered by <strong>{action.event.replace(/_/g, ' ')}</strong> on branch <code>{action.head_branch}</code></span>
+                        {action.pull_requests?.length > 0 && action.pull_requests[0] && (
+                          <a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link" style={{ marginLeft: '8px' }}>
+                            (PR #{action.pull_requests[0].number})
+                          </a>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.8em', color: '#586069' }}>
+                        {formatCommitDate(action.created_at)}
+                      </span>
+                    </div>
+                    <div className="assignee-info">
+                      <span>Iniciado por:</span>
+                      <a href={`https://github.com/${action.actor.login}`} target="_blank" rel="noopener noreferrer" title={action.actor.login}>
+                        <img 
+                          src={action.actor.avatar_url} 
+                          alt={`Avatar de ${action.actor.login}`} 
+                          className="assignee-avatar"
+                        />
+                      </a>
+                    </div>
+                  </div>
+              </li>
+            );
+        })}
+      </ul>
+    );
   }
   
   if (activeTab === 'Releases' && releases.length > 0) {

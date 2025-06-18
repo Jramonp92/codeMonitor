@@ -4,6 +4,8 @@ import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 // Exportar los tipos para que otros archivos puedan usarlos.
 export type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
 
+// --- Reemplaza esta sección en la parte superior de useGithubData.ts ---
+
 // Interfaces
 type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
 type IssueState = 'open' | 'closed' | 'all';
@@ -12,9 +14,43 @@ type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | '
 interface Repo { id: number; name: string; full_name: string; private: boolean; owner: { login: string; } }
 interface CommitInfo { sha: string; commit: { author: { name: string; date: string; }; message: string; }; html_url: string; }
 interface GitHubUser { login: string; avatar_url: string; html_url: string; }
-interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
-interface PullRequestInfo extends IssueInfo { merged_at: string | null; }
-interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; actor: { login: string; }; pull_requests: { html_url: string; number: number; }[]; }
+
+// --- INICIO DE TIPOS ACTUALIZADOS ---
+interface IssueInfo { 
+  id: number; 
+  title: string; 
+  html_url: string; 
+  number: number; 
+  user: GitHubUser; 
+  created_at: string; 
+  closed_at: string | null; // <-- CAMBIO: Añadido
+  state: 'open' | 'closed'; 
+  assignees: GitHubUser[]; 
+  pull_request?: object; 
+}
+
+interface PullRequestInfo extends IssueInfo { 
+  merged_at: string | null; 
+}
+
+interface ActionInfo { 
+  id: number; 
+  name: string; 
+  status: 'queued' | 'in_progress' | 'completed' | 'waiting'; 
+  conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; 
+  html_url: string; 
+  created_at: string; 
+  run_number: number; // <-- CAMBIO: Añadido
+  event: string; // <-- CAMBIO: Añadido
+  head_branch: string; // <-- CAMBIO: Añadido
+  actor: { 
+    login: string;
+    avatar_url: string; // <-- CAMBIO: Añadido
+  }; 
+  pull_requests: { html_url: string; number: number; }[]; 
+}
+// --- FIN DE TIPOS ACTUALIZADOS ---
+
 interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; }; published_at: string; }
 
 const ALARM_NAME = 'github-check-alarm';
