@@ -1,0 +1,15 @@
+.filter-container {
+    text-align: left;
+    margin-top: 1rem;
+    font-size: 0.9em;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e1e4e8;
+    margin-bottom: 1rem;
+  }
+  .filter-container label {
+    margin-right: 15px;
+    cursor: pointer;
+  }
+  .filter-container input {
+    margin-right: 5px;
+  }

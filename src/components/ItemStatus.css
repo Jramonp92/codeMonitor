@@ -1,0 +1,10 @@
+.item-status-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    margin-left: 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: bold;
+    color: white;
+    text-transform: capitalize;
+  }

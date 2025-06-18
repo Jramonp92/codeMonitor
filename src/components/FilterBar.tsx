@@ -1,5 +1,6 @@
 // --- Ruta: src/components/FilterBar.tsx ---
 import React from 'react';
+import './FilterBar.css';
 
 interface FilterBarProps {
   filters: { label: string; value: string }[];

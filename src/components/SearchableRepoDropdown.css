@@ -56,3 +56,12 @@
     cursor: default;
     color: #888;
   }
+
+  .repo-dot {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 0; /* Asegurarse de que no tenga margen */
+  }
+  

@@ -1,0 +1,40 @@
+/* Estilos para Paginación */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e1e4e8;
+}
+.pagination-container button {
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5da;
+    background-color: #f6f8fa;
+    cursor: pointer;
+}
+.pagination-container button:hover:not(:disabled) {
+    background-color: #f3f4f6;
+}
+.pagination-container button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+.pagination-pages {
+    display: flex;
+    gap: 4px;
+}
+.pagination-pages button {
+    padding: 0.3rem 0.6rem;
+    min-width: 28px;
+}
+.pagination-pages button.active {
+    background-color: #0366d6;
+    color: white;
+    border-color: #0366d6;
+}
+.pagination-pages span {
+    padding: 0.3rem 0.2rem;
+    align-self: center;
+}
