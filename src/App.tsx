@@ -1,20 +1,19 @@
 import { useState, useEffect } from 'react';
 import './App.css'; 
 import { useGithubData } from './hooks/useGithubData';
-// Se eliminan los imports de componentes que solo usaba ContentDisplay
 import { FilterBar } from './components/FilterBar';
 import { Pagination } from './components/Pagination';
 import { SearchableRepoDropdown } from './components/SearchableRepoDropdown';
 import { RepoManagerModal } from './components/RepoManagerModal';
 import { AlertsManagerModal } from './components/AlertsManagerModal';
 
-// --- INICIO DEL CAMBIO ---
-// 1. Se importa el nuevo componente que creamos.
+// Se importan los nuevos componentes
+import { AppHeader } from './components/AppHeader';
 import { ContentDisplay } from './components/ContentDisplay';
-// 2. Se limpian los tipos que ya no se usan directamente en este archivo.
+
+// Se limpian los tipos que ya no se usan directamente en este archivo
 import type { Tab } from './hooks/useGithubData';
 import type { ActiveNotifications } from './background/alarms';
-// --- FIN DEL CAMBIO ---
 
 
 function App() {
@@ -24,7 +23,6 @@ function App() {
 
   const {
     user,
-    allRepos,
     managedRepos,
     addRepoToManagedList,
     removeRepoFromManagedList,
@@ -106,7 +104,7 @@ function App() {
       <RepoManagerModal
         isOpen={isRepoModalOpen}
         onClose={() => setIsRepoModalOpen(false)}
-        allRepos={allRepos}
+        allRepos={managedRepos} // Pasamos todos por si quiere añadir desde la lista
         managedRepos={managedRepos}
         onAdd={addRepoToManagedList}
         onRemove={removeRepoFromManagedList}
@@ -122,10 +120,15 @@ function App() {
       />
 
       <div className="app-container">
-        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'}}>
-          <img src={user.avatar_url} alt="User Avatar" width="40" style={{ borderRadius: '50%' }} />
-          <p>¡Bienvenido, {user.login}!</p>
-        </div>
+        
+        {/* --- INICIO DEL CAMBIO --- */}
+        <AppHeader 
+          user={user}
+          onManageRepos={() => setIsRepoModalOpen(true)}
+          onManageAlerts={() => setIsAlertsModalOpen(true)}
+          onLogout={handleLogout}
+        />
+
         <div className="select-container">
           <SearchableRepoDropdown
               repos={managedRepos}
@@ -134,18 +137,13 @@ function App() {
               disabled={!user || managedRepos.length === 0}
               notifications={activeNotifications}
           />
-          <button onClick={() => setIsRepoModalOpen(true)} className="manage-button" title="Manage Repositories">
-            ⚙️
-          </button>
-          <button onClick={() => setIsAlertsModalOpen(true)} className="manage-button" title="Manage Alerts">
-            🔔
-          </button>
           {selectedRepo && (
              <button onClick={handleRefresh} className="refresh-button" title="Refrescar datos">
                 🔄
              </button>
           )}
         </div>
+        {/* --- FIN DEL CAMBIO --- */}
         
         {selectedRepo && (
           <>
@@ -192,7 +190,6 @@ function App() {
           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         )}
 
-        <button onClick={handleLogout} style={{ marginTop: '1.5rem' }}>Cerrar Sesión</button>
       </div>
     </>
   );

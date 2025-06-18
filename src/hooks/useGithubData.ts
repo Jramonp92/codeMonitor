@@ -27,7 +27,7 @@ interface CommitInfo {
   } | null;
 
 }
-interface GitHubUser { login: string; avatar_url: string; html_url: string; }
+export interface GitHubUser { login: string; avatar_url: string; html_url: string; }
 
 // --- INICIO DE TIPOS ACTUALIZADOS ---
 interface IssueInfo { 
