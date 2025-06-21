@@ -63,6 +63,8 @@ export function SearchableRepoDropdown({ repos, selectedRepo, onSelect, disabled
               // Este log se ejecutará por cada repositorio en la lista desplegable.
               if (hasNotification) {
                 console.log(`%c[DEBUG] Repo "${repo.name}" DEBE tener punto rojo. Razón:`, 'color: purple; font-weight: bold;', repoNotifications);
+              } else {
+                console.log(`%c[DEBUG] Repo "${repo.name}" NO DEBE tener punto rojo. Razón:`, 'color: purple; font-weight: bold;', repoNotifications);
               }
 
               return (

@@ -1,112 +1,44 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 
-// --- INICIO DE LA CORRECCIÓN ---
-// Se añaden IssueState, PRState, y ActionStatus a la lista de tipos exportados.
 export type { Tab, IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
-// --- FIN DE LA CORRECCIÓN ---
 
-// Interfaces
+// Interfaces (se mantienen igual)
 type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
 type IssueState = 'open' | 'closed' | 'all';
 type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
 type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
 interface Repo { id: number; name: string; full_name: string; private: boolean; owner: { login: string; } }
-interface CommitInfo {
-  sha: string;
-  html_url: string;
-  commit: {
-    author: { name: string; date: string; };
-    message: string;
-  };
-
-  author: {
-    login: string;
-    avatar_url: string;
-    html_url: string;
-  } | null;
-
-}
+interface CommitInfo { sha: string; html_url: string; commit: { author: { name: string; date: string; }; message: string; }; author: { login: string; avatar_url: string; html_url: string; } | null; }
 export interface GitHubUser { login: string; avatar_url: string; html_url: string; }
-
-interface IssueInfo { 
-  id: number; 
-  title: string; 
-  html_url: string; 
-  number: number; 
-  user: GitHubUser; 
-  created_at: string; 
-  closed_at: string | null;
-  state: 'open' | 'closed'; 
-  assignees: GitHubUser[]; 
-  pull_request?: object; 
-}
-
-interface PullRequestInfo extends IssueInfo { 
-  merged_at: string | null; 
-}
-
-interface ActionInfo { 
-  id: number; 
-  name: string; 
-  status: 'queued' | 'in_progress' | 'completed' | 'waiting'; 
-  conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; 
-  html_url: string; 
-  created_at: string; 
-  run_number: number;
-  event: string;
-  head_branch: string;
-  actor: { 
-    login: string;
-    avatar_url: string;
-  }; 
-  pull_requests: { html_url: string; number: number; }[]; 
-}
-
-interface ReleaseInfo { 
-  id: number; 
-  name: string; 
-  tag_name: string; 
-  html_url: string; 
-  author: { 
-    login: string;
-    avatar_url: string;
-    html_url: string;
-  }; 
-  published_at: string; 
-  prerelease: boolean;
-}
+interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; closed_at: string | null; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
+interface PullRequestInfo extends IssueInfo { merged_at: string | null; }
+interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; run_number: number; event: string; head_branch: string; actor: { login: string; avatar_url: string; }; pull_requests: { html_url: string; number: number; }[]; }
+interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; avatar_url: string; html_url: string; }; published_at: string; prerelease: boolean; }
 
 const ALARM_NAME = 'github-check-alarm';
 
 export function useGithubData() {
   const [user, setUser] = useState<GitHubUser | null>(null);
-  
   const [managedRepos, setManagedRepos] = useState<Repo[]>([]);
   const [allRepos, setAllRepos] = useState<Repo[]>([]);
-  
   const [selectedRepo, setSelectedRepo] = useState<string>('');
-  
   const [isContentLoading, setIsContentLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<Tab>('README');
-  
   const [issueStateFilter, setIssueStateFilter] = useState<IssueState>('all');
   const [prStateFilter, setPrStateFilter] = useState<PRState>('all');
   const [actionStatusFilter, setActionStatusFilter] = useState<ActionStatus>('all');
-
   const [readmeHtml, setReadmeHtml] = useState<string>('');
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [issues, setIssues] = useState<IssueInfo[]>([]);
   const [pullRequests, setPullRequests] = useState<PullRequestInfo[]>([]);
   const [actions, setActions] = useState<ActionInfo[]>([]);
   const [releases, setReleases] = useState<ReleaseInfo[]>([]);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-
   const [alertSettings, setAlertSettings] = useState<AlertSettings>({});
   const [activeNotifications, setActiveNotifications] = useState<ActiveNotifications>({});
-  const [alertFrequency, setAlertFrequency] = useState<number>(1);
+  const [alertFrequency, setAlertFrequency] = useState<number>(10);
 
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
@@ -125,8 +57,6 @@ export function useGithubData() {
           if (result[notificationsKey]) setActiveNotifications(result[notificationsKey]);
           if (result[frequencyKey]) setAlertFrequency(result[frequencyKey]);
         });
-
-        chrome.action.setBadgeText({ text: '' });
 
         chrome.runtime.sendMessage({ type: 'getRepositories' }, (repoResponse) => {
           if (repoResponse?.success) {
@@ -191,25 +121,29 @@ export function useGithubData() {
     });
   };
 
-  const clearNotificationsForTab = useCallback((repo: string, tabKey: keyof ActiveNotifications[string] | (keyof ActiveNotifications[string])[]) => {
-    const repoNotifications = activeNotifications[repo];
-    if (!user || !repoNotifications) return;
-
-    const keysToClear = Array.isArray(tabKey) ? tabKey : [tabKey];
+  const clearNotificationsForTab = useCallback((repo: string, tab: Tab) => {
+    const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
+      'Issues': ['issues'],
+      'PRs': ['newPRs', 'assignedPRs'],
+      'Actions': ['actions'],
+      'Releases': ['newReleases']
+    };
+    const keysToClear = notificationMap[tab];
     
-    const needsClearing = keysToClear.some(key => {
-        const category = repoNotifications[key];
-        return Array.isArray(category) && category.length > 0;
-    });
-
-    if (!needsClearing) return;
+    if (!keysToClear || !user || !activeNotifications[repo]) return;
 
     const newNotifications = { ...activeNotifications };
     const newRepoNotifications = { ...newNotifications[repo] };
+    let didClear = false;
 
     keysToClear.forEach(key => {
-      delete newRepoNotifications[key];
+      if (newRepoNotifications[key] && newRepoNotifications[key]!.length > 0) {
+        delete newRepoNotifications[key];
+        didClear = true;
+      }
     });
+
+    if (!didClear) return;
 
     if (Object.keys(newRepoNotifications).length === 0) {
       delete newNotifications[repo];
@@ -218,31 +152,14 @@ export function useGithubData() {
     }
     
     setActiveNotifications(newNotifications);
-    
     chrome.storage.local.set({ [`notifications_${user.login}`]: newNotifications });
 
-    let newTotalCount = 0;
-    Object.values(newNotifications).forEach(repoNots => {
-      if (repoNots) {
-        Object.values(repoNots).forEach(notArray => {
-          if (Array.isArray(notArray)) {
-            newTotalCount += notArray.length;
-          }
-        });
-      }
-    });
-
-    if (newTotalCount > 0) {
-      chrome.action.setBadgeText({ text: `+${newTotalCount}` });
-    } else {
-      chrome.action.setBadgeText({ text: '' });
-    }
-
+    const newTotalCount = Object.values(newNotifications).flatMap(Object.values).flat().length;
+    chrome.action.setBadgeText({ text: newTotalCount > 0 ? `+${newTotalCount}` : '' });
   }, [activeNotifications, user]);
   
   const fetchDataForTab = useCallback(() => {
     if (!selectedRepo) return;
-
     setIsContentLoading(true);
     let message: any = { repoFullName: selectedRepo };
     if (activeTab !== 'README') {
@@ -319,9 +236,7 @@ export function useGithubData() {
     fetchDataForTab();
   }, [fetchDataForTab]);
 
-  const handleRefresh = useCallback(() => {
-    fetchDataForTab();
-  }, [fetchDataForTab]);
+  const handleRefresh = useCallback(() => { fetchDataForTab(); }, [fetchDataForTab]);
 
   const handleTabChange = (newTab: Tab) => {
     setActiveTab(newTab);
@@ -329,47 +244,28 @@ export function useGithubData() {
   };
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (selectedRepo) {
-        const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
-            'Issues': ['issues'],
-            'PRs': ['newPRs', 'assignedPRs'],
-            'Actions': ['actions'],
-            'Releases': ['newReleases']
-        };
-        const keysToClear = notificationMap[activeTab];
-        
-        if (keysToClear) {
-          clearNotificationsForTab(selectedRepo, keysToClear);
-        }
-      }
-    }, 10000);
+    if (!selectedRepo) return;
 
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => {
+      clearNotificationsForTab(selectedRepo, activeTab);
+    }, 5000); 
+
+    return () => {
+      clearTimeout(timer);
+    };
   }, [activeTab, selectedRepo, clearNotificationsForTab]);
 
   useEffect(() => {
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-      if (areaName !== 'local' || !user?.login) {
-        return;
-      }
+      if (areaName !== 'local' || !user?.login) return;
       const notificationsKey = `notifications_${user.login}`;
-
       if (changes[notificationsKey]) {
-        console.log('Actualizando estado global de notificaciones...');
-        const newNotifications = changes[notificationsKey].newValue || {};
-        setActiveNotifications(newNotifications);
-
-        console.log('Refrescando contenido de la vista activa...');
+        setActiveNotifications(changes[notificationsKey].newValue || {});
         handleRefresh();
       }
     };
-
     chrome.storage.onChanged.addListener(handleStorageChange);
-
-    return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange);
-    };
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, [user, handleRefresh]);
 
 
@@ -389,30 +285,12 @@ export function useGithubData() {
   };
 
   return {
-    user,
-    allRepos,
-    managedRepos,
-    addRepoToManagedList,
-    removeRepoFromManagedList,
-    selectedRepo, setSelectedRepo,
-    isContentLoading,
-    activeTab, 
-    issueStateFilter,
-    prStateFilter,
-    actionStatusFilter,
-    handleTabChange,
-    handleIssueFilterChange,
-    handlePrFilterChange,
-    handleActionStatusChange,
-    readmeHtml,
-    commits, issues, pullRequests, actions, releases,
-    currentPage, setCurrentPage,
-    totalPages,
-    handleRefresh,
-    alertSettings,
-    activeNotifications,
-    alertFrequency,
-    handleAlertSettingsChange,
-    handleFrequencyChange,
+    user, allRepos, managedRepos, addRepoToManagedList, removeRepoFromManagedList,
+    selectedRepo, setSelectedRepo, isContentLoading, activeTab, issueStateFilter,
+    prStateFilter, actionStatusFilter, handleTabChange, handleIssueFilterChange,
+    handlePrFilterChange, handleActionStatusChange, readmeHtml, commits, issues,
+    pullRequests, actions, releases, currentPage, setCurrentPage, totalPages,
+    handleRefresh, alertSettings, activeNotifications, alertFrequency,
+    handleAlertSettingsChange, handleFrequencyChange,
   };
 }
