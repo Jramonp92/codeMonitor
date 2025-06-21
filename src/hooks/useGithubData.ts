@@ -145,6 +145,17 @@ export function useGithubData() {
     });
   }, []);
 
+  // --- INICIO DE LA MEJORA ---
+  // Efecto para seleccionar el primer repositorio por defecto.
+  useEffect(() => {
+    // Si no hay ningún repositorio seleccionado, pero la lista de repositorios gestionados ya se ha cargado...
+    if (!selectedRepo && managedRepos.length > 0) {
+      // ... seleccionamos el primero de la lista.
+      setSelectedRepo(managedRepos[0].full_name);
+    }
+  }, [managedRepos, selectedRepo]); // Se ejecuta cuando la lista de repos o la selección cambian.
+  // --- FIN DE LA MEJORA ---
+
   const updateManagedRepos = useCallback((updatedRepos: Repo[]) => {
     if (user?.login) {
       const userReposKey = `userRepos_${user.login}`;
