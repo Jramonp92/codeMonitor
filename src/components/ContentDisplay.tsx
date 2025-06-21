@@ -60,9 +60,9 @@ export const ContentDisplay = ({
   const renderItemList = (items: (IssueInfo | PullRequestInfo)[], notificationKeys: (keyof ActiveNotifications[string])[]) => (
     <ul className="item-list">
       {items.map((item) => {
+        const notificationsForRepo = activeNotifications[selectedRepo] || {};
         const isNew = notificationKeys.some(key => notificationsForRepo[key]?.includes(item.id));
         
-        // --- INICIO DEL CAMBIO ---
         let dateLabel = '';
         let dateValue = '';
 
@@ -76,7 +76,6 @@ export const ContentDisplay = ({
           dateLabel = 'Abierto';
           dateValue = formatCommitDate(item.created_at);
         }
-        // --- FIN DEL CAMBIO ---
 
         return (
           <li key={item.id}>
@@ -88,7 +87,6 @@ export const ContentDisplay = ({
               <div className="item-meta">
                   <div className="item-meta-column">
                     <span>Creado por <strong>{item.user.login}</strong></span>
-                    {/* El span ahora usa las nuevas variables para mostrar la fecha formateada */}
                     <span className="item-date">{dateLabel}: {dateValue}</span>
                   </div>
                   {item.assignees && item.assignees.length > 0 ? (
@@ -117,13 +115,24 @@ export const ContentDisplay = ({
 
   const hasExistingData = commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0;
 
+  // --- INICIO DE LA MEJORA ---
+  // Reemplazamos los textos de carga por el spinner
   if (isContentLoading && !hasExistingData && activeTab !== 'README') {
-      return <p className="loading-text">Cargando...</p>;
+    return (
+      <div className="content-placeholder">
+        <div className="spinner"></div>
+      </div>
+    );
   }
   
   if (isContentLoading && activeTab === 'README') {
-    return <p className="loading-text">Cargando...</p>;
+    return (
+      <div className="content-placeholder">
+        <div className="spinner"></div>
+      </div>
+    );
   }
+  // --- FIN DE LA MEJORA ---
     
   if (activeTab === 'README') {
     if (readmeHtml) {
