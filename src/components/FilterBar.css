@@ -1,14 +1,27 @@
 .filter-container {
-    text-align: left;
-    font-size: 0.9em;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #e1e4e8;
-    margin-bottom: 1rem;
-  }
-  .filter-container label {
-    margin-right: 15px;
-    cursor: pointer;
-  }
-  .filter-container input {
-    margin-right: 5px;
-  }
+  /* 1. Usamos Flexbox para tener más control sobre el alineamiento y espaciado */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px; /* Espacio consistente entre cada opción de filtro */
+
+  font-size: 0.9em;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e1e4e8;
+  margin-bottom: 1rem;
+}
+
+.filter-container label {
+  /* 2. LA CLAVE: Evita que el texto dentro de la etiqueta se parta en varias líneas.
+     Esto fuerza a que el radio button y su texto siempre estén juntos. */
+  white-space: nowrap; 
+  
+  margin-right: 0; /* Ya no es necesario porque usamos 'gap' en el contenedor */
+  cursor: pointer;
+}
+
+.filter-container input {
+  margin-right: 5px;
+  /* 3. Alinear verticalmente el radio button con el texto para un look más pulido. */
+  vertical-align: middle; 
+}

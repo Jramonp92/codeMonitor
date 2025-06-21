@@ -7,8 +7,8 @@
     
     /* --- INICIO DE LA CORRECCIÓN --- */
     /* Especificamos los espacios por separado para un control más fino. */
-    column-gap: 24px; /* Mantenemos el espacio horizontal entre pestañas. */
-    row-gap: 4px;      /* Reducimos drásticamente el espacio vertical entre filas. */
+    column-gap: 20px; /* Mantenemos el espacio horizontal entre pestañas. */
+    row-gap: 0;      /* Reducimos drásticamente el espacio vertical entre filas. */
     /* --- FIN DE LA CORRECCIÓN --- */
     
     border-bottom: none; 
@@ -26,7 +26,6 @@
     position: relative;
     white-space: nowrap;
     transition: color 0.2s ease, border-color 0.2s ease;
-    margin-top: 1rem;
   }
   
   .tab-container button:hover:not(.active) {
@@ -40,6 +39,23 @@
     border-bottom-color: #f9826c; 
   }
   
+  /* --- INICIO DE LA MEJORA --- */
+/* 1. Definimos la animación de "pulso" */
+@keyframes pulse {
+    0% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgba(9, 105, 218, 0.7);
+    }
+    70% {
+      opacity: 0.6;
+      box-shadow: 0 0 0 5px rgba(9, 105, 218, 0);
+    }
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgba(9, 105, 218, 0);
+    }
+  }
+  
   /* Punto de notificación en las pestañas */
   .tab-container .notification-dot {
     display: inline-block;
@@ -50,4 +66,8 @@
     position: absolute;
     top: 6px;
     right: -2px;
+  
+    /* 2. Aplicamos la animación al punto */
+    animation: pulse 2s infinite;
   }
+  /* --- FIN DE LA MEJORA --- */

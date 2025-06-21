@@ -1,5 +1,6 @@
 import type { Repo } from '../hooks/useGithubData';
 import type { AlertSettings } from '../background/alarms';
+import './AlertsManagerModal.css';
 
 interface Props {
   isOpen: boolean;
