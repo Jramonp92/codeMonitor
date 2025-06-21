@@ -91,3 +91,18 @@
   .login-button svg {
     fill: currentColor;
   }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 5px solid rgba(0, 0, 0, 0.1);
+    border-left-color: #24292e; /* El mismo color del botón de login */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
