@@ -57,10 +57,26 @@
 }
 /* --- FIN DE LA MEJORA DE SCROLL (Parte 2) --- */
 
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(9, 105, 218, 0.7);
+  }
+  70% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 5px rgba(9, 105, 218, 0);
+  }
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(9, 105, 218, 0);
+  }
+}
+
 .notification-dot {
   display: inline-block;
   width: 8px;
   height: 8px;
   background-color: #0969da; /* Azul de GitHub */
   border-radius: 50%;
+  animation: pulse 2s infinite;
 }
