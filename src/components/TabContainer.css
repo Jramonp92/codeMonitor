@@ -1,0 +1,52 @@
+/* Estilos para el componente TabContainer.tsx */
+
+.tab-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    
+    /* --- INICIO DE LA CORRECCIÓN --- */
+    /* Especificamos los espacios por separado para un control más fino. */
+    column-gap: 24px; /* Mantenemos el espacio horizontal entre pestañas. */
+    row-gap: 4px;      /* Reducimos drásticamente el espacio vertical entre filas. */
+    /* --- FIN DE LA CORRECCIÓN --- */
+    
+    border-bottom: none; 
+    margin-bottom: 16px;
+  }
+  
+  .tab-container button {
+    padding: 8px 4px;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 14px; 
+    font-weight: 500;
+    color: #586069;
+    position: relative;
+    white-space: nowrap;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .tab-container button:hover:not(.active) {
+    color: #1f2328;
+  }
+  
+  .tab-container button.active {
+    color: #1f2328;
+    font-weight: 600;
+    border-bottom: 2px solid; 
+    border-bottom-color: #f9826c; 
+  }
+  
+  /* Punto de notificación en las pestañas */
+  .tab-container .notification-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #0969da;
+    border-radius: 50%;
+    position: absolute;
+    top: 6px;
+    right: -2px;
+  }

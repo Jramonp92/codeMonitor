@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 
-// Exportar los tipos para que otros archivos puedan usarlos.
-export type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
-
-// --- Reemplaza esta sección en la parte superior de useGithubData.ts ---
+// --- INICIO DE LA CORRECCIÓN ---
+// Se añaden IssueState, PRState, y ActionStatus a la lista de tipos exportados.
+export type { Tab, IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
+// --- FIN DE LA CORRECCIÓN ---
 
 // Interfaces
 type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
@@ -29,7 +29,6 @@ interface CommitInfo {
 }
 export interface GitHubUser { login: string; avatar_url: string; html_url: string; }
 
-// --- INICIO DE TIPOS ACTUALIZADOS ---
 interface IssueInfo { 
   id: number; 
   title: string; 
@@ -37,7 +36,7 @@ interface IssueInfo {
   number: number; 
   user: GitHubUser; 
   created_at: string; 
-  closed_at: string | null; // <-- CAMBIO: Añadido
+  closed_at: string | null;
   state: 'open' | 'closed'; 
   assignees: GitHubUser[]; 
   pull_request?: object; 
@@ -54,16 +53,15 @@ interface ActionInfo {
   conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; 
   html_url: string; 
   created_at: string; 
-  run_number: number; // <-- CAMBIO: Añadido
-  event: string; // <-- CAMBIO: Añadido
-  head_branch: string; // <-- CAMBIO: Añadido
+  run_number: number;
+  event: string;
+  head_branch: string;
   actor: { 
     login: string;
-    avatar_url: string; // <-- CAMBIO: Añadido
+    avatar_url: string;
   }; 
   pull_requests: { html_url: string; number: number; }[]; 
 }
-// --- FIN DE TIPOS ACTUALIZADOS ---
 
 interface ReleaseInfo { 
   id: number; 
@@ -72,11 +70,11 @@ interface ReleaseInfo {
   html_url: string; 
   author: { 
     login: string;
-    avatar_url: string; // <-- CAMBIO: Añadido para el avatar
+    avatar_url: string;
     html_url: string;
   }; 
   published_at: string; 
-  prerelease: boolean; // <-- CAMBIO: Añadido para la etiqueta de estado
+  prerelease: boolean;
 }
 
 const ALARM_NAME = 'github-check-alarm';
@@ -145,16 +143,11 @@ export function useGithubData() {
     });
   }, []);
 
-  // --- INICIO DE LA MEJORA ---
-  // Efecto para seleccionar el primer repositorio por defecto.
   useEffect(() => {
-    // Si no hay ningún repositorio seleccionado, pero la lista de repositorios gestionados ya se ha cargado...
     if (!selectedRepo && managedRepos.length > 0) {
-      // ... seleccionamos el primero de la lista.
       setSelectedRepo(managedRepos[0].full_name);
     }
-  }, [managedRepos, selectedRepo]); // Se ejecuta cuando la lista de repos o la selección cambian.
-  // --- FIN DE LA MEJORA ---
+  }, [managedRepos, selectedRepo]);
 
   const updateManagedRepos = useCallback((updatedRepos: Repo[]) => {
     if (user?.login) {
@@ -198,7 +191,6 @@ export function useGithubData() {
     });
   };
 
-  // --> CAMBIO: Función corregida para actualizar el badge del ícono de la extensión.
   const clearNotificationsForTab = useCallback((repo: string, tabKey: keyof ActiveNotifications[string] | (keyof ActiveNotifications[string])[]) => {
     const repoNotifications = activeNotifications[repo];
     if (!user || !repoNotifications) return;
@@ -212,7 +204,6 @@ export function useGithubData() {
 
     if (!needsClearing) return;
 
-    // 1. Clonamos el objeto de notificaciones para no mutar el estado directamente.
     const newNotifications = { ...activeNotifications };
     const newRepoNotifications = { ...newNotifications[repo] };
 
@@ -226,13 +217,10 @@ export function useGithubData() {
       newNotifications[repo] = newRepoNotifications;
     }
     
-    // 2. Actualizamos el estado de React para que los puntos rojos en la UI desaparezcan.
     setActiveNotifications(newNotifications);
     
-    // 3. Guardamos el nuevo objeto de notificaciones en el storage.
     chrome.storage.local.set({ [`notifications_${user.login}`]: newNotifications });
 
-    // 4. Recalculamos el número total de notificaciones restantes.
     let newTotalCount = 0;
     Object.values(newNotifications).forEach(repoNots => {
       if (repoNots) {
@@ -244,7 +232,6 @@ export function useGithubData() {
       }
     });
 
-    // 5. Actualizamos el badge del ícono de la extensión INMEDIATAMENTE.
     if (newTotalCount > 0) {
       chrome.action.setBadgeText({ text: `+${newTotalCount}` });
     } else {
