@@ -56,3 +56,11 @@
   scrollbar-color: #d0d7de transparent;
 }
 /* --- FIN DE LA MEJORA DE SCROLL (Parte 2) --- */
+
+.notification-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #0969da; /* Azul de GitHub */
+  border-radius: 50%;
+}
