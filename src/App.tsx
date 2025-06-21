@@ -8,7 +8,7 @@ import { AppHeader } from './components/AppHeader';
 import { ContentDisplay } from './components/ContentDisplay';
 import { RepoToolbar } from './components/RepoToolbar';
 import { AppShell } from './components/AppShell';
-import { TabContainer } from './components/TabContainer'; // 1. Importamos el nuevo componente
+import { TabContainer } from './components/TabContainer';
 
 function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
@@ -17,6 +17,7 @@ function App() {
 
   const {
     user,
+    allRepos,
     managedRepos,
     addRepoToManagedList,
     removeRepoFromManagedList,
@@ -46,22 +47,13 @@ function App() {
     alertFrequency,
     handleAlertSettingsChange,
     handleFrequencyChange,
-  } = useGithubData();
-  
-  // La constante notificationKeyMap se ha movido a TabContainer.tsx
+  } = useGithubData(); // Ya no se extrae isAppLoading ni handleLogin de aquí
 
   useEffect(() => {
-    if (user) {
-      setIsAppLoading(false);
-    } else {
-      setTimeout(() => setIsAppLoading(false), 500);
+    if (user !== undefined) {
+      setTimeout(() => setIsAppLoading(false), 300);
     }
   }, [user]);
-
-  const handleRepoSelection = (repoFullName: string) => {
-    handleTabChange('README');
-    setSelectedRepo(repoFullName);
-  };
 
   const handleLogin = () => {
     setIsAppLoading(true);
@@ -80,13 +72,14 @@ function App() {
       window.location.reload();
     });
   };
+  // --- FIN DE LA CORRECCIÓN ---
 
   return (
     <AppShell isLoading={isAppLoading} user={user} onLogin={handleLogin}>
       <RepoManagerModal
         isOpen={isRepoModalOpen}
         onClose={() => setIsRepoModalOpen(false)}
-        allRepos={managedRepos}
+        allRepos={allRepos}
         managedRepos={managedRepos}
         onAdd={addRepoToManagedList}
         onRemove={removeRepoFromManagedList}
@@ -113,25 +106,27 @@ function App() {
           managedRepos={managedRepos}
           selectedRepo={selectedRepo}
           user={user!}
-          onSelectRepo={handleRepoSelection}
+          onSelectRepo={(repoFullName) => {
+            handleTabChange('README');
+            setSelectedRepo(repoFullName);
+          }}
           onRefresh={handleRefresh}
           onOpenRepoManager={() => setIsRepoModalOpen(true)}
           onOpenAlertsManager={() => setIsAlertsModalOpen(true)}
           notifications={activeNotifications}
         />
         
-        {/* 2. Reemplazamos el bloque de JSX por el nuevo componente */}
         <TabContainer
-          activeTab={activeTab}
-          handleTabChange={handleTabChange}
-          selectedRepo={selectedRepo}
-          activeNotifications={activeNotifications}
-          issueStateFilter={issueStateFilter}
-          handleIssueFilterChange={handleIssueFilterChange}
-          prStateFilter={prStateFilter}
-          handlePrFilterChange={handlePrFilterChange}
-          actionStatusFilter={actionStatusFilter}
-          handleActionStatusChange={handleActionStatusChange}
+            activeTab={activeTab}
+            handleTabChange={handleTabChange}
+            selectedRepo={selectedRepo}
+            activeNotifications={activeNotifications}
+            issueStateFilter={issueStateFilter}
+            handleIssueFilterChange={handleIssueFilterChange}
+            prStateFilter={prStateFilter}
+            handlePrFilterChange={handlePrFilterChange}
+            actionStatusFilter={actionStatusFilter}
+            handleActionStatusChange={handleActionStatusChange}
         />
 
         <div className={isContentLoading ? 'content-revalidating' : ''}>
@@ -152,7 +147,6 @@ function App() {
         {selectedRepo && activeTab !== 'README' && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
           <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
         )}
-
       </div>
     </AppShell>
   );
