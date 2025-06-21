@@ -12,7 +12,7 @@
     /* --- FIN DE LA CORRECCIÓN --- */
     
     border-bottom: none; 
-    margin-bottom: 16px;
+    padding-bottom: 16px;
   }
   
   .tab-container button {
