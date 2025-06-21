@@ -1,53 +1,56 @@
 /* Estilos para SettingsMenu.tsx */
-.settings-menu-container {
-    position: relative;
-    display: inline-block;
-  }
+
+/* El menú desplegable */
+.settings-menu {
+  /* Posicionamiento absoluto relativo al contenedor .app-header__actions */
+  position: absolute;
+  top: 115%; /* Ligeramente debajo del botón del avatar */
+  right: 0;
   
-  /* El menú desplegable */
-  .settings-menu {
-    position: absolute;
-    top: 110%; /* Ligeramente debajo del botón */
-    right: 0;
-    background-color: white;
-    border: 1px solid #d0d7de;
-    border-radius: 6px;
-    box-shadow: 0 8px 24px rgba(140,149,159,0.2);
-    padding: 4px 0;
-    min-width: 220px;
-    z-index: 100;
-    list-style: none;
-    margin: 0;
-  }
-  
-  /* Cada opción del menú */
-  .settings-menu-item {
-    display: block;
-    width: 100%;
-    text-align: left;
-    padding: 8px 16px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-size: 0.9em;
-    color: #24292f;
-  }
-  
-  .settings-menu-item:hover {
-    background-color: #f6f8fa;
-  }
-  
-  /* Opción de logout con separador */
-  .settings-menu-item.logout {
-    color: #d73a49;
-    border-top: 1px solid #d0d7de;
-    margin-top: 4px;
-    padding-top: 8px;
-  }
-  
-  /* Estilo para opciones deshabilitadas */
-  .settings-menu-item:disabled {
-    color: #8c959f;
-    cursor: not-allowed;
-    background-color: transparent;
-  }
+  background-color: white;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(140,149,159,0.2);
+  padding: 4px 0;
+  min-width: 220px;
+  z-index: 100;
+  list-style: none;
+  margin: 0;
+}
+
+.settings-menu li {
+  padding: 0;
+  margin: 0;
+}
+
+/* Cada opción del menú */
+.settings-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.9em;
+  color: #24292f;
+}
+
+.settings-menu-item:hover {
+  background-color: #f6f8fa;
+}
+
+/* Opción de logout con separador */
+.settings-menu-item.logout {
+  color: #d73a49;
+  border-top: 1px solid #d0d7de;
+  margin-top: 4px;
+  padding-top: 8px;
+}
+
+/* Estilo para opciones deshabilitadas */
+.settings-menu-item:disabled {
+  color: #8c959f;
+  cursor: not-allowed;
+  background-color: transparent;
+}

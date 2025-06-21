@@ -1,64 +1,44 @@
-import { useState, useEffect, useRef } from 'react';
 import './SettingsMenu.css';
 
+// La interfaz ahora incluye una función 'onClose' que será pasada desde AppHeader
 interface SettingsMenuProps {
   onManageRepos: () => void;
   onManageAlerts: () => void;
   onLogout: () => void;
+  onClose: () => void;
 }
 
-export const SettingsMenu = ({ onManageRepos, onManageAlerts, onLogout }: SettingsMenuProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+export const SettingsMenu = ({ onManageRepos, onManageAlerts, onLogout, onClose }: SettingsMenuProps) => {
 
-  // Efecto para cerrar el menú si se hace clic fuera de él
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-
+  // Esta función auxiliar ejecuta la acción y luego invoca el cierre del menú
   const handleAction = (action: () => void) => {
     action();
-    setIsOpen(false);
+    onClose();
   };
 
+  // El componente ahora es solo la lista de opciones (el panel del menú)
   return (
-    <div className="settings-menu-container" ref={menuRef}>
-      <button className="manage-button" onClick={() => setIsOpen(!isOpen)} title="Settings">
-        ⚙️
-      </button>
-
-      {isOpen && (
-        <ul className="settings-menu">
-          <li>
-            <button className="settings-menu-item" onClick={() => handleAction(onManageRepos)}>
-              Configurar Repositorios
-            </button>
-          </li>
-          <li>
-            <button className="settings-menu-item" onClick={() => handleAction(onManageAlerts)}>
-              Configurar Alertas
-            </button>
-          </li>
-          <li>
-            <button className="settings-menu-item" disabled>
-              Settings (próximamente)
-            </button>
-          </li>
-          <li>
-            <button className="settings-menu-item logout" onClick={() => handleAction(onLogout)}>
-              Cerrar Sesión
-            </button>
-          </li>
-        </ul>
-      )}
-    </div>
+    <ul className="settings-menu">
+      <li>
+        <button className="settings-menu-item" onClick={() => handleAction(onManageRepos)}>
+          Configurar Repositorios
+        </button>
+      </li>
+      <li>
+        <button className="settings-menu-item" onClick={() => handleAction(onManageAlerts)}>
+          Configurar Alertas
+        </button>
+      </li>
+      <li>
+        <button className="settings-menu-item" disabled>
+          Settings (próximamente)
+        </button>
+      </li>
+      <li>
+        <button className="settings-menu-item logout" onClick={() => handleAction(onLogout)}>
+          Cerrar Sesión
+        </button>
+      </li>
+    </ul>
   );
 };
