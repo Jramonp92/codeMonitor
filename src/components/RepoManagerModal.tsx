@@ -125,7 +125,7 @@ export function RepoManagerModal({ isOpen, onClose, allRepos, managedRepos, onAd
               {managedRepos.map(repo => (
                 <li key={repo.id}>
                   <span>{repo.name}</span>
-                  <button onClick={() => onRemove(repo)} className="remove-button">🗑️</button>
+                  <button onClick={() => onRemove(repo)} className="remove-button">-</button>
                 </li>
               ))}
             </ul>

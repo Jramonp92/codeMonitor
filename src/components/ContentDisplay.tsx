@@ -8,6 +8,9 @@ import { ItemStatus } from './ItemStatus';
 import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from '../hooks/useGithubData';
 import type { ActiveNotifications } from '../background/alarms';
 
+// Importamos los íconos de react-icons
+import { VscCheck, VscError, VscCircleSlash, VscLoading, VscQuestion, VscVmRunning } from 'react-icons/vsc';
+
 // Definimos las props que recibirá el componente
 export interface ContentDisplayProps {
   activeTab: Tab;
@@ -48,13 +51,23 @@ export const ContentDisplay = ({
   };
   
   const getStatusIcon = (status: ActionInfo['status'], conclusion: ActionInfo['conclusion']) => {
+    const iconProps = { className: 'action-status-icon' }; 
+    
     if (status === 'completed') {
       switch (conclusion) {
-        case 'success': return '✅'; case 'failure': return '❌';
-        case 'cancelled': return '🚫'; default: return '⚪️';
+        case 'success':
+          return <VscCheck {...iconProps} className={`${iconProps.className} status-success`} />;
+        case 'failure':
+          return <VscError {...iconProps} className={`${iconProps.className} status-failure`} />;
+        case 'cancelled':
+          return <VscCircleSlash {...iconProps} className={`${iconProps.className} status-cancelled`} />;
+        default:
+          return <VscQuestion {...iconProps} />;
       }
     }
-    if (status === 'in_progress') return '⏳'; return '큐';
+    if (status === 'in_progress') return <VscVmRunning {...iconProps} className={`${iconProps.className} status-inprogress`} />;
+    
+    return <VscLoading {...iconProps} />;
   };
 
   const renderItemList = (items: (IssueInfo | PullRequestInfo)[], notificationKeys: (keyof ActiveNotifications[string])[]) => (

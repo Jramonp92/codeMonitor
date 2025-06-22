@@ -161,3 +161,9 @@
   font-size: 0.85em;
   margin-top: 8px;
 }
+
+.remove-button {
+  color: #c0392b;
+  font-weight: bold;
+  font-size: 24px;
+}

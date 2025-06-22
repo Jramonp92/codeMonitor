@@ -206,3 +206,30 @@
       margin-left: 8px; 
       margin-right: 0;
     }
+
+
+    .action-status-icon {
+      vertical-align: middle;
+      /* Un pequeño margen para separarlo del texto */
+      /* Define un tamaño base */
+      font-size: 1.1em;
+      /* --- AÑADE ESTA LÍNEA --- */
+      stroke-width: 0.5; /* Aumenta el grosor del ícono. Puedes probar valores como 0.5, 1, etc. */
+    }
+    
+    /* Colores según el estado */
+    .status-success {
+      color: #2da44e; /* Verde de GitHub */
+    }
+    
+    .status-failure {
+      color: #cf222e; /* Rojo de GitHub */
+    }
+    
+    .status-inprogress {
+      color: #d29922; /* Amarillo/Naranja de GitHub */
+    }
+    
+    .status-cancelled {
+      color: #8b949e; /* Gris de GitHub */
+    }
