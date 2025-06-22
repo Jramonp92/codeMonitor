@@ -1,14 +1,15 @@
 import './SettingsMenu.css';
 
-// La interfaz ahora incluye una función 'onClose' que será pasada desde AppHeader
+// La interfaz ahora incluye una función 'onClose' y 'onOpenSettings'
 interface SettingsMenuProps {
   onManageRepos: () => void;
   onManageAlerts: () => void;
   onLogout: () => void;
   onClose: () => void;
+  onOpenSettings: () => void;
 }
 
-export const SettingsMenu = ({ onManageRepos, onManageAlerts, onLogout, onClose }: SettingsMenuProps) => {
+export const SettingsMenu = ({ onManageRepos, onManageAlerts, onLogout, onClose, onOpenSettings }: SettingsMenuProps) => {
 
   // Esta función auxiliar ejecuta la acción y luego invoca el cierre del menú
   const handleAction = (action: () => void) => {
@@ -30,8 +31,8 @@ export const SettingsMenu = ({ onManageRepos, onManageAlerts, onLogout, onClose 
         </button>
       </li>
       <li>
-        <button className="settings-menu-item" disabled>
-          Settings (próximamente)
+        <button className="settings-menu-item" onClick={() => handleAction(onOpenSettings)}>
+          Settings
         </button>
       </li>
       <li>

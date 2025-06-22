@@ -15,9 +15,16 @@ interface AppHeaderProps {
   onManageRepos: () => void;
   onManageAlerts: () => void;
   onLogout: () => void;
+  onOpenSettings: () => void; // <-- 1. AÑADE la nueva prop aquí
 }
 
-export const AppHeader = ({ user, onManageRepos, onManageAlerts, onLogout }: AppHeaderProps) => {
+export const AppHeader = ({ 
+  user, 
+  onManageRepos, 
+  onManageAlerts, 
+  onLogout, 
+  onOpenSettings // <-- 2. RECÍBELA como prop
+}: AppHeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuContainerRef = useRef<HTMLDivElement>(null);
 
@@ -56,6 +63,7 @@ export const AppHeader = ({ user, onManageRepos, onManageAlerts, onLogout }: App
             onManageAlerts={onManageAlerts}
             onLogout={onLogout}
             onClose={() => setIsMenuOpen(false)}
+            onOpenSettings={onOpenSettings} // <-- 3. PÁSALO al SettingsMenu
           />
         )}
       </div>
