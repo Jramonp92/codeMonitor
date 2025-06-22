@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 
+export type TabKey = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions' | 'Releases';
+export type TabVisibility = Record<TabKey, boolean>;
+
 export type { Tab, IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
 
 // Interfaces (se mantienen igual)
@@ -39,6 +42,16 @@ export function useGithubData() {
   const [alertSettings, setAlertSettings] = useState<AlertSettings>({});
   const [activeNotifications, setActiveNotifications] = useState<ActiveNotifications>({});
   const [alertFrequency, setAlertFrequency] = useState<number>(10);
+  
+  const [tabVisibility, setTabVisibility] = useState<TabVisibility>({
+    README: true,
+    Commits: true,
+    Issues: true,
+    PRs: true,
+    Actions: true,
+    Releases: true,
+  });
+
 
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
@@ -50,12 +63,14 @@ export function useGithubData() {
         const alertsConfigKey = `alertsConfig_${currentUser.login}`;
         const notificationsKey = `notifications_${currentUser.login}`;
         const frequencyKey = 'alertFrequency';
+        const storageKeys = [userReposKey, alertsConfigKey, notificationsKey, frequencyKey, 'tabVisibility'];
 
-        chrome.storage.local.get([userReposKey, alertsConfigKey, notificationsKey, frequencyKey], (result) => {
+        chrome.storage.local.get(storageKeys, (result) => {
           if (result[userReposKey]) setManagedRepos(result[userReposKey]);
           if (result[alertsConfigKey]) setAlertSettings(result[alertsConfigKey]);
           if (result[notificationsKey]) setActiveNotifications(result[notificationsKey]);
           if (result[frequencyKey]) setAlertFrequency(result[frequencyKey]);
+          if (result.tabVisibility) setTabVisibility(result.tabVisibility);
         });
 
         chrome.runtime.sendMessage({ type: 'getRepositories' }, (repoResponse) => {
@@ -72,6 +87,28 @@ export function useGithubData() {
       }
     });
   }, []);
+
+  // --- INICIO DE LA CORRECCIÓN DEL BUG ---
+  const handleTabVisibilityChange = useCallback((tab: TabKey, isVisible: boolean) => {
+    const newVisibility = { ...tabVisibility, [tab]: isVisible };
+    setTabVisibility(newVisibility);
+    chrome.storage.local.set({ tabVisibility: newVisibility });
+
+    // Si la pestaña que se oculta es la que está activa, busca una nueva para mostrar.
+    if (!isVisible && activeTab === tab) {
+      const tabOrder: TabKey[] = ['README', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'];
+      // Encuentra la primera pestaña que todavía sea visible en el nuevo estado.
+      const fallbackTab = tabOrder.find(t => newVisibility[t]);
+      
+      if (fallbackTab) {
+        // Cambia a la nueva pestaña visible y resetea la página.
+        setActiveTab(fallbackTab);
+        setCurrentPage(1);
+      }
+    }
+  }, [tabVisibility, activeTab]); // Se añade `activeTab` a las dependencias.
+  // --- FIN DE LA CORRECCIÓN DEL BUG ---
+
 
   useEffect(() => {
     if (!selectedRepo && managedRepos.length > 0) {
@@ -292,5 +329,7 @@ export function useGithubData() {
     pullRequests, actions, releases, currentPage, setCurrentPage, totalPages,
     handleRefresh, alertSettings, activeNotifications, alertFrequency,
     handleAlertSettingsChange, handleFrequencyChange,
+    tabVisibility,
+    handleTabVisibilityChange,
   };
 }

@@ -1,6 +1,9 @@
 import './TabContainer.css';
 import { FilterBar } from './FilterBar';
-import type { Tab, IssueState, PRState, ActionStatus } from '../hooks/useGithubData';
+// --- INICIO DE CAMBIOS ---
+// 1. Importamos los nuevos tipos desde el hook.
+import type { Tab, IssueState, PRState, ActionStatus, TabVisibility, TabKey } from '../hooks/useGithubData';
+// --- FIN DE CAMBIOS ---
 import type { ActiveNotifications } from '../background/alarms';
 
 // Definimos las props que el nuevo componente necesitará recibir de App.tsx
@@ -15,6 +18,10 @@ interface TabContainerProps {
   handlePrFilterChange: (filter: PRState) => void;
   actionStatusFilter: ActionStatus;
   handleActionStatusChange: (status: ActionStatus) => void;
+  // --- INICIO DE CAMBIOS ---
+  // 2. Añadimos la nueva prop para recibir la configuración de visibilidad.
+  tabVisibility: TabVisibility;
+  // --- FIN DE CAMBIOS ---
 }
 
 // Sacamos estas constantes de App.tsx para que vivan junto a su lógica
@@ -38,6 +45,10 @@ export const TabContainer = ({
   handlePrFilterChange,
   actionStatusFilter,
   handleActionStatusChange,
+  // --- INICIO DE CAMBIOS ---
+  // 3. Recibimos la nueva prop.
+  tabVisibility,
+  // --- FIN DE CAMBIOS ---
 }: TabContainerProps) => {
   
   // Si no hay un repositorio seleccionado, no mostramos nada.
@@ -48,7 +59,10 @@ export const TabContainer = ({
   return (
     <>
       <div className="tab-container">
-        {TABS.map(tab => {
+        {/* --- INICIO DE CAMBIOS --- */}
+        {/* 4. Filtramos el array TABS antes de mapearlo para renderizar solo las pestañas visibles. */}
+        {TABS.filter(tab => tabVisibility[tab as TabKey]).map(tab => {
+        {/* --- FIN DE CAMBIOS --- */}
           const notificationKeysForTab = NOTIFICATION_KEY_MAP[tab];
           const hasNotification = notificationKeysForTab?.some(key => {
             const notificationsForRepo = activeNotifications[selectedRepo];

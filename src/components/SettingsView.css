@@ -155,3 +155,26 @@
   .settings-link-item svg {
     color: #586069;
   }
+
+  /* --- INICIO DE CAMBIOS: Estilos para la lista de toggles --- */
+  .toggle-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  
+  .toggle-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 6px;
+    background-color: #f6f8fa;
+    border: 1px solid #e1e4e8;
+  }
+
+  .toggle-list-item span {
+    font-weight: 500;
+  }
+  /* --- FIN DE CAMBIOS --- */

@@ -9,7 +9,7 @@ import { ContentDisplay } from './components/ContentDisplay';
 import { RepoToolbar } from './components/RepoToolbar';
 import { AppShell } from './components/AppShell';
 import { TabContainer } from './components/TabContainer';
-import { SettingsView } from './components/SettingsView'; // Importa la nueva vista
+import { SettingsView } from './components/SettingsView';
 
 function App() {
   const [activeView, setActiveView] = useState<'main' | 'settings'>('main');
@@ -49,6 +49,11 @@ function App() {
     alertFrequency,
     handleAlertSettingsChange,
     handleFrequencyChange,
+    // --- INICIO DE CAMBIOS ---
+    // 1. Extraemos el nuevo estado y la función del hook.
+    tabVisibility,
+    handleTabVisibilityChange,
+    // --- FIN DE CAMBIOS ---
   } = useGithubData();
 
   useEffect(() => {
@@ -131,6 +136,10 @@ function App() {
                 handlePrFilterChange={handlePrFilterChange}
                 actionStatusFilter={actionStatusFilter}
                 handleActionStatusChange={handleActionStatusChange}
+                // --- INICIO DE CAMBIOS ---
+                // 2. Pasamos el objeto de visibilidad al TabContainer.
+                tabVisibility={tabVisibility}
+                // --- FIN DE CAMBIOS ---
             />
 
             <div className={isContentLoading ? 'content-revalidating' : ''}>
@@ -153,7 +162,14 @@ function App() {
             )}
           </>
         ) : (
-          <SettingsView onClose={() => setActiveView('main')} />
+          // --- INICIO DE CAMBIOS ---
+          // 3. Pasamos el estado y la función a la vista de Settings.
+          <SettingsView
+            onClose={() => setActiveView('main')}
+            tabVisibility={tabVisibility}
+            onTabVisibilityChange={handleTabVisibilityChange}
+          />
+          // --- FIN DE CAMBIOS ---
         )}
       </div>
     </AppShell>
