@@ -40,6 +40,17 @@
   background-color: #f6f8fa;
 }
 
+/* --- INICIO DE CAMBIOS --- */
+/* 1. Nuevo estilo para el botón de limpiar notificaciones */
+.settings-menu-item.clear-notifications {
+  color: #d73a49; /* Usamos el mismo color rojo que el logout */
+  border-top: 1px solid #d0d7de;
+  margin-top: 4px;
+  padding-top: 8px;
+}
+/* --- FIN DE CAMBIOS --- */
+
+
 /* Opción de logout con separador */
 .settings-menu-item.logout {
   color: #d73a49;

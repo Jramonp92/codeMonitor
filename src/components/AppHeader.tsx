@@ -15,7 +15,11 @@ interface AppHeaderProps {
   onManageRepos: () => void;
   onManageAlerts: () => void;
   onLogout: () => void;
-  onOpenSettings: () => void; // <-- 1. AÑADE la nueva prop aquí
+  onOpenSettings: () => void;
+  // --- INICIO DE CAMBIOS ---
+  // 1. Añadimos la nueva prop para la función de limpiar notificaciones.
+  onClearAllNotifications: () => void;
+  // --- FIN DE CAMBIOS ---
 }
 
 export const AppHeader = ({ 
@@ -23,7 +27,11 @@ export const AppHeader = ({
   onManageRepos, 
   onManageAlerts, 
   onLogout, 
-  onOpenSettings // <-- 2. RECÍBELA como prop
+  onOpenSettings,
+  // --- INICIO DE CAMBIOS ---
+  // 2. Recibimos la nueva prop.
+  onClearAllNotifications
+  // --- FIN DE CAMBIOS ---
 }: AppHeaderProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuContainerRef = useRef<HTMLDivElement>(null);
@@ -47,23 +55,21 @@ export const AppHeader = ({
         Repo Observer
       </div>
       
-      {/* Usamos la ref en el contenedor de las acciones para detectar clics fuera */}
       <div className="app-header__actions" ref={menuContainerRef}>
-        {/* La información del usuario ahora es el botón que abre el menú */}
         <button className="app-header__user-trigger" onClick={() => setIsMenuOpen(!isMenuOpen)}>
           <img src={user.avatar_url} alt="Avatar del usuario" className="app-header__avatar" />
           <span className="app-header__username">{user.login}</span>
           <ChevronDownIcon />
         </button>
         
-        {/* El menú se renderiza condicionalmente y se le pasa una función para cerrarse */}
         {isMenuOpen && (
           <SettingsMenu
             onManageRepos={onManageRepos}
             onManageAlerts={onManageAlerts}
             onLogout={onLogout}
             onClose={() => setIsMenuOpen(false)}
-            onOpenSettings={onOpenSettings} // <-- 3. PÁSALO al SettingsMenu
+            onOpenSettings={onOpenSettings}
+            onClearAllNotifications={onClearAllNotifications}
           />
         )}
       </div>

@@ -1,23 +1,29 @@
 import './SettingsMenu.css';
 
-// La interfaz ahora incluye una función 'onClose' y 'onOpenSettings'
+// La interfaz ahora incluye la nueva función para limpiar notificaciones
 interface SettingsMenuProps {
   onManageRepos: () => void;
   onManageAlerts: () => void;
   onLogout: () => void;
   onClose: () => void;
   onOpenSettings: () => void;
+  onClearAllNotifications: () => void;
 }
 
-export const SettingsMenu = ({ onManageRepos, onManageAlerts, onLogout, onClose, onOpenSettings }: SettingsMenuProps) => {
+export const SettingsMenu = ({ 
+  onManageRepos, 
+  onManageAlerts, 
+  onLogout, 
+  onClose, 
+  onOpenSettings,
+  onClearAllNotifications 
+}: SettingsMenuProps) => {
 
-  // Esta función auxiliar ejecuta la acción y luego invoca el cierre del menú
   const handleAction = (action: () => void) => {
     action();
     onClose();
   };
 
-  // El componente ahora es solo la lista de opciones (el panel del menú)
   return (
     <ul className="settings-menu">
       <li>
@@ -28,6 +34,11 @@ export const SettingsMenu = ({ onManageRepos, onManageAlerts, onLogout, onClose,
       <li>
         <button className="settings-menu-item" onClick={() => handleAction(onManageAlerts)}>
           Configurar Alertas
+        </button>
+      </li>
+      <li>
+        <button className="settings-menu-item clear-notifications" onClick={() => handleAction(onClearAllNotifications)}>
+          Limpiar todas las notificaciones
         </button>
       </li>
       <li>

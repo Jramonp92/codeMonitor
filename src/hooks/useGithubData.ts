@@ -94,19 +94,15 @@ export function useGithubData() {
     });
   }, []);
   
-  // --- INICIO DE CAMBIOS ---
-
-  // 1. Extraemos la lógica para buscar ramas a su propia función con `useCallback`.
   const fetchBranchesForRepo = useCallback(() => {
     if (selectedRepo) {
       setAreBranchesLoading(true);
-      // No limpiamos las ramas aquí para que no parpadee la UI durante la recarga
       chrome.runtime.sendMessage({ type: 'getBranches', repoFullName: selectedRepo }, (response) => {
         if (response?.success) {
           setBranches(response.data || []);
         } else {
           console.error(`Error fetching branches for ${selectedRepo}:`, response?.error);
-          setBranches([]); // Si falla, limpiamos las ramas
+          setBranches([]);
         }
         setAreBranchesLoading(false);
       });
@@ -117,7 +113,6 @@ export function useGithubData() {
   }, [selectedRepo]);
 
 
-  // Efecto 1: Seleccionar la rama por defecto.
   useEffect(() => {
     if (selectedRepo) {
       const currentRepo = managedRepos.find(repo => repo.full_name === selectedRepo);
@@ -127,13 +122,10 @@ export function useGithubData() {
     }
   }, [selectedRepo, managedRepos]);
   
-  // Efecto 2: Cargar la lista de ramas. Ahora solo llama a la nueva función.
   useEffect(() => {
     fetchBranchesForRepo();
-  }, [fetchBranchesForRepo]); // Depende de la función memoizada.
+  }, [fetchBranchesForRepo]); 
   
-  // --- FIN DE CAMBIOS ---
-
   const handleTabVisibilityChange = useCallback((tab: TabKey, isVisible: boolean) => {
     const newVisibility = { ...tabVisibility, [tab]: isVisible };
     setTabVisibility(newVisibility);
@@ -319,13 +311,10 @@ export function useGithubData() {
     fetchDataForTab();
   }, [fetchDataForTab]);
 
-  // --- INICIO DE CAMBIOS ---
-  // 2. Modificamos la función de refrescar para que llame a ambas funciones de carga.
   const handleRefresh = useCallback(() => {
     fetchDataForTab();
     fetchBranchesForRepo();
   }, [fetchDataForTab, fetchBranchesForRepo]);
-  // --- FIN DE CAMBIOS ---
 
   const handleTabChange = (newTab: Tab) => {
     setActiveTab(newTab);
@@ -378,6 +367,20 @@ export function useGithubData() {
     setCurrentPage(1);
   };
 
+  const clearAllNotifications = useCallback(() => {
+    if (!user) return;
+    const notificationsKey = `notifications_${user.login}`;
+    
+    setActiveNotifications({});
+
+    chrome.storage.local.set({ [notificationsKey]: {} });
+
+    chrome.action.setBadgeText({ text: '' });
+
+  }, [user]);
+
+
+
   return {
     user, allRepos, managedRepos, addRepoToManagedList, removeRepoFromManagedList,
     selectedRepo, setSelectedRepo, isContentLoading, activeTab, issueStateFilter,
@@ -392,5 +395,6 @@ export function useGithubData() {
     selectedBranch,
     areBranchesLoading,
     handleBranchChange,
+    clearAllNotifications,
   };
 }

@@ -51,12 +51,13 @@ function App() {
     handleFrequencyChange,
     tabVisibility,
     handleTabVisibilityChange,
-    // --- INICIO DE CAMBIOS ---
-    // 1. Extraemos los estados y manejadores de las ramas.
     branches,
     selectedBranch,
     areBranchesLoading,
     handleBranchChange,
+    // --- INICIO DE CAMBIOS ---
+    // 1. Extraemos la nueva función del hook.
+    clearAllNotifications,
     // --- FIN DE CAMBIOS ---
   } = useGithubData();
 
@@ -113,6 +114,7 @@ function App() {
               onManageAlerts={() => setIsAlertsModalOpen(true)}
               onLogout={handleLogout}
               onOpenSettings={() => setActiveView('settings')}
+              onClearAllNotifications={clearAllNotifications}
             />
 
             <RepoToolbar
@@ -141,13 +143,10 @@ function App() {
                 actionStatusFilter={actionStatusFilter}
                 handleActionStatusChange={handleActionStatusChange}
                 tabVisibility={tabVisibility}
-                // --- INICIO DE CAMBIOS ---
-                // 2. Pasamos todas las props nuevas al TabContainer.
                 branches={branches}
                 selectedBranch={selectedBranch}
                 areBranchesLoading={areBranchesLoading}
                 handleBranchChange={handleBranchChange}
-                // --- FIN DE CAMBIOS ---
             />
 
             <div className={isContentLoading ? 'content-revalidating' : ''}>
