@@ -52,6 +52,9 @@ export function AlertsManagerModal({
               <option value="10">10 minutos</option>
               <option value="30">30 minutos</option>
               <option value="60">1 hora</option>
+              <option value="120">2 horas</option>
+              <option value="720">12 horas</option>
+              <option value="1440">1 día</option>
             </select>
           </div>
 
