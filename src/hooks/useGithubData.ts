@@ -4,14 +4,17 @@ import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 export type TabKey = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions' | 'Releases';
 export type TabVisibility = Record<TabKey, boolean>;
 
+export interface Branch { name: string; }
 export type { Tab, IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
 
-// Interfaces (se mantienen igual)
+// Interfaces
 type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
 type IssueState = 'open' | 'closed' | 'all';
 type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
 type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
-interface Repo { id: number; name: string; full_name: string; private: boolean; owner: { login: string; } }
+
+interface Repo { id: number; name: string; full_name: string; private: boolean; owner: { login: string; }; default_branch: string; }
+
 interface CommitInfo { sha: string; html_url: string; commit: { author: { name: string; date: string; }; message: string; }; author: { login: string; avatar_url: string; html_url: string; } | null; }
 export interface GitHubUser { login: string; avatar_url: string; html_url: string; }
 interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; closed_at: string | null; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
@@ -52,6 +55,9 @@ export function useGithubData() {
     Releases: true,
   });
 
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>('');
+  const [areBranchesLoading, setAreBranchesLoading] = useState<boolean>(false);
 
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
@@ -87,28 +93,57 @@ export function useGithubData() {
       }
     });
   }, []);
+  
+  // --- INICIO DE LA CORRECCIÓN ---
 
-  // --- INICIO DE LA CORRECCIÓN DEL BUG ---
+  // Efecto 1: Seleccionar la rama por defecto en cuanto tengamos la información.
+  useEffect(() => {
+    if (selectedRepo) {
+      const currentRepo = managedRepos.find(repo => repo.full_name === selectedRepo);
+      if (currentRepo?.default_branch) {
+        setSelectedBranch(currentRepo.default_branch);
+      }
+    }
+  }, [selectedRepo, managedRepos]);
+  
+  // Efecto 2: Cargar la lista completa de ramas para el dropdown.
+  useEffect(() => {
+    if (selectedRepo) {
+      setAreBranchesLoading(true);
+      setBranches([]); 
+      chrome.runtime.sendMessage({ type: 'getBranches', repoFullName: selectedRepo }, (response) => {
+        if (response?.success) {
+          setBranches(response.data || []);
+        } else {
+          console.error(`Error fetching branches for ${selectedRepo}:`, response?.error);
+          setBranches([]);
+          // Ya no hacemos setSelectedBranch('') aquí para no sobreescribir la selección del efecto anterior.
+        }
+        setAreBranchesLoading(false);
+      });
+    } else {
+      setBranches([]);
+      setSelectedBranch('');
+    }
+  }, [selectedRepo]);
+  
+  // --- FIN DE LA CORRECCIÓN ---
+
   const handleTabVisibilityChange = useCallback((tab: TabKey, isVisible: boolean) => {
     const newVisibility = { ...tabVisibility, [tab]: isVisible };
     setTabVisibility(newVisibility);
     chrome.storage.local.set({ tabVisibility: newVisibility });
 
-    // Si la pestaña que se oculta es la que está activa, busca una nueva para mostrar.
     if (!isVisible && activeTab === tab) {
       const tabOrder: TabKey[] = ['README', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'];
-      // Encuentra la primera pestaña que todavía sea visible en el nuevo estado.
       const fallbackTab = tabOrder.find(t => newVisibility[t]);
       
       if (fallbackTab) {
-        // Cambia a la nueva pestaña visible y resetea la página.
         setActiveTab(fallbackTab);
         setCurrentPage(1);
       }
     }
-  }, [tabVisibility, activeTab]); // Se añade `activeTab` a las dependencias.
-  // --- FIN DE LA CORRECCIÓN DEL BUG ---
-
+  }, [tabVisibility, activeTab]);
 
   useEffect(() => {
     if (!selectedRepo && managedRepos.length > 0) {
@@ -196,7 +231,10 @@ export function useGithubData() {
   }, [activeNotifications, user]);
   
   const fetchDataForTab = useCallback(() => {
-    if (!selectedRepo) return;
+    if (!selectedRepo || (activeTab === 'Commits' && !selectedBranch)) {
+      return;
+    }
+    
     setIsContentLoading(true);
     let message: any = { repoFullName: selectedRepo };
     if (activeTab !== 'README') {
@@ -207,7 +245,10 @@ export function useGithubData() {
 
     switch(activeTab) {
       case 'README': messageType = 'getReadme'; break;
-      case 'Commits': messageType = 'getCommits'; break;
+      case 'Commits': 
+        messageType = 'getCommits';
+        message.branch = selectedBranch;
+        break;
       case 'Issues': 
         messageType = 'getIssues';
         message.state = issueStateFilter;
@@ -267,7 +308,7 @@ export function useGithubData() {
         }
         setIsContentLoading(false);
     });
-  }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter]);
+  }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter, selectedBranch]);
 
   useEffect(() => {
     fetchDataForTab();
@@ -277,6 +318,11 @@ export function useGithubData() {
 
   const handleTabChange = (newTab: Tab) => {
     setActiveTab(newTab);
+    setCurrentPage(1);
+  };
+
+  const handleBranchChange = (newBranch: string) => {
+    setSelectedBranch(newBranch);
     setCurrentPage(1);
   };
 
@@ -331,5 +377,9 @@ export function useGithubData() {
     handleAlertSettingsChange, handleFrequencyChange,
     tabVisibility,
     handleTabVisibilityChange,
+    branches,
+    selectedBranch,
+    areBranchesLoading,
+    handleBranchChange,
   };
 }

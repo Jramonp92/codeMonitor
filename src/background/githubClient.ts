@@ -7,70 +7,98 @@ async function getAuthToken() {
 const GITHUB_API_URL = "https://api.github.com";
 const ITEMS_PER_PAGE = 7;
 
-// Helper para normalizar los resultados de la API de búsqueda de issues/prs
 const normalizePRData = (item: any) => ({
     ...item,
     merged_at: item.pull_request?.merged_at || null,
 });
 
-// --- NUEVA FUNCIÓN ---
-// Obtiene el contenido del README para un repositorio.
 export async function fetchReadme(repoFullName: string) {
     const token = await getAuthToken();
-    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/readme`, {
+    const response: Response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/readme`, {
         headers: { 
             Authorization: `Bearer ${token}`,
-            // Usamos el formato 'html' para que GitHub nos devuelva el README renderizado.
             Accept: 'application/vnd.github.html+json',
         },
     });
     if (!response.ok) throw new Error(`Failed to fetch README for ${repoFullName}`);
-    // La respuesta directa es el contenido HTML del README.
-    const readmeHtml = await response.text();
+    const readmeHtml: string = await response.text();
     return readmeHtml;
 }
 
 export async function fetchRepositories() {
     const token = await getAuthToken();
-    const response = await fetch(`${GITHUB_API_URL}/user/repos?per_page=100`, {
+    const response: Response = await fetch(`${GITHUB_API_URL}/user/repos?per_page=100`, {
         headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) throw new Error("Failed to fetch repositories");
-    const repos = await response.json();
+    const repos: any[] = await response.json();
     const simplifiedRepos = repos.map((repo: any) => ({
         id: repo.id,
         full_name: repo.full_name,
         name: repo.name,
         private: repo.private,
         owner: { login: repo.owner.login },
+        default_branch: repo.default_branch,
     }));
     return simplifiedRepos;
 }
 
 export async function fetchRepoDetails(repoFullName: string) {
     const token = await getAuthToken();
-    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}`, {
+    const response: Response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}`, {
         headers: { Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' },
     });
     if (!response.ok) throw new Error(`Failed to fetch repository details for ${repoFullName}`);
-    const repo = await response.json();
+    const repo: any = await response.json();
     return {
         id: repo.id,
         full_name: repo.full_name,
         name: repo.name,
         private: repo.private,
         owner: { login: repo.owner.login },
+        default_branch: repo.default_branch,
     };
 }
 
-export async function fetchCommits(repoFullName: string, page: number = 1) {
+// --- INICIO DE CORRECCIÓN DE TIPOS ---
+export async function fetchBranches(repoFullName: string) {
     const token = await getAuthToken();
-    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/commits?per_page=${ITEMS_PER_PAGE}&page=${page}`, {
+    let allBranches: any[] = [];
+    let nextPageUrl: string | null = `${GITHUB_API_URL}/repos/${repoFullName}/branches?per_page=100`;
+
+    while (nextPageUrl) {
+        // Añadimos el tipo explícito 'Response'
+        const response: Response = await fetch(nextPageUrl, {
+            headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to fetch branches. Status: ${response.status}`);
+        }
+
+        const pageBranches: any[] = await response.json();
+        allBranches = [...allBranches, ...pageBranches];
+
+        // Añadimos el tipo explícito 'string | null'
+        const linkHeader: string | null = response.headers.get('Link');
+        // Añadimos el tipo explícito para el resultado del 'match'
+        const nextLinkMatch: RegExpMatchArray | null | undefined = linkHeader?.match(/<([^>]+)>;\s*rel="next"/);
+        
+        nextPageUrl = nextLinkMatch ? nextLinkMatch[1] : null;
+    }
+    
+    return allBranches.map((branch: any) => ({ name: branch.name }));
+}
+// --- FIN DE CORRECCIÓN DE TIPOS ---
+
+export async function fetchCommits(repoFullName: string, branchName: string, page: number = 1) {
+    const token = await getAuthToken();
+    const response: Response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/commits?sha=${branchName}&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch commits.`);
-    const items = await response.json();
-    const linkHeader = response.headers.get('Link');
+    const items: any[] = await response.json();
+    const linkHeader: string | null = response.headers.get('Link');
     if (linkHeader) {
         const lastLinkMatch = linkHeader.match(/<.*?page=(\d+)>; rel="last"/);
         if (lastLinkMatch) return { items, totalPages: parseInt(lastLinkMatch[1], 10) };
@@ -86,23 +114,23 @@ export async function fetchIssues(repoFullName: string, state: 'open' | 'closed'
     if (state !== 'all') {
         query += ` is:${state}`;
     }
-    const response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
+    const response: Response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch issues.`);
-    const data = await response.json();
+    const data: any = await response.json();
     const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE);
     return { items: data.items, totalPages: totalPages > 0 ? totalPages : 1 };
 }
 
 export async function fetchPullRequests(repoFullName: string, state: 'open' | 'all' = 'all', page: number = 1) {
     const token = await getAuthToken();
-    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/pulls?state=${state}&sort=created&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
+    const response: Response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/pulls?state=${state}&sort=created&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch pull requests.`);
-    const items = await response.json();
-    const linkHeader = response.headers.get('Link');
+    const items: any[] = await response.json();
+    const linkHeader: string | null = response.headers.get('Link');
     if (linkHeader) {
         const lastLinkMatch = linkHeader.match(/<.*?page=(\d+)>; rel="last"/);
         if (lastLinkMatch) return { items, totalPages: parseInt(lastLinkMatch[1], 10) };
@@ -115,11 +143,11 @@ export async function fetchPullRequests(repoFullName: string, state: 'open' | 'a
 export async function fetchMergedPullRequests(repoFullName: string, page: number = 1) {
     const token = await getAuthToken();
     const query = `is:pr is:merged repo:${repoFullName}`;
-    const response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
+    const response: Response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch merged PRs.`);
-    const data = await response.json();
+    const data: any = await response.json();
     const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE);
     const items = data.items.map(normalizePRData);
     return { items, totalPages: totalPages > 0 ? totalPages : 1 };
@@ -128,11 +156,11 @@ export async function fetchMergedPullRequests(repoFullName: string, page: number
 export async function fetchClosedUnmergedPullRequests(repoFullName: string, page: number = 1) {
     const token = await getAuthToken();
     const query = `is:pr is:closed is:unmerged repo:${repoFullName}`;
-    const response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
+    const response: Response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=updated&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch closed and unmerged PRs.`);
-    const data = await response.json();
+    const data: any = await response.json();
     const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE);
     const items = data.items.map(normalizePRData);
     return { items, totalPages: totalPages > 0 ? totalPages : 1 };
@@ -145,11 +173,11 @@ export async function fetchMyAssignedPullRequests(repoFullName: string, page: nu
     if (!token || !user || !user.login) throw new Error('Authentication token or user info not found.');
     const username = user.login;
     const query = `is:pr state:open repo:${repoFullName} assignee:${username}`;
-    const response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=created&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
+    const response: Response = await fetch(`${GITHUB_API_URL}/search/issues?q=${encodeURIComponent(query)}&sort=created&direction=desc&per_page=${ITEMS_PER_PAGE}&page=${page}`, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch assigned PRs.`);
-    const data = await response.json();
+    const data: any = await response.json();
     const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE);
     const items = data.items.map(normalizePRData);
     return { items, totalPages: totalPages > 0 ? totalPages : 1 };
@@ -161,11 +189,11 @@ export async function fetchActions(repoFullName: string, status?: string, page: 
     if (status && status !== 'all') {
         url += `&status=${status}`;
     }
-    const response = await fetch(url, {
+    const response: Response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch actions.`);
-    const data = await response.json();
+    const data: any = await response.json();
     const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE);
     return {
         items: data.workflow_runs,
@@ -175,12 +203,12 @@ export async function fetchActions(repoFullName: string, status?: string, page: 
 
 export async function fetchReleases(repoFullName: string, page: number = 1) {
     const token = await getAuthToken();
-    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/releases?per_page=${ITEMS_PER_PAGE}&page=${page}`, {
+    const response: Response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/releases?per_page=${ITEMS_PER_PAGE}&page=${page}`, {
       headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
     if (!response.ok) throw new Error(`Failed to fetch releases.`);
-    const items = await response.json();
-    const linkHeader = response.headers.get('Link');
+    const items: any[] = await response.json();
+    const linkHeader: string | null = response.headers.get('Link');
     if (linkHeader) {
         const lastLinkMatch = linkHeader.match(/<.*?page=(\d+)>; rel="last"/);
         if (lastLinkMatch) return { items, totalPages: parseInt(lastLinkMatch[1], 10) };

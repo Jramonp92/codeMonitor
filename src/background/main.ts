@@ -1,9 +1,10 @@
 import { login, logout } from './auth';
-import { initializeAlarms } from './alarms'; // <-- 1. Importamos la función
+import { initializeAlarms } from './alarms';
 import { 
   fetchReadme,
   fetchRepositories, 
   fetchRepoDetails,
+  fetchBranches, 
   fetchCommits, 
   fetchIssues, 
   fetchPullRequests,
@@ -14,7 +15,6 @@ import {
   fetchReleases
 } from './githubClient';
 
-// 2. Iniciamos el sistema de alarmas tan pronto como el service worker arranca.
 initializeAlarms();
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -99,12 +99,31 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  // --- INICIO DE CAMBIOS ---
+  
+  // 2. Añadimos un nuevo manejador para la petición de ramas
+  if (message.type === 'getBranches') {
+    (async () => {
+      try {
+        const { repoFullName } = message;
+        if (!repoFullName) throw new Error('repoFullName is required.');
+        const branches = await fetchBranches(repoFullName); 
+        sendResponse({ success: true, data: branches });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+
+  // 3. Modificamos el manejador de 'getCommits' para que reciba el nombre de la rama
   if (message.type === 'getCommits') {
     (async () => {
       try {
-        const { repoFullName, page } = message;
+        const { repoFullName, branch, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
-        const data = await fetchCommits(repoFullName, page); 
+        if (!branch) throw new Error('branch is required.'); // La rama ahora es necesaria
+        const data = await fetchCommits(repoFullName, branch, page); 
         sendResponse({ success: true, data });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
@@ -112,6 +131,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })();
     return true;
   }
+  // --- FIN DE CAMBIOS ---
 
   if (message.type === 'getIssues') {
     (async () => {
