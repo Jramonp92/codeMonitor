@@ -49,10 +49,14 @@ function App() {
     alertFrequency,
     handleAlertSettingsChange,
     handleFrequencyChange,
-    // --- INICIO DE CAMBIOS ---
-    // 1. Extraemos el nuevo estado y la función del hook.
     tabVisibility,
     handleTabVisibilityChange,
+    // --- INICIO DE CAMBIOS ---
+    // 1. Extraemos los estados y manejadores de las ramas.
+    branches,
+    selectedBranch,
+    areBranchesLoading,
+    handleBranchChange,
     // --- FIN DE CAMBIOS ---
   } = useGithubData();
 
@@ -136,9 +140,13 @@ function App() {
                 handlePrFilterChange={handlePrFilterChange}
                 actionStatusFilter={actionStatusFilter}
                 handleActionStatusChange={handleActionStatusChange}
-                // --- INICIO DE CAMBIOS ---
-                // 2. Pasamos el objeto de visibilidad al TabContainer.
                 tabVisibility={tabVisibility}
+                // --- INICIO DE CAMBIOS ---
+                // 2. Pasamos todas las props nuevas al TabContainer.
+                branches={branches}
+                selectedBranch={selectedBranch}
+                areBranchesLoading={areBranchesLoading}
+                handleBranchChange={handleBranchChange}
                 // --- FIN DE CAMBIOS ---
             />
 
@@ -162,14 +170,11 @@ function App() {
             )}
           </>
         ) : (
-          // --- INICIO DE CAMBIOS ---
-          // 3. Pasamos el estado y la función a la vista de Settings.
           <SettingsView
             onClose={() => setActiveView('main')}
             tabVisibility={tabVisibility}
             onTabVisibilityChange={handleTabVisibilityChange}
           />
-          // --- FIN DE CAMBIOS ---
         )}
       </div>
     </AppShell>

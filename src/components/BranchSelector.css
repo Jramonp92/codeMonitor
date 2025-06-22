@@ -1,0 +1,94 @@
+.branch-selector-container {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid #d0d7de;
+    background-color: #f6f8fa;
+    gap: 8px;
+    margin-bottom: 1rem
+  }
+  
+  .branch-selector-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9em;
+    font-weight: 500;
+    color: #57606a;
+  }
+  
+  /* --- INICIO DE CAMBIOS: Nuevos estilos para el dropdown con búsqueda --- */
+  
+  /* Contenedor para el input y la lista, necesario para el posicionamiento */
+  .searchable-input-container {
+    position: relative;
+    flex-grow: 1; /* Permite que el input ocupe el espacio disponible */
+  }
+  
+  /* El input de búsqueda, reemplaza al <select> */
+  .branch-search-input {
+    width: 100%;
+    padding: 4px 8px;
+    font-size: 0.9em;
+    border-radius: 6px;
+    border: 1px solid #d0d7de;
+    background-color: #ffffff;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    box-sizing: border-box; /* Asegura que el padding no desborde el contenedor */
+  }
+  
+  .branch-search-input:hover {
+    border-color: #a0a0a0;
+  }
+  
+  .branch-search-input:disabled {
+    background-color: #f3f3f3;
+    color: #888;
+    cursor: not-allowed;
+  }
+  
+  /* La lista desplegable de resultados */
+  .branch-list {
+    position: absolute;
+    top: 105%; /* Ligeramente debajo del input */
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #d0d7de;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    list-style: none;
+    padding: 4px 0;
+    margin: 0;
+    max-height: 250px; /* Altura máxima antes de mostrar scroll */
+    overflow-y: auto;
+    z-index: 100;
+  }
+  
+  .branch-list li {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .branch-list li:hover {
+    background-color: #f6f8fa;
+  }
+  
+  .branch-list li.no-results {
+    color: #57606a;
+    cursor: default;
+  }
+  
+  /* El checkmark para indicar la rama seleccionada actualmente */
+  .check-mark {
+    color: #2da44e; /* Verde de éxito */
+    font-weight: bold;
+  }
+  
+  /* --- FIN DE CAMBIOS --- */
