@@ -220,15 +220,16 @@ export function useGithubData() {
     });
   };
   
-  // --- INICIO DE CAMBIOS ---
   const clearNotificationsForTab = useCallback((repo: string, tab: Tab) => {
+    // --- INICIO DE CAMBIOS ---
+    // 1. La limpieza de 'fileChanges' ya no se gestiona aquí para evitar el borrado prematuro.
     const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
-      'Code': ['fileChanges'],
       'Issues': ['issues'],
       'PRs': ['newPRs', 'assignedPRs'],
       'Actions': ['actions'],
       'Releases': ['newReleases']
     };
+    // --- FIN DE CAMBIOS ---
     const keysToClear = notificationMap[tab];
     
     if (!keysToClear || !user || !activeNotifications[repo]) return;
@@ -264,8 +265,53 @@ export function useGithubData() {
     setViewedFile(null);
   }, []);
 
+  // --- INICIO DE CAMBIOS ---
+  const clearSingleFileNotification = useCallback((repo: string, path: string, branch: string) => {
+    if (!user || !activeNotifications[repo]?.fileChanges) return;
+
+    const newNotifications = JSON.parse(JSON.stringify(activeNotifications));
+    const repoFileChanges = newNotifications[repo].fileChanges || [];
+    
+    const initialCount = repoFileChanges.length;
+    const updatedFileChanges = repoFileChanges.filter(
+      (notif: any) => notif.path !== path || notif.branch !== branch
+    );
+
+    if (updatedFileChanges.length === initialCount) {
+        return; // No se encontró ninguna notificación que limpiar
+    }
+
+    if (updatedFileChanges.length === 0) {
+      delete newNotifications[repo].fileChanges;
+    } else {
+      newNotifications[repo].fileChanges = updatedFileChanges;
+    }
+    
+    if (Object.keys(newNotifications[repo]).length === 0) {
+      delete newNotifications[repo];
+    }
+
+    setActiveNotifications(newNotifications);
+    chrome.storage.local.set({ [`notifications_${user.login}`]: newNotifications });
+
+    let newTotalCount = 0;
+    Object.values(newNotifications).forEach(repoNotifications => {
+      if (repoNotifications) {
+        Object.values(repoNotifications).forEach(notificationsArray => {
+          if (Array.isArray(notificationsArray)) {
+            newTotalCount += notificationsArray.length;
+          }
+        });
+      }
+    });
+
+  }, [activeNotifications, user]);
+
   const handleFileSelect = useCallback((filePath: string) => {
     if (!selectedRepo || !selectedBranch) return;
+    
+    // 2. Limpiamos la notificación específica de este archivo al seleccionarlo.
+    clearSingleFileNotification(selectedRepo, filePath, selectedBranch);
     
     setIsContentLoading(true);
     chrome.runtime.sendMessage({ type: 'getFileContent', repoFullName: selectedRepo, branch: selectedBranch, path: filePath }, (response) => {
@@ -277,7 +323,8 @@ export function useGithubData() {
       }
       setIsContentLoading(false);
     });
-  }, [selectedRepo, selectedBranch]);
+  }, [selectedRepo, selectedBranch, clearSingleFileNotification]);
+  // --- FIN DE CAMBIOS ---
 
   const fetchDataForTab = useCallback(() => {
     if (!selectedRepo || ((activeTab === 'Commits' || activeTab === 'Code') && !selectedBranch)) {
@@ -397,7 +444,10 @@ export function useGithubData() {
   };
 
   useEffect(() => {
-    if (!selectedRepo) return;
+    // --- INICIO DE CAMBIOS ---
+    // 4. Modificamos este useEffect para que no actúe en la pestaña 'Code'
+    if (!selectedRepo || activeTab === 'Code') return;
+    // --- FIN DE CAMBIOS ---
 
     const timer = setTimeout(() => {
       clearNotificationsForTab(selectedRepo, activeTab);
