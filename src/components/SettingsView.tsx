@@ -1,8 +1,5 @@
 import './SettingsView.css';
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos los tipos que necesitamos desde el hook.
 import type { TabVisibility, TabKey } from '../hooks/useGithubData';
-// --- FIN DE CAMBIOS ---
 
 // --- Iconos ---
 const BackArrowIcon = () => (
@@ -20,17 +17,17 @@ const ShieldIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
 );
 
-// --- INICIO DE CAMBIOS ---
-// 2. Actualizamos la interfaz de props.
 interface SettingsViewProps {
   onClose: () => void;
   tabVisibility: TabVisibility;
   onTabVisibilityChange: (tab: TabKey, isVisible: boolean) => void;
 }
 
-// 3. Creamos una constante para mapear fácilmente las pestañas en la UI.
+// --- INICIO DE CAMBIOS ---
+// 1. Añadimos la pestaña 'Code' a la lista de toggles
 const configurableTabs: { id: TabKey, label: string }[] = [
     { id: 'README', label: 'README' },
+    { id: 'Code', label: 'Code' },
     { id: 'Commits', label: 'Commits' },
     { id: 'Issues', label: 'Issues' },
     { id: 'PRs', label: 'Pull Requests' },
@@ -72,8 +69,6 @@ export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange }: 
           </div>
         </section>
         
-        {/* --- INICIO DE CAMBIOS --- */}
-        {/* 4. Añadimos la nueva sección para gestionar la visibilidad de las pestañas. */}
         <section className="settings-section">
           <h3><span role="img" aria-label="pestañas">📑</span> Pestañas Visibles</h3>
           <p>Elige qué pestañas mostrar en la vista principal.</p>
@@ -93,7 +88,6 @@ export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange }: 
             ))}
           </div>
         </section>
-        {/* --- FIN DE CAMBIOS --- */}
 
         <section className="settings-section">
           <h3><span role="img" aria-label="libro">📖</span> Legal</h3>
