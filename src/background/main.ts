@@ -1,3 +1,5 @@
+// src/background/main.ts
+
 import { login, logout } from './auth';
 import { initializeAlarms } from './alarms';
 import { 
@@ -12,10 +14,22 @@ import {
   fetchClosedUnmergedPullRequests,
   fetchMyAssignedPullRequests,
   fetchActions,
-  fetchReleases
+  fetchReleases,
+  fetchDirectoryContent,
+  fetchFileContent
 } from './githubClient';
 
 initializeAlarms();
+
+// --- INICIO DE CORRECCIÓN ---
+// El listener para abrir el panel lateral al hacer clic en el icono
+// debe estar en el nivel superior, no dentro del listener de mensajes.
+chrome.action.onClicked.addListener(async (tab) => {
+  if (tab.windowId) {
+    await chrome.sidePanel.open({ windowId: tab.windowId });
+  }
+});
+// --- FIN DE CORRECCIÓN ---
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
@@ -99,9 +113,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- INICIO DE CAMBIOS ---
-  
-  // 2. Añadimos un nuevo manejador para la petición de ramas
   if (message.type === 'getBranches') {
     (async () => {
       try {
@@ -116,13 +127,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // 3. Modificamos el manejador de 'getCommits' para que reciba el nombre de la rama
   if (message.type === 'getCommits') {
     (async () => {
       try {
         const { repoFullName, branch, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
-        if (!branch) throw new Error('branch is required.'); // La rama ahora es necesaria
+        if (!branch) throw new Error('branch is required.');
         const data = await fetchCommits(repoFullName, branch, page); 
         sendResponse({ success: true, data });
       } catch (error: any) {
@@ -131,7 +141,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })();
     return true;
   }
-  // --- FIN DE CAMBIOS ---
 
   if (message.type === 'getIssues') {
     (async () => {
@@ -230,10 +239,35 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })();
     return true;
   }
-});
 
-chrome.action.onClicked.addListener(async (tab) => {
-  if (tab.windowId) {
-    await chrome.sidePanel.open({ windowId: tab.windowId });
+  if (message.type === 'getDirectoryContent') {
+    (async () => {
+      try {
+        const { repoFullName, branch, path } = message;
+        if (!repoFullName) throw new Error('repoFullName is required.');
+        if (!branch) throw new Error('branch is required.');
+        const content = await fetchDirectoryContent(repoFullName, branch, path || '');
+        sendResponse({ success: true, data: content });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === 'getFileContent') {
+    (async () => {
+      try {
+        const { repoFullName, branch, path } = message;
+        if (!repoFullName) throw new Error('repoFullName is required.');
+        if (!branch) throw new Error('branch is required.');
+        if (!path) throw new Error('path is required for getFileContent.');
+        const content = await fetchFileContent(repoFullName, path, branch);
+        sendResponse({ success: true, data: content });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
   }
 });

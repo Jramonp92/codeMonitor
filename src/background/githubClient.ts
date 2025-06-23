@@ -1,3 +1,4 @@
+// src/background/githubClient.ts
 async function getAuthToken() {
     const result = await chrome.storage.local.get('token');
     if (!result.token) throw new Error('No authentication token found.');
@@ -216,4 +217,42 @@ export async function fetchReleases(repoFullName: string, page: number = 1) {
         return { items, totalPages: page };
     }
     return { items, totalPages: page };
+}
+
+
+/**
+ * Obtiene el contenido de un directorio en una rama específica.
+ * @param repoFullName - El nombre completo del repositorio (ej: "owner/repo").
+ * @param branchName - El nombre de la rama.
+ * @param path - La ruta del directorio a explorar.
+ * @returns Una promesa que se resuelve con el contenido del directorio.
+ */
+export async function fetchDirectoryContent(repoFullName: string, branchName: string, path: string) {
+    const token = await getAuthToken();
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/contents/${path}?ref=${branchName}`, {
+        headers: { Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' },
+    });
+    if (!response.ok) throw new Error(`Failed to fetch content for path: ${path}`);
+    return response.json();
+}
+
+/**
+ * Obtiene el contenido de un fichero específico.
+ * @param repoFullName - El nombre completo del repositorio (ej: "owner/repo").
+ * @param filePath - La ruta del archivo a obtener.
+ * @param branchName - El nombre de la rama donde se encuentra el archivo.
+ * @returns Una promesa que se resuelve con el contenido del archivo en formato de texto.
+ */
+export async function fetchFileContent(repoFullName: string, filePath: string, branchName:string) {
+    const token = await getAuthToken();
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/contents/${filePath}?ref=${branchName}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            // Usamos el header 'Accept' para obtener el contenido en formato raw/texto.
+            Accept: 'application/vnd.github.raw', 
+            'X-GitHub-Api-Version': '2022-11-28'
+        },
+    });
+    if (!response.ok) throw new Error(`Failed to fetch file: ${filePath}`);
+    return response.text();
 }

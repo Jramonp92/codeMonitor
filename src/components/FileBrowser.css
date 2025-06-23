@@ -1,0 +1,76 @@
+/* src/components/FileBrowser.css */
+
+.file-browser-container {
+    padding: 8px;
+    background-color: var(--vscode-sideBar-background);
+    color: var(--vscode-foreground);
+    font-size: 14px;
+  }
+    
+  .breadcrumbs {
+    margin-bottom: 12px;
+    padding: 6px 8px;
+    background-color: var(--vscode-editorGroupHeader-tabsBackground);
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow-x: auto;
+    /* --- INICIO DE CAMBIOS --- */
+    /* 1. Aseguramos la alineación a la izquierda */
+    text-align: left; 
+    /* --- FIN DE CAMBIOS --- */
+  }
+    
+  .breadcrumb-item {
+    cursor: pointer;
+    /* --- INICIO DE CAMBIOS --- */
+    /* 2. Usamos un azul más explícito para los links y un poco más de grosor */
+    color: #007acc; 
+    font-weight: 500;
+    /* --- FIN DE CAMBIOS --- */
+  }
+    
+  .breadcrumb-item:hover {
+    text-decoration: underline;
+  }
+    
+  .file-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+    
+  .file-item {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.1s ease-in-out;
+  }
+    
+  .file-item:hover {
+    background-color: var(--vscode-list-hoverBackground);
+  }
+    
+  .item-icon {
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    color: var(--vscode-icon-foreground);
+    /* --- INICIO DE CAMBIOS --- */
+    /* 3. Aumentamos ligeramente el tamaño de los iconos */
+    font-size: 1.1em;
+    /* --- FIN DE CAMBIOS --- */
+  }
+    
+  .item-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+    
+  .empty-directory {
+    padding: 10px 8px;
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+  }

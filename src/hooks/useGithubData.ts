@@ -1,14 +1,28 @@
+// src/hooks/useGithubData.ts
+
 import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 
-export type TabKey = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions' | 'Releases';
+export type TabKey = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions' | 'Releases';
+export type Tab = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
+
+export interface DirectoryContentItem {
+  name: string;
+  path: string;
+  type: 'file' | 'dir';
+  sha: string;
+}
+
+export interface ViewedFile {
+  path: string;
+  content: string;
+}
+
 export type TabVisibility = Record<TabKey, boolean>;
 
 export interface Branch { name: string; }
-export type { Tab, IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
+export type { IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
 
-// Interfaces
-type Tab = 'README' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
 type IssueState = 'open' | 'closed' | 'all';
 type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
 type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | 'waiting' | 'cancelled';
@@ -48,6 +62,7 @@ export function useGithubData() {
   
   const [tabVisibility, setTabVisibility] = useState<TabVisibility>({
     README: true,
+    Code: true, 
     Commits: true,
     Issues: true,
     PRs: true,
@@ -58,6 +73,10 @@ export function useGithubData() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [areBranchesLoading, setAreBranchesLoading] = useState<boolean>(false);
+
+  const [currentPath, setCurrentPath] = useState('');
+  const [directoryContent, setDirectoryContent] = useState<DirectoryContentItem[]>([]);
+  const [viewedFile, setViewedFile] = useState<ViewedFile | null>(null);
 
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
@@ -119,6 +138,8 @@ export function useGithubData() {
       if (currentRepo?.default_branch) {
         setSelectedBranch(currentRepo.default_branch);
       }
+      setCurrentPath('');
+      setViewedFile(null);
     }
   }, [selectedRepo, managedRepos]);
   
@@ -132,7 +153,7 @@ export function useGithubData() {
     chrome.storage.local.set({ tabVisibility: newVisibility });
 
     if (!isVisible && activeTab === tab) {
-      const tabOrder: TabKey[] = ['README', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'];
+      const tabOrder: TabKey[] = ['README', 'Code', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'];
       const fallbackTab = tabOrder.find(t => newVisibility[t]);
       
       if (fallbackTab) {
@@ -189,6 +210,26 @@ export function useGithubData() {
         periodInMinutes: frequency,
     });
   };
+  
+  const handlePathChange = useCallback((newPath: string) => {
+    setCurrentPath(newPath);
+    setViewedFile(null); // Al cambiar de directorio, dejamos de ver un archivo
+  }, []);
+
+  const handleFileSelect = useCallback((filePath: string) => {
+    if (!selectedRepo || !selectedBranch) return;
+    
+    setIsContentLoading(true);
+    chrome.runtime.sendMessage({ type: 'getFileContent', repoFullName: selectedRepo, branch: selectedBranch, path: filePath }, (response) => {
+      if (response.success) {
+        setViewedFile({ path: filePath, content: response.data });
+      } else {
+        console.error(`Error fetching file ${filePath}:`, response.error);
+        setViewedFile({ path: filePath, content: `Error: No se pudo cargar el archivo.` });
+      }
+      setIsContentLoading(false);
+    });
+  }, [selectedRepo, selectedBranch]);
 
   const clearNotificationsForTab = useCallback((repo: string, tab: Tab) => {
     const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
@@ -228,13 +269,13 @@ export function useGithubData() {
   }, [activeNotifications, user]);
   
   const fetchDataForTab = useCallback(() => {
-    if (!selectedRepo || (activeTab === 'Commits' && !selectedBranch)) {
+    if (!selectedRepo || ((activeTab === 'Commits' || activeTab === 'Code') && !selectedBranch)) {
       return;
     }
     
     setIsContentLoading(true);
     let message: any = { repoFullName: selectedRepo };
-    if (activeTab !== 'README') {
+    if (activeTab !== 'README' && activeTab !== 'Code') {
       message.page = currentPage;
     }
     
@@ -242,6 +283,11 @@ export function useGithubData() {
 
     switch(activeTab) {
       case 'README': messageType = 'getReadme'; break;
+      case 'Code':
+        messageType = 'getDirectoryContent';
+        message.branch = selectedBranch;
+        message.path = currentPath;
+        break;
       case 'Commits': 
         messageType = 'getCommits';
         message.branch = selectedBranch;
@@ -281,6 +327,8 @@ export function useGithubData() {
         if (response?.success) {
             if (activeTab === 'README') {
               setReadmeHtml(response.data || '');
+            } else if (activeTab === 'Code') {
+              setDirectoryContent(response.data || []);
             } else {
               const { items, totalPages: newTotalPages } = response.data;
               switch(activeTab) {
@@ -300,30 +348,46 @@ export function useGithubData() {
         } else {
             console.error(`Error fetching ${activeTab}:`, response?.error);
             setReadmeHtml('');
+            setDirectoryContent([]);
             setCommits([]); setIssues([]); setPullRequests([]); setActions([]); setReleases([]);
             setTotalPages(1); 
         }
         setIsContentLoading(false);
     });
-  }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter, selectedBranch]);
+  }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter, selectedBranch, currentPath]);
 
   useEffect(() => {
     fetchDataForTab();
   }, [fetchDataForTab]);
 
+  // --- INICIO DE CAMBIOS ---
   const handleRefresh = useCallback(() => {
-    fetchDataForTab();
+    // Si estamos viendo un archivo, refrescamos solo ese archivo.
+    if (activeTab === 'Code' && viewedFile) {
+      handleFileSelect(viewedFile.path);
+    } else {
+      // Si no, refrescamos la vista actual (lista de archivos, commits, etc.)
+      fetchDataForTab();
+    }
+    // Siempre refrescamos la lista de ramas por si ha habido cambios.
     fetchBranchesForRepo();
-  }, [fetchDataForTab, fetchBranchesForRepo]);
+  }, [activeTab, viewedFile, fetchDataForTab, fetchBranchesForRepo, handleFileSelect]);
+  // --- FIN DE CAMBIOS ---
 
   const handleTabChange = (newTab: Tab) => {
     setActiveTab(newTab);
     setCurrentPage(1);
+    if (newTab !== 'Code') {
+      setCurrentPath('');
+      setViewedFile(null);
+    }
   };
 
   const handleBranchChange = (newBranch: string) => {
     setSelectedBranch(newBranch);
     setCurrentPage(1);
+    setCurrentPath('');
+    setViewedFile(null);
   };
 
   useEffect(() => {
@@ -379,8 +443,6 @@ export function useGithubData() {
 
   }, [user]);
 
-
-
   return {
     user, allRepos, managedRepos, addRepoToManagedList, removeRepoFromManagedList,
     selectedRepo, setSelectedRepo, isContentLoading, activeTab, issueStateFilter,
@@ -396,5 +458,11 @@ export function useGithubData() {
     areBranchesLoading,
     handleBranchChange,
     clearAllNotifications,
+    currentPath,
+    directoryContent,
+    viewedFile,
+    setViewedFile, 
+    handlePathChange,
+    handleFileSelect,
   };
 }

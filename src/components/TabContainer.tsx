@@ -1,13 +1,14 @@
+// src/components/TabContainer.tsx
+
 import './TabContainer.css';
 import { FilterBar } from './FilterBar';
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos el nuevo componente y los tipos necesarios.
 import { BranchSelector } from './BranchSelector';
+// --- INICIO DE CAMBIOS ---
+// 1. Actualizamos la importación de tipos para incluir 'Code'
 import type { Tab, IssueState, PRState, ActionStatus, TabVisibility, TabKey, Branch } from '../hooks/useGithubData';
 // --- FIN DE CAMBIOS ---
 import type { ActiveNotifications } from '../background/alarms';
 
-// Actualizamos las props para incluir todo lo relacionado con las ramas.
 interface TabContainerProps {
   activeTab: Tab;
   handleTabChange: (tab: Tab) => void;
@@ -20,16 +21,16 @@ interface TabContainerProps {
   actionStatusFilter: ActionStatus;
   handleActionStatusChange: (status: ActionStatus) => void;
   tabVisibility: TabVisibility;
-  // --- INICIO DE CAMBIOS ---
-  // 2. Añadimos las nuevas props para el selector de ramas.
   branches: Branch[];
   selectedBranch: string;
   areBranchesLoading: boolean;
   handleBranchChange: (branchName: string) => void;
-  // --- FIN DE CAMBIOS ---
 }
 
-const TABS: Tab[] = ['README', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'];
+// --- INICIO DE CAMBIOS ---
+// 2. Añadimos la pestaña 'Code' en el orden solicitado
+const TABS: Tab[] = ['README', 'Code', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'];
+// --- FIN DE CAMBIOS ---
 
 const NOTIFICATION_KEY_MAP: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
   'Issues': ['issues'],
@@ -50,13 +51,10 @@ export const TabContainer = ({
   actionStatusFilter,
   handleActionStatusChange,
   tabVisibility,
-  // --- INICIO DE CAMBIOS ---
-  // 3. Recibimos las nuevas props.
   branches,
   selectedBranch,
   areBranchesLoading,
   handleBranchChange
-  // --- FIN DE CAMBIOS ---
 }: TabContainerProps) => {
   
   if (!selectedRepo) {
@@ -84,7 +82,9 @@ export const TabContainer = ({
         })}
       </div>
 
-      {activeTab === 'Commits' && (
+      {/* --- INICIO DE CAMBIOS --- */}
+      {/* 3. Mostramos el selector de rama también en la pestaña 'Code' */}
+      {(activeTab === 'Commits' || activeTab === 'Code') && (
         <BranchSelector 
           branches={branches}
           selectedBranch={selectedBranch}
@@ -92,6 +92,7 @@ export const TabContainer = ({
           isLoading={areBranchesLoading}
         />
       )}
+      {/* --- FIN DE CAMBIOS --- */}
 
 
       {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}

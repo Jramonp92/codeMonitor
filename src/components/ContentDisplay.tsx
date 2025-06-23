@@ -1,17 +1,29 @@
-// Importamos el archivo CSS
-import './ContentDisplay.css'; 
+// src/components/ContentDisplay.tsx
 
-// Componentes que se usan dentro de ContentDisplay
-import { ItemStatus } from './ItemStatus'; 
+import './ContentDisplay.css';
+import { ItemStatus } from './ItemStatus';
 
-// Tipos que necesita este componente
-import type { Tab, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo } from '../hooks/useGithubData';
+// --- INICIO DE CAMBIOS ---
+// 1. Importamos los nuevos componentes y tipos
+import { FileBrowser } from './FileBrowser';
+import { FileViewer } from './FileViewer';
+import type { 
+  Tab, 
+  IssueInfo, 
+  PullRequestInfo, 
+  ActionInfo, 
+  CommitInfo, 
+  ReleaseInfo,
+  DirectoryContentItem,
+  ViewedFile
+} from '../hooks/useGithubData';
+// --- FIN DE CAMBIOS ---
+
 import type { ActiveNotifications } from '../background/alarms';
-
-// Importamos los íconos de react-icons
 import { VscCheck, VscError, VscCircleSlash, VscLoading, VscQuestion, VscVmRunning } from 'react-icons/vsc';
 
-// Definimos las props que recibirá el componente
+// --- INICIO DE CAMBIOS ---
+// 2. Actualizamos las props para recibir todo lo relacionado con el explorador de archivos
 export interface ContentDisplayProps {
   activeTab: Tab;
   isContentLoading: boolean;
@@ -23,9 +35,15 @@ export interface ContentDisplayProps {
   actions: ActionInfo[];
   releases: ReleaseInfo[];
   activeNotifications: ActiveNotifications;
+  directoryContent: DirectoryContentItem[];
+  currentPath: string;
+  viewedFile: ViewedFile | null;
+  handlePathChange: (newPath: string) => void;
+  handleFileSelect: (filePath: string) => void;
+  setViewedFile: (file: ViewedFile | null) => void;
 }
+// --- FIN DE CAMBIOS ---
 
-// Exportamos el componente
 export const ContentDisplay = ({ 
   activeTab, 
   isContentLoading, 
@@ -36,10 +54,18 @@ export const ContentDisplay = ({
   pullRequests, 
   actions, 
   releases,
-  activeNotifications 
+  activeNotifications,
+  // --- INICIO DE CAMBIOS ---
+  // 3. Desestructuramos las nuevas props
+  directoryContent,
+  currentPath,
+  viewedFile,
+  handlePathChange,
+  handleFileSelect,
+  setViewedFile,
+  // --- FIN DE CAMBIOS ---
 }: ContentDisplayProps) => {
 
-  // --- Helpers ---
   const formatCommitDate = (dateString: string) => {
     if (!dateString) return '';
     const commitDate = new Date(dateString);
@@ -123,14 +149,12 @@ export const ContentDisplay = ({
     </ul>
   );
 
-  // --- Lógica de Renderizado ---
   if (!selectedRepo) return null;
 
-  const hasExistingData = commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0;
-
-  // --- INICIO DE LA MEJORA ---
-  // Reemplazamos los textos de carga por el spinner
-  if (isContentLoading && !hasExistingData && activeTab !== 'README') {
+  const hasDataForOtherTabs = commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0;
+  
+  // 4. Actualizamos la lógica de carga para que no afecte a la pestaña 'Code' mientras navegamos
+  if (isContentLoading && !hasDataForOtherTabs && activeTab !== 'README' && activeTab !== 'Code') {
     return (
       <div className="content-placeholder">
         <div className="spinner"></div>
@@ -138,14 +162,13 @@ export const ContentDisplay = ({
     );
   }
   
-  if (isContentLoading && activeTab === 'README') {
+  if (isContentLoading && (activeTab === 'README' || (activeTab === 'Code' && !viewedFile))) {
     return (
       <div className="content-placeholder">
         <div className="spinner"></div>
       </div>
     );
   }
-  // --- FIN DE LA MEJORA ---
     
   if (activeTab === 'README') {
     if (readmeHtml) {
@@ -153,6 +176,23 @@ export const ContentDisplay = ({
     }
     return <p className="loading-text">No se encontró un archivo README para este repositorio.</p>;
   }
+  
+  // --- INICIO DE CAMBIOS ---
+  // 5. Lógica de renderizado para la pestaña 'Code'
+  if (activeTab === 'Code') {
+    if (viewedFile) {
+      return <FileViewer file={viewedFile} onBack={() => setViewedFile(null)} />;
+    }
+    return (
+      <FileBrowser 
+        content={directoryContent}
+        currentPath={currentPath}
+        onPathChange={handlePathChange}
+        onFileSelect={handleFileSelect}
+      />
+    );
+  }
+  // --- FIN DE CAMBIOS ---
     
   const notificationsForRepo = activeNotifications[selectedRepo] || {};
   

@@ -1,3 +1,5 @@
+// src/App.tsx
+
 import { useState, useEffect } from 'react';
 import './App.css';
 import { useGithubData } from './hooks/useGithubData';
@@ -17,6 +19,8 @@ function App() {
   const [isRepoModalOpen, setIsRepoModalOpen] = useState(false);
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
 
+  // --- INICIO DE CAMBIOS ---
+  // 1. Extraemos todos los nuevos estados y funciones del hook
   const {
     user,
     allRepos,
@@ -55,11 +59,15 @@ function App() {
     selectedBranch,
     areBranchesLoading,
     handleBranchChange,
-    // --- INICIO DE CAMBIOS ---
-    // 1. Extraemos la nueva función del hook.
     clearAllNotifications,
-    // --- FIN DE CAMBIOS ---
+    directoryContent,
+    currentPath,
+    viewedFile,
+    handlePathChange,
+    handleFileSelect,
+    setViewedFile,
   } = useGithubData();
+  // --- FIN DE CAMBIOS ---
 
   useEffect(() => {
     if (user !== undefined) {
@@ -150,10 +158,12 @@ function App() {
             />
 
             <div className={isContentLoading ? 'content-revalidating' : ''}>
+              {/* --- INICIO DE CAMBIOS --- */}
+              {/* 2. Pasamos todas las nuevas props a ContentDisplay */}
               <ContentDisplay
                 activeTab={activeTab}
                 isContentLoading={isContentLoading}
-                selectedRepo={selectedRepo}
+                selectedRepo={selectedRepo!}
                 readmeHtml={readmeHtml}
                 commits={commits}
                 issues={issues}
@@ -161,10 +171,17 @@ function App() {
                 actions={actions}
                 releases={releases}
                 activeNotifications={activeNotifications}
+                directoryContent={directoryContent}
+                currentPath={currentPath}
+                viewedFile={viewedFile}
+                handlePathChange={handlePathChange}
+                handleFileSelect={handleFileSelect}
+                setViewedFile={setViewedFile}
               />
+              {/* --- FIN DE CAMBIOS --- */}
             </div>
 
-            {selectedRepo && activeTab !== 'README' && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
+            {selectedRepo && activeTab !== 'README' && activeTab !== 'Code' && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
               <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             )}
           </>
