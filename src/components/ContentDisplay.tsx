@@ -99,14 +99,10 @@ export const ContentDisplay = ({
     <ul className="item-list">
       {items.map((item) => {
         const notificationsForRepo = activeNotifications[selectedRepo] || {};
-        // --- INICIO DE CAMBIOS ---
-        // 1. Hacemos la comprobación de 'isNew' más segura a nivel de tipos.
         const isNew = notificationKeys.some(key => {
             const notifications = notificationsForRepo[key];
-            // Aseguramos que el array contiene números antes de usar 'includes'
             return Array.isArray(notifications) && (notifications as number[]).includes(item.id);
         });
-        // --- FIN DE CAMBIOS ---
         
         let dateLabel = '';
         let dateValue = '';
@@ -207,6 +203,7 @@ export const ContentDisplay = ({
         isTracked={isTracked}
         addTrackedFile={addTrackedFile}
         removeTrackedFile={removeTrackedFile}
+        activeNotifications={activeNotifications}
       />
     );
   }

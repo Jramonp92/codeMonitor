@@ -64,13 +64,10 @@ function App() {
     handlePathChange,
     handleFileSelect,
     setViewedFile,
-    // --- INICIO DE CAMBIOS ---
-    // 1. Extraemos los nuevos estados y funciones del hook
     trackedFiles,
     addTrackedFile,
     removeTrackedFile,
     isTracked,
-    // --- FIN DE CAMBIOS ---
   } = useGithubData();
 
   useEffect(() => {
@@ -107,9 +104,7 @@ function App() {
         onAdd={addRepoToManagedList}
         onRemove={removeRepoFromManagedList}
       />
-
-      {/* --- INICIO DE CAMBIOS --- */}
-      {/* 2. Pasamos las nuevas props al modal de alertas */}
+      
       <AlertsManagerModal
         isOpen={isAlertsModalOpen}
         onClose={() => setIsAlertsModalOpen(false)}
@@ -122,8 +117,7 @@ function App() {
         addTrackedFile={addTrackedFile}
         removeTrackedFile={removeTrackedFile}
       />
-      {/* --- FIN DE CAMBIOS --- */}
-
+      
       <div className="app-container">
         {activeView === 'main' ? (
           <>
@@ -169,8 +163,6 @@ function App() {
             />
 
             <div className={isContentLoading ? 'content-revalidating' : ''}>
-              {/* --- INICIO DE CAMBIOS --- */}
-              {/* 3. Pasamos las nuevas props a ContentDisplay */}
               <ContentDisplay
                 activeTab={activeTab}
                 isContentLoading={isContentLoading}
@@ -194,7 +186,6 @@ function App() {
                 addTrackedFile={addTrackedFile}
                 removeTrackedFile={removeTrackedFile}
               />
-              {/* --- FIN DE CAMBIOS --- */}
             </div>
 
             {selectedRepo && activeTab !== 'README' && activeTab !== 'Code' && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
