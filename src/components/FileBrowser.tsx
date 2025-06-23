@@ -1,14 +1,13 @@
 // src/components/FileBrowser.tsx
 
+// --- INICIO DE CAMBIOS ---
+// 1. Importamos el tipo ActiveNotifications
 import type { DirectoryContentItem } from '../hooks/useGithubData';
-import './FileBrowser.css';
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos los iconos necesarios
-import { VscFolder, VscFile, VscArrowUp, VscEye, VscEyeClosed } from 'react-icons/vsc';
+import type { ActiveNotifications } from '../background/alarms';
 // --- FIN DE CAMBIOS ---
+import './FileBrowser.css';
+import { VscFolder, VscFile, VscArrowUp, VscEye, VscEyeClosed } from 'react-icons/vsc';
 
-// --- INICIO DE CAMBIOS ---
-// 2. Actualizamos las props para recibir las funciones y datos de seguimiento
 interface FileBrowserProps {
   content: DirectoryContentItem[];
   currentPath: string;
@@ -19,21 +18,25 @@ interface FileBrowserProps {
   isTracked: (repo: string, path: string, branch: string) => boolean;
   addTrackedFile: (repo: string, path: string, branch: string) => void;
   removeTrackedFile: (repo: string, path: string, branch: string) => void;
+  // --- INICIO DE CAMBIOS ---
+  // 2. Añadimos la nueva prop para recibir las notificaciones
+  activeNotifications: ActiveNotifications;
+  // --- FIN DE CAMBIOS ---
 }
-// --- FIN DE CAMBIOS ---
 
 export const FileBrowser = ({ 
   content, 
   currentPath, 
   onPathChange, 
   onFileSelect,
-  // --- INICIO DE CAMBIOS ---
-  // 3. Desestructuramos las nuevas props
   repoFullName,
   selectedBranch,
   isTracked,
   addTrackedFile,
   removeTrackedFile,
+  // --- INICIO DE CAMBIOS ---
+  // 3. Desestructuramos la nueva prop
+  activeNotifications
   // --- FIN DE CAMBIOS ---
 }: FileBrowserProps) => {
   const pathSegments = currentPath.split('/').filter(Boolean);
@@ -48,17 +51,14 @@ export const FileBrowser = ({
     onPathChange(parentPath);
   };
 
-  // --- INICIO DE CAMBIOS ---
-  // 4. Creamos el manejador para el botón de observar/dejar de observar
   const handleToggleTrack = (event: React.MouseEvent, item: DirectoryContentItem) => {
-    event.stopPropagation(); // Evita que se abra el archivo al hacer clic en el ojo
+    event.stopPropagation();
     if (isTracked(repoFullName, item.path, selectedBranch)) {
       removeTrackedFile(repoFullName, item.path, selectedBranch);
     } else {
       addTrackedFile(repoFullName, item.path, selectedBranch);
     }
   };
-  // --- FIN DE CAMBIOS ---
 
   const sortedContent = [...content].sort((a, b) => {
     if (a.type === b.type) {
@@ -94,34 +94,46 @@ export const FileBrowser = ({
         )}
 
         {sortedContent.length > 0 ? (
-          sortedContent.map(item => (
-            <li 
-              key={item.sha} 
-              className="file-item" 
-              // 5. El onClick principal solo se activa si no es un botón de trackeo
-              onClick={() => item.type === 'dir' ? onPathChange(item.path) : onFileSelect(item.path)}
-            >
-              <div className="item-main-content">
-                <span className="item-icon">
-                  {item.type === 'dir' ? <VscFolder /> : <VscFile />}
-                </span>
-                <span className="item-name">{item.name}</span>
-              </div>
-              
-              {/* --- INICIO DE CAMBIOS --- */}
-              {/* 6. Si es un archivo, mostramos el botón para observar */}
-              {item.type === 'file' && (
-                <button 
-                  className={`track-button ${isTracked(repoFullName, item.path, selectedBranch) ? 'tracked' : ''}`}
-                  onClick={(e) => handleToggleTrack(e, item)}
-                  aria-label={isTracked(repoFullName, item.path, selectedBranch) ? 'Dejar de observar' : 'Observar archivo'}
-                >
-                  {isTracked(repoFullName, item.path, selectedBranch) ? <VscEye /> : <VscEyeClosed />}
-                </button>
-              )}
-              {/* --- FIN DE CAMBIOS --- */}
-            </li>
-          ))
+          sortedContent.map(item => {
+            // --- INICIO DE CAMBIOS ---
+            // 4. Lógica para determinar si el item (archivo o carpeta) tiene una notificación
+            let hasNotification = false;
+            const fileChanges = activeNotifications[repoFullName]?.fileChanges || [];
+
+            if (item.type === 'file') {
+              hasNotification = fileChanges.some(n => n.path === item.path && n.branch === selectedBranch);
+            } else { // 'dir'
+              hasNotification = fileChanges.some(n => n.branch === selectedBranch && n.path.startsWith(item.path + '/'));
+            }
+            // --- FIN DE CAMBIOS ---
+
+            return (
+              <li 
+                key={item.sha} 
+                className="file-item" 
+                onClick={() => item.type === 'dir' ? onPathChange(item.path) : onFileSelect(item.path)}
+              >
+                <div className="item-main-content">
+                  <span className="item-icon">
+                    {item.type === 'dir' ? <VscFolder /> : <VscFile />}
+                  </span>
+                  <span className="item-name">{item.name}</span>
+                  {/* 5. Mostramos el punto rojo si hay notificación */}
+                  {hasNotification && <span className="notification-dot item-dot"></span>}
+                </div>
+                
+                {item.type === 'file' && (
+                  <button 
+                    className={`track-button ${isTracked(repoFullName, item.path, selectedBranch) ? 'tracked' : ''}`}
+                    onClick={(e) => handleToggleTrack(e, item)}
+                    aria-label={isTracked(repoFullName, item.path, selectedBranch) ? 'Dejar de observar' : 'Observar archivo'}
+                  >
+                    {isTracked(repoFullName, item.path, selectedBranch) ? <VscEye /> : <VscEyeClosed />}
+                  </button>
+                )}
+              </li>
+            )
+          })
         ) : (
           !currentPath && <li className="empty-directory">Este directorio está vacío.</li>
         )}

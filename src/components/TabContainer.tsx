@@ -3,10 +3,7 @@
 import './TabContainer.css';
 import { FilterBar } from './FilterBar';
 import { BranchSelector } from './BranchSelector';
-// --- INICIO DE CAMBIOS ---
-// 1. Actualizamos la importación de tipos para incluir 'Code'
 import type { Tab, IssueState, PRState, ActionStatus, TabVisibility, TabKey, Branch } from '../hooks/useGithubData';
-// --- FIN DE CAMBIOS ---
 import type { ActiveNotifications } from '../background/alarms';
 
 interface TabContainerProps {
@@ -27,12 +24,10 @@ interface TabContainerProps {
   handleBranchChange: (branchName: string) => void;
 }
 
-// --- INICIO DE CAMBIOS ---
-// 2. Añadimos la pestaña 'Code' en el orden solicitado
 const TABS: Tab[] = ['README', 'Code', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'];
-// --- FIN DE CAMBIOS ---
 
 const NOTIFICATION_KEY_MAP: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
+  'Code': ['fileChanges'],
   'Issues': ['issues'],
   'PRs': ['newPRs', 'assignedPRs'],
   'Actions': ['actions'],
@@ -67,7 +62,7 @@ export const TabContainer = ({
         {TABS.filter(tab => tabVisibility[tab as TabKey]).map(tab => {
           const notificationKeysForTab = NOTIFICATION_KEY_MAP[tab];
           const hasNotification = notificationKeysForTab?.some(key => {
-            const notificationsForRepo = activeNotifications[selectedRepo];
+            const notificationsForRepo = activeNotifications[selectedRepo!];
             if (!notificationsForRepo) return false;
             const notificationsForCategory = notificationsForRepo[key];
             return Array.isArray(notificationsForCategory) && notificationsForCategory.length > 0;
@@ -82,18 +77,19 @@ export const TabContainer = ({
         })}
       </div>
 
-      {/* --- INICIO DE CAMBIOS --- */}
-      {/* 3. Mostramos el selector de rama también en la pestaña 'Code' */}
       {(activeTab === 'Commits' || activeTab === 'Code') && (
+        // --- INICIO DE CAMBIOS ---
+        // 1. Pasamos las props de notificaciones y repositorio al selector de ramas
         <BranchSelector 
           branches={branches}
           selectedBranch={selectedBranch}
           onBranchChange={handleBranchChange}
           isLoading={areBranchesLoading}
+          activeNotifications={activeNotifications}
+          repoFullName={selectedRepo}
         />
+        // --- FIN DE CAMBIOS ---
       )}
-      {/* --- FIN DE CAMBIOS --- */}
-
 
       {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
       {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }, { label: 'Merged', value: 'merged' }, { label: 'Asignados a mi', value: 'assigned_to_me' }]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
