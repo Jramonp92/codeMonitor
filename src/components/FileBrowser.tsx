@@ -19,7 +19,6 @@ interface FileBrowserProps {
   addTrackedFile: (repo: string, path: string, branch: string) => void;
   removeTrackedFile: (repo: string, path: string, branch: string) => void;
   // --- INICIO DE CAMBIOS ---
-  // 2. Añadimos la nueva prop para recibir las notificaciones
   activeNotifications: ActiveNotifications;
   // --- FIN DE CAMBIOS ---
 }

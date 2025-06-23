@@ -221,7 +221,6 @@ export function useGithubData() {
   };
   
   // --- INICIO DE CAMBIOS ---
-  // 1. Añadimos 'fileChanges' a la lista de notificaciones que se limpian para la pestaña 'Code'
   const clearNotificationsForTab = useCallback((repo: string, tab: Tab) => {
     const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
       'Code': ['fileChanges'],
