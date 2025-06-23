@@ -1,5 +1,3 @@
-// src/hooks/useGithubData.ts
-
 import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 
@@ -17,6 +15,14 @@ export interface ViewedFile {
   path: string;
   content: string;
 }
+
+// --- INICIO DE CAMBIOS ---
+// 1. Nuevo tipo para un archivo observado
+export interface TrackedFile {
+  path: string;
+  branch: string;
+}
+// --- FIN DE CAMBIOS ---
 
 export type TabVisibility = Record<TabKey, boolean>;
 
@@ -77,6 +83,11 @@ export function useGithubData() {
   const [currentPath, setCurrentPath] = useState('');
   const [directoryContent, setDirectoryContent] = useState<DirectoryContentItem[]>([]);
   const [viewedFile, setViewedFile] = useState<ViewedFile | null>(null);
+  
+  // --- INICIO DE CAMBIOS ---
+  // 2. Nuevo estado para los archivos observados
+  const [trackedFiles, setTrackedFiles] = useState<{ [repoFullName: string]: TrackedFile[] }>({});
+  // --- FIN DE CAMBIOS ---
 
   useEffect(() => {
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
@@ -88,7 +99,11 @@ export function useGithubData() {
         const alertsConfigKey = `alertsConfig_${currentUser.login}`;
         const notificationsKey = `notifications_${currentUser.login}`;
         const frequencyKey = 'alertFrequency';
-        const storageKeys = [userReposKey, alertsConfigKey, notificationsKey, frequencyKey, 'tabVisibility'];
+        // --- INICIO DE CAMBIOS ---
+        // 3. Añadimos la clave para los archivos observados al storage
+        const trackedFilesKey = `trackedFiles_${currentUser.login}`;
+        const storageKeys = [userReposKey, alertsConfigKey, notificationsKey, frequencyKey, 'tabVisibility', trackedFilesKey];
+        // --- FIN DE CAMBIOS ---
 
         chrome.storage.local.get(storageKeys, (result) => {
           if (result[userReposKey]) setManagedRepos(result[userReposKey]);
@@ -96,6 +111,10 @@ export function useGithubData() {
           if (result[notificationsKey]) setActiveNotifications(result[notificationsKey]);
           if (result[frequencyKey]) setAlertFrequency(result[frequencyKey]);
           if (result.tabVisibility) setTabVisibility(result.tabVisibility);
+          // --- INICIO DE CAMBIOS ---
+          // 4. Cargamos los archivos observados desde el storage
+          if (result[trackedFilesKey]) setTrackedFiles(result[trackedFilesKey]);
+          // --- FIN DE CAMBIOS ---
         });
 
         chrome.runtime.sendMessage({ type: 'getRepositories' }, (repoResponse) => {
@@ -213,7 +232,7 @@ export function useGithubData() {
   
   const handlePathChange = useCallback((newPath: string) => {
     setCurrentPath(newPath);
-    setViewedFile(null); // Al cambiar de directorio, dejamos de ver un archivo
+    setViewedFile(null);
   }, []);
 
   const handleFileSelect = useCallback((filePath: string) => {
@@ -360,19 +379,14 @@ export function useGithubData() {
     fetchDataForTab();
   }, [fetchDataForTab]);
 
-  // --- INICIO DE CAMBIOS ---
   const handleRefresh = useCallback(() => {
-    // Si estamos viendo un archivo, refrescamos solo ese archivo.
     if (activeTab === 'Code' && viewedFile) {
       handleFileSelect(viewedFile.path);
     } else {
-      // Si no, refrescamos la vista actual (lista de archivos, commits, etc.)
       fetchDataForTab();
     }
-    // Siempre refrescamos la lista de ramas por si ha habido cambios.
     fetchBranchesForRepo();
   }, [activeTab, viewedFile, fetchDataForTab, fetchBranchesForRepo, handleFileSelect]);
-  // --- FIN DE CAMBIOS ---
 
   const handleTabChange = (newTab: Tab) => {
     setActiveTab(newTab);
@@ -436,12 +450,48 @@ export function useGithubData() {
     const notificationsKey = `notifications_${user.login}`;
     
     setActiveNotifications({});
-
     chrome.storage.local.set({ [notificationsKey]: {} });
-
     chrome.action.setBadgeText({ text: '' });
-
   }, [user]);
+
+  // --- INICIO DE CAMBIOS ---
+  // 5. Funciones para manejar la lista de archivos observados
+  const updateTrackedFiles = useCallback((newTrackedFiles: { [repoFullName: string]: TrackedFile[] }) => {
+    if (!user?.login) return;
+    setTrackedFiles(newTrackedFiles);
+    chrome.storage.local.set({ [`trackedFiles_${user.login}`]: newTrackedFiles });
+  }, [user]);
+
+  const addTrackedFile = useCallback((repoFullName: string, path: string, branch: string) => {
+    const newFile: TrackedFile = { path, branch };
+    const repoFiles = trackedFiles[repoFullName] || [];
+    
+    // Evitar duplicados
+    if (repoFiles.some(f => f.path === path && f.branch === branch)) {
+      return;
+    }
+
+    const newRepoFiles = [...repoFiles, newFile];
+    const newTrackedFiles = { ...trackedFiles, [repoFullName]: newRepoFiles };
+    updateTrackedFiles(newTrackedFiles);
+  }, [trackedFiles, updateTrackedFiles]);
+
+  const removeTrackedFile = useCallback((repoFullName: string, path: string, branch: string) => {
+    const repoFiles = trackedFiles[repoFullName] || [];
+    const newRepoFiles = repoFiles.filter(f => f.path !== path || f.branch !== branch);
+    
+    const newTrackedFiles = { ...trackedFiles, [repoFullName]: newRepoFiles };
+    if (newRepoFiles.length === 0) {
+      delete newTrackedFiles[repoFullName];
+    }
+    updateTrackedFiles(newTrackedFiles);
+  }, [trackedFiles, updateTrackedFiles]);
+  
+  const isTracked = useCallback((repoFullName: string, path: string, branch: string) => {
+    const repoFiles = trackedFiles[repoFullName] || [];
+    return repoFiles.some(f => f.path === path && f.branch === branch);
+  }, [trackedFiles]);
+  // --- FIN DE CAMBIOS ---
 
   return {
     user, allRepos, managedRepos, addRepoToManagedList, removeRepoFromManagedList,
@@ -464,5 +514,9 @@ export function useGithubData() {
     setViewedFile, 
     handlePathChange,
     handleFileSelect,
+    trackedFiles,
+    addTrackedFile,
+    removeTrackedFile,
+    isTracked,
   };
 }

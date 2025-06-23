@@ -26,8 +26,6 @@
     flex-direction: column;
 }
 
-/* --- INICIO DE LA MEJORA --- */
-/* Estilos que faltaban para el cabecero del modal */
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -50,8 +48,6 @@
   padding: 0;
   line-height: 1;
 }
-/* --- FIN DE LA MEJORA --- */
-
 
 /* Configuración de la frecuencia de alertas */
 .frequency-settings {
@@ -133,3 +129,83 @@
     background-color: #f1f3f5;
     border-radius: 6px;
 }
+
+/* --- INICIO DE CAMBIOS --- */
+
+/* Estilos para la celda de archivos observados */
+.tracked-files-cell {
+  min-width: 250px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.branch-group {
+  margin-bottom: 10px;
+}
+
+.branch-group:last-child {
+  margin-bottom: 0;
+}
+
+.branch-group strong {
+  font-size: 0.95em;
+  color: #333;
+}
+
+.tracked-files-cell ul {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0 10px;
+}
+
+.tracked-files-cell li {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 0.9em;
+  padding: 2px 0;
+}
+
+.tracked-files-cell li span {
+  /* Para truncar nombres de archivo largos */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+.remove-file-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #888;
+  font-weight: bold;
+  font-size: 1.2em;
+  padding: 0 5px;
+}
+
+.remove-file-btn:hover {
+  color: #d73a49; /* Rojo de GitHub */
+}
+
+.add-file-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #007acc;
+  font-size: 0.9em;
+  font-weight: 500;
+  padding: 4px 0;
+  margin-top: 5px;
+}
+
+.add-file-btn:hover {
+  text-decoration: underline;
+}
+
+.add-file-btn:disabled {
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* --- FIN DE CAMBIOS --- */

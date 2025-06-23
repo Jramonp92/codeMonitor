@@ -3,18 +3,39 @@
 import type { DirectoryContentItem } from '../hooks/useGithubData';
 import './FileBrowser.css';
 // --- INICIO DE CAMBIOS ---
-// 1. Importamos los iconos que usaremos desde react-icons
-import { VscFolder, VscFile, VscArrowUp } from 'react-icons/vsc';
+// 1. Importamos los iconos necesarios
+import { VscFolder, VscFile, VscArrowUp, VscEye, VscEyeClosed } from 'react-icons/vsc';
 // --- FIN DE CAMBIOS ---
 
+// --- INICIO DE CAMBIOS ---
+// 2. Actualizamos las props para recibir las funciones y datos de seguimiento
 interface FileBrowserProps {
   content: DirectoryContentItem[];
   currentPath: string;
   onPathChange: (newPath: string) => void;
   onFileSelect: (filePath: string) => void;
+  repoFullName: string;
+  selectedBranch: string;
+  isTracked: (repo: string, path: string, branch: string) => boolean;
+  addTrackedFile: (repo: string, path: string, branch: string) => void;
+  removeTrackedFile: (repo: string, path: string, branch: string) => void;
 }
+// --- FIN DE CAMBIOS ---
 
-export const FileBrowser = ({ content, currentPath, onPathChange, onFileSelect }: FileBrowserProps) => {
+export const FileBrowser = ({ 
+  content, 
+  currentPath, 
+  onPathChange, 
+  onFileSelect,
+  // --- INICIO DE CAMBIOS ---
+  // 3. Desestructuramos las nuevas props
+  repoFullName,
+  selectedBranch,
+  isTracked,
+  addTrackedFile,
+  removeTrackedFile,
+  // --- FIN DE CAMBIOS ---
+}: FileBrowserProps) => {
   const pathSegments = currentPath.split('/').filter(Boolean);
 
   const handleBreadcrumbClick = (index: number) => {
@@ -22,11 +43,20 @@ export const FileBrowser = ({ content, currentPath, onPathChange, onFileSelect }
     onPathChange(newPath);
   };
   
-  // --- INICIO DE CAMBIOS ---
-  // 2. Lógica para manejar el clic en "subir un nivel"
   const handleGoUp = () => {
     const parentPath = pathSegments.slice(0, -1).join('/');
     onPathChange(parentPath);
+  };
+
+  // --- INICIO DE CAMBIOS ---
+  // 4. Creamos el manejador para el botón de observar/dejar de observar
+  const handleToggleTrack = (event: React.MouseEvent, item: DirectoryContentItem) => {
+    event.stopPropagation(); // Evita que se abra el archivo al hacer clic en el ojo
+    if (isTracked(repoFullName, item.path, selectedBranch)) {
+      removeTrackedFile(repoFullName, item.path, selectedBranch);
+    } else {
+      addTrackedFile(repoFullName, item.path, selectedBranch);
+    }
   };
   // --- FIN DE CAMBIOS ---
 
@@ -54,8 +84,6 @@ export const FileBrowser = ({ content, currentPath, onPathChange, onFileSelect }
       </div>
 
       <ul className="file-list">
-        {/* --- INICIO DE CAMBIOS --- */}
-        {/* 3. Si no estamos en la raíz, mostramos el botón para subir un nivel */}
         {currentPath && (
           <li className="file-item" onClick={handleGoUp}>
             <span className="item-icon">
@@ -64,27 +92,37 @@ export const FileBrowser = ({ content, currentPath, onPathChange, onFileSelect }
             <span className="item-name">..</span>
           </li>
         )}
-        {/* --- FIN DE CAMBIOS --- */}
 
         {sortedContent.length > 0 ? (
           sortedContent.map(item => (
             <li 
               key={item.sha} 
               className="file-item" 
+              // 5. El onClick principal solo se activa si no es un botón de trackeo
               onClick={() => item.type === 'dir' ? onPathChange(item.path) : onFileSelect(item.path)}
             >
+              <div className="item-main-content">
+                <span className="item-icon">
+                  {item.type === 'dir' ? <VscFolder /> : <VscFile />}
+                </span>
+                <span className="item-name">{item.name}</span>
+              </div>
+              
               {/* --- INICIO DE CAMBIOS --- */}
-              {/* 4. Usamos los nuevos iconos de react-icons */}
-              <span className="item-icon">
-                {item.type === 'dir' ? <VscFolder /> : <VscFile />}
-              </span>
+              {/* 6. Si es un archivo, mostramos el botón para observar */}
+              {item.type === 'file' && (
+                <button 
+                  className={`track-button ${isTracked(repoFullName, item.path, selectedBranch) ? 'tracked' : ''}`}
+                  onClick={(e) => handleToggleTrack(e, item)}
+                  aria-label={isTracked(repoFullName, item.path, selectedBranch) ? 'Dejar de observar' : 'Observar archivo'}
+                >
+                  {isTracked(repoFullName, item.path, selectedBranch) ? <VscEye /> : <VscEyeClosed />}
+                </button>
+              )}
               {/* --- FIN DE CAMBIOS --- */}
-              <span className="item-name">{item.name}</span>
             </li>
           ))
         ) : (
-          // 5. Si no hay contenido Y no estamos en la raíz, no mostramos el mensaje,
-          //    porque ya se muestra el botón ".." para subir.
           !currentPath && <li className="empty-directory">Este directorio está vacío.</li>
         )}
       </ul>

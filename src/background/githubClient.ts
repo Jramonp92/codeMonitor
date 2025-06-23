@@ -61,14 +61,12 @@ export async function fetchRepoDetails(repoFullName: string) {
     };
 }
 
-// --- INICIO DE CORRECCIÓN DE TIPOS ---
 export async function fetchBranches(repoFullName: string) {
     const token = await getAuthToken();
     let allBranches: any[] = [];
     let nextPageUrl: string | null = `${GITHUB_API_URL}/repos/${repoFullName}/branches?per_page=100`;
 
     while (nextPageUrl) {
-        // Añadimos el tipo explícito 'Response'
         const response: Response = await fetch(nextPageUrl, {
             headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
         });
@@ -79,10 +77,8 @@ export async function fetchBranches(repoFullName: string) {
 
         const pageBranches: any[] = await response.json();
         allBranches = [...allBranches, ...pageBranches];
-
-        // Añadimos el tipo explícito 'string | null'
+        
         const linkHeader: string | null = response.headers.get('Link');
-        // Añadimos el tipo explícito para el resultado del 'match'
         const nextLinkMatch: RegExpMatchArray | null | undefined = linkHeader?.match(/<([^>]+)>;\s*rel="next"/);
         
         nextPageUrl = nextLinkMatch ? nextLinkMatch[1] : null;
@@ -90,7 +86,6 @@ export async function fetchBranches(repoFullName: string) {
     
     return allBranches.map((branch: any) => ({ name: branch.name }));
 }
-// --- FIN DE CORRECCIÓN DE TIPOS ---
 
 export async function fetchCommits(repoFullName: string, branchName: string, page: number = 1) {
     const token = await getAuthToken();
@@ -219,14 +214,6 @@ export async function fetchReleases(repoFullName: string, page: number = 1) {
     return { items, totalPages: page };
 }
 
-
-/**
- * Obtiene el contenido de un directorio en una rama específica.
- * @param repoFullName - El nombre completo del repositorio (ej: "owner/repo").
- * @param branchName - El nombre de la rama.
- * @param path - La ruta del directorio a explorar.
- * @returns Una promesa que se resuelve con el contenido del directorio.
- */
 export async function fetchDirectoryContent(repoFullName: string, branchName: string, path: string) {
     const token = await getAuthToken();
     const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/contents/${path}?ref=${branchName}`, {
@@ -236,19 +223,11 @@ export async function fetchDirectoryContent(repoFullName: string, branchName: st
     return response.json();
 }
 
-/**
- * Obtiene el contenido de un fichero específico.
- * @param repoFullName - El nombre completo del repositorio (ej: "owner/repo").
- * @param filePath - La ruta del archivo a obtener.
- * @param branchName - El nombre de la rama donde se encuentra el archivo.
- * @returns Una promesa que se resuelve con el contenido del archivo en formato de texto.
- */
 export async function fetchFileContent(repoFullName: string, filePath: string, branchName:string) {
     const token = await getAuthToken();
     const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/contents/${filePath}?ref=${branchName}`, {
         headers: {
             Authorization: `Bearer ${token}`,
-            // Usamos el header 'Accept' para obtener el contenido en formato raw/texto.
             Accept: 'application/vnd.github.raw', 
             'X-GitHub-Api-Version': '2022-11-28'
         },
@@ -256,3 +235,40 @@ export async function fetchFileContent(repoFullName: string, filePath: string, b
     if (!response.ok) throw new Error(`Failed to fetch file: ${filePath}`);
     return response.text();
 }
+
+// --- INICIO DE CÓDIGO AÑADIDO ---
+
+/**
+ * Obtiene el último commit que modificó un archivo específico en una rama.
+ * @param repoFullName - El nombre completo del repositorio (ej: "owner/repo").
+ * @param branchName - El nombre de la rama.
+ * @param path - La ruta del archivo a consultar.
+ * @returns El objeto del último commit que afectó al archivo.
+ */
+export async function fetchLastCommitForFile(repoFullName: string, branchName: string, path: string) {
+    const token = await getAuthToken();
+    // Pedimos solo el último commit (per_page=1) para ser eficientes.
+    const url = `${GITHUB_API_URL}/repos/${repoFullName}/commits?sha=${branchName}&path=${encodeURIComponent(path)}&per_page=1`;
+    
+    const response = await fetch(url, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28'
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch commits for path: ${path}. Status: ${response.status}`);
+    }
+
+    const commits = await response.json();
+    // Si la respuesta está vacía, significa que el archivo no existe en esa rama o la ruta es incorrecta.
+    if (commits.length === 0) {
+        return null;
+    }
+    
+    // Devolvemos solo el primer commit, que es el más reciente.
+    return commits[0];
+}
+
+// --- FIN DE CÓDIGO AÑADIDO ---

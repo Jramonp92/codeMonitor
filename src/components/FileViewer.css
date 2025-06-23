@@ -25,13 +25,10 @@
   border-radius: 4px;
   cursor: pointer;
   margin-right: 10px;
-  /* --- INICIO DE CAMBIOS --- */
-  /* 1. Ajustamos el padding y centramos el ícono SVG */
   padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* --- FIN DE CAMBIOS --- */
 }
   
 .back-button:hover {
@@ -79,3 +76,30 @@
   white-space: pre; 
   word-wrap: break-word;
 }
+
+/* --- INICIO DE CAMBIOS --- */
+/* Estilos para el botón de observar, consistentes con FileBrowser.css */
+.track-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: var(--vscode-icon-foreground);
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  /* Clave para alinearlo a la derecha */
+  margin-left: auto;
+  /* Hacemos el ícono un poco más grande */
+  font-size: 1.2em;
+}
+
+.track-button:hover {
+  opacity: 1;
+}
+
+.track-button.tracked {
+  opacity: 1;
+  color: var(--vscode-textLink-activeForeground, #007acc);
+}
+/* --- FIN DE CAMBIOS --- */

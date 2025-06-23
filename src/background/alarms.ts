@@ -1,7 +1,19 @@
-import { fetchIssues, fetchPullRequests, fetchActions, fetchReleases, fetchMyAssignedPullRequests } from './githubClient';
+// src/background/alarms.ts
+
+// --- INICIO DE CAMBIOS ---
+// 1. Importamos todas las funciones necesarias, incluida la nueva
+import { 
+  fetchIssues, 
+  fetchPullRequests, 
+  fetchActions, 
+  fetchReleases, 
+  fetchMyAssignedPullRequests, 
+  fetchLastCommitForFile 
+} from './githubClient';
+import type { TrackedFile } from '../hooks/useGithubData';
+// --- FIN DE CAMBIOS ---
 
 // --- TYPE DEFINITIONS ---
-// Defines the structure for a user's alert settings.
 export interface AlertSettings {
   [repoFullName: string]: {
     issues?: boolean;
@@ -9,11 +21,10 @@ export interface AlertSettings {
     assignedPRs?: boolean;
     actions?: boolean;
     newReleases?: boolean;
+    fileChanges?: boolean;
   };
 }
 
-// Defines the structure for the data we last checked.
-// We store arrays of IDs to compare against new data.
 interface LastCheckedData {
   [repoFullName: string]: {
     issues?: number[];
@@ -21,10 +32,10 @@ interface LastCheckedData {
     assignedPRs?: number[];
     actions?: { [runId: number]: string };
     releases?: number[];
+    trackedFiles?: { [pathAndBranch: string]: string }; 
   };
 }
 
-// Defines the structure for storing active notifications.
 export interface ActiveNotifications {
   [repoFullName: string]: {
     issues?: number[];
@@ -32,17 +43,15 @@ export interface ActiveNotifications {
     assignedPRs?: number[];
     actions?: number[];
     newReleases?: number[];
+    fileChanges?: { path: string, branch: string, sha: string }[];
   };
 }
 
 const ALARM_NAME = 'github-check-alarm';
 
-// --- CORE LOGIC FUNCTION ---
-// This function runs every time the alarm fires.
 async function checkForUpdates() {
   console.log('Alarm triggered: Checking for repository updates...');
 
-  // 1. Get the current logged-in user.
   const { user } = await chrome.storage.local.get('user');
   if (!user || !user.login) {
     console.log('No user logged in. Skipping check.');
@@ -50,34 +59,34 @@ async function checkForUpdates() {
   }
   const username = user.login;
 
-  // 2. Get the user's alert settings, last checked data, and active notifications.
   const storageKeys = [
     `alertsConfig_${username}`,
     `lastCheckedData_${username}`,
-    `notifications_${username}`
+    `notifications_${username}`,
+    `trackedFiles_${username}`
   ];
+  
   const storageData = await chrome.storage.local.get(storageKeys);
   
-  // Explicitly type the data retrieved from storage to ensure type safety.
   const alertSettings: AlertSettings = storageData[`alertsConfig_${username}`] || {}; 
   const lastData: LastCheckedData = storageData[`lastCheckedData_${username}`] || {};
   const currentNotifications: ActiveNotifications = storageData[`notifications_${username}`] || {};
+  const trackedFilesByRepo: { [repo: string]: TrackedFile[] } = storageData[`trackedFiles_${username}`] || {};
 
   if (Object.keys(alertSettings).length === 0) {
     console.log('User has no alert settings configured. Skipping check.');
     return;
   }
   
-  const newLastData: LastCheckedData = {};
+  const newLastData: LastCheckedData = JSON.parse(JSON.stringify(lastData));
   let totalNewNotifications = 0;
 
-  // 3. Iterate over each repository the user has configured alerts for.
   for (const repo in alertSettings) {
     const settings = alertSettings[repo];
-    newLastData[repo] = { ...lastData[repo] }; // Carry over old data to not lose it
     if (!currentNotifications[repo]) currentNotifications[repo] = {};
 
-    // --- Check for new issues ---
+    // --- INICIO DE CÓDIGO RESTAURADO ---
+    // Check for new issues
     if (settings.issues) {
         const { items: newIssues } = await fetchIssues(repo, 'open', 1);
         const newIssueIds = newIssues.map((issue: { id: any; }) => issue.id);
@@ -87,10 +96,10 @@ async function checkForUpdates() {
         if (foundNotifications.length > 0) {
             currentNotifications[repo].issues = [...(currentNotifications[repo].issues || []), ...foundNotifications];
         }
-        newLastData[repo].issues = newIssueIds;
+        newLastData[repo] = { ...newLastData[repo], issues: newIssueIds };
     }
 
-    // --- Check for new Pull Requests ---
+    // Check for new Pull Requests
     if (settings.newPRs) {
         const { items: newPRs } = await fetchPullRequests(repo, 'open', 1);
         const newPRIds = newPRs.map((pr: { id: any; }) => pr.id);
@@ -100,10 +109,10 @@ async function checkForUpdates() {
         if (foundNotifications.length > 0) {
             currentNotifications[repo].newPRs = [...(currentNotifications[repo].newPRs || []), ...foundNotifications];
         }
-        newLastData[repo].prs = newPRIds;
+        newLastData[repo] = { ...newLastData[repo], prs: newPRIds };
     }
 
-    // --- Check for PRs assigned to me ---
+    // Check for PRs assigned to me
     if (settings.assignedPRs) {
         const { items: assignedPRs } = await fetchMyAssignedPullRequests(repo, 1);
         const newAssignedPRIds = assignedPRs.map((pr: { id: any; }) => pr.id);
@@ -113,16 +122,13 @@ async function checkForUpdates() {
         if (foundNotifications.length > 0) {
             currentNotifications[repo].assignedPRs = [...(currentNotifications[repo].assignedPRs || []), ...foundNotifications];
         }
-        newLastData[repo].assignedPRs = newAssignedPRIds;
+        newLastData[repo] = { ...newLastData[repo], assignedPRs: newAssignedPRIds };
     }
     
-    // --- Check for Actions status changes ---
+    // Check for Actions status changes
     if (settings.actions) {
-        // 1. Llama a fetchActions sin un estado para obtener todas las ejecuciones recientes.
         const { items: actionRuns } = await fetchActions(repo, undefined, 1);
-        
-        // 2. Obtiene el mapa de ejecuciones de la última vez.
-        const lastRunStates = lastData[repo]?.actions || {}; // { runId: status }
+        const lastRunStates = lastData[repo]?.actions || {};
         const newRunStates: { [runId: number]: string } = {};
 
         if (actionRuns) {
@@ -132,23 +138,18 @@ async function checkForUpdates() {
 
                 const previousState = lastRunStates[run.id];
 
-                // 3. Comprueba si la ejecución es nueva o si su estado ha cambiado.
                 if (!previousState || previousState !== currentState) {
-                    if (!currentNotifications[repo].actions) {
-                        currentNotifications[repo].actions = [];
-                    }
-                    // 4. Añade una notificación si no existe ya para esa ejecución.
-                    if (!currentNotifications[repo].actions.includes(run.id)) {
-                        currentNotifications[repo].actions.push(run.id);
+                    if (!currentNotifications[repo].actions) currentNotifications[repo].actions = [];
+                    if (!currentNotifications[repo].actions!.includes(run.id)) {
+                        currentNotifications[repo].actions!.push(run.id);
                     }
                 }
             }
         }
-        // 5. Guarda el nuevo mapa de estados para la próxima comprobación.
-        newLastData[repo].actions = newRunStates;
+        newLastData[repo] = { ...newLastData[repo], actions: newRunStates };
     }
 
-    // --- Check for new releases ---
+    // Check for new releases
     if (settings.newReleases) {
         const { items: newReleases } = await fetchReleases(repo, 1);
         const newReleaseIds = newReleases.map((release: { id: any; }) => release.id);
@@ -158,13 +159,47 @@ async function checkForUpdates() {
         if (foundNotifications.length > 0) {
             currentNotifications[repo].newReleases = [...(currentNotifications[repo].newReleases || []), ...foundNotifications];
         }
-        newLastData[repo].releases = newReleaseIds;
+        newLastData[repo] = { ...newLastData[repo], releases: newReleaseIds };
+    }
+    // --- FIN DE CÓDIGO RESTAURADO ---
+    
+    // Nueva sección para comprobar cambios en archivos
+    if (settings.fileChanges) {
+        const trackedFiles = trackedFilesByRepo[repo] || [];
+        if (trackedFiles.length > 0) {
+            if (!newLastData[repo]) newLastData[repo] = {};
+            if (!newLastData[repo].trackedFiles) newLastData[repo].trackedFiles = {};
+
+            for (const file of trackedFiles) {
+                try {
+                    const lastCommit = await fetchLastCommitForFile(repo, file.branch, file.path);
+                    if (lastCommit && lastCommit.sha) {
+                        const compositeKey = `${file.path}_${file.branch}`;
+                        const lastKnownSha = lastData[repo]?.trackedFiles?.[compositeKey];
+
+                        if (!lastKnownSha || lastKnownSha !== lastCommit.sha) {
+                            if (!currentNotifications[repo].fileChanges) {
+                                currentNotifications[repo].fileChanges = [];
+                            }
+                            if (!currentNotifications[repo].fileChanges!.some(n => n.sha === lastCommit.sha)) {
+                                currentNotifications[repo].fileChanges!.push({
+                                    path: file.path,
+                                    branch: file.branch,
+                                    sha: lastCommit.sha
+                                });
+                            }
+                        }
+                        newLastData[repo]!.trackedFiles![compositeKey] = lastCommit.sha;
+                    }
+                } catch (error) {
+                    console.error(`Error checking file ${file.path} in ${repo}:`, error);
+                }
+            }
+        }
     }
   }
 
-  // 4. Calculate total notifications and update storage and badge.
   Object.values(currentNotifications).forEach(repoNotifications => {
-    // This check handles the type error.
     if (repoNotifications) {
       Object.values(repoNotifications).forEach(notificationsArray => {
         if (Array.isArray(notificationsArray)) {
@@ -179,7 +214,6 @@ async function checkForUpdates() {
     [`notifications_${username}`]: currentNotifications
   });
 
-  // 5. Update the extension icon's badge.
   if (totalNewNotifications > 0) {
     chrome.action.setBadgeText({ text: `+${totalNewNotifications}` });
     chrome.action.setBadgeBackgroundColor({ color: '#d93f3f' });
@@ -190,17 +224,14 @@ async function checkForUpdates() {
   console.log(`Check complete. Found ${totalNewNotifications} new notifications.`);
 }
 
-// --- ALARM INITIALIZATION ---
-// This function sets up the alarm when the extension starts.
 export function initializeAlarms() {
   chrome.alarms.get(ALARM_NAME, (alarm) => {
     if (!alarm) {
       console.log('Creating alarm for the first time.');
-      // Get user-defined period, defaulting to 10 minutes.
       chrome.storage.local.get('alertFrequency', (result) => {
         const periodInMinutes = result.alertFrequency || 10;
         chrome.alarms.create(ALARM_NAME, {
-          delayInMinutes: 1, // Start after 1 minute
+          delayInMinutes: 1,
           periodInMinutes: periodInMinutes 
         });
       });
@@ -208,7 +239,6 @@ export function initializeAlarms() {
   });
 }
 
-// Listener that calls our main function when the alarm fires.
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === ALARM_NAME) {
     checkForUpdates();

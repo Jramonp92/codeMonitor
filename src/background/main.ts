@@ -16,20 +16,17 @@ import {
   fetchActions,
   fetchReleases,
   fetchDirectoryContent,
-  fetchFileContent
+  fetchFileContent,
+  fetchLastCommitForFile
 } from './githubClient';
 
 initializeAlarms();
 
-// --- INICIO DE CORRECCIÓN ---
-// El listener para abrir el panel lateral al hacer clic en el icono
-// debe estar en el nivel superior, no dentro del listener de mensajes.
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.windowId) {
     await chrome.sidePanel.open({ windowId: tab.windowId });
   }
 });
-// --- FIN DE CORRECCIÓN ---
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
@@ -270,4 +267,21 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })();
     return true;
   }
+
+  if (message.type === 'getLastCommitForFile') {
+    (async () => {
+      try {
+        const { repoFullName, branch, path } = message;
+        if (!repoFullName || !branch || !path) {
+          throw new Error('repoFullName, branch, and path are required.');
+        }
+        const commit = await fetchLastCommitForFile(repoFullName, branch, path);
+        sendResponse({ success: true, data: commit });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+  
 });

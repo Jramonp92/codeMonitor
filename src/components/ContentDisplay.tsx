@@ -2,9 +2,6 @@
 
 import './ContentDisplay.css';
 import { ItemStatus } from './ItemStatus';
-
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos los nuevos componentes y tipos
 import { FileBrowser } from './FileBrowser';
 import { FileViewer } from './FileViewer';
 import type { 
@@ -17,13 +14,9 @@ import type {
   DirectoryContentItem,
   ViewedFile
 } from '../hooks/useGithubData';
-// --- FIN DE CAMBIOS ---
-
 import type { ActiveNotifications } from '../background/alarms';
 import { VscCheck, VscError, VscCircleSlash, VscLoading, VscQuestion, VscVmRunning } from 'react-icons/vsc';
 
-// --- INICIO DE CAMBIOS ---
-// 2. Actualizamos las props para recibir todo lo relacionado con el explorador de archivos
 export interface ContentDisplayProps {
   activeTab: Tab;
   isContentLoading: boolean;
@@ -41,8 +34,12 @@ export interface ContentDisplayProps {
   handlePathChange: (newPath: string) => void;
   handleFileSelect: (filePath: string) => void;
   setViewedFile: (file: ViewedFile | null) => void;
+  repoFullName: string;
+  selectedBranch: string;
+  isTracked: (repo: string, path: string, branch: string) => boolean;
+  addTrackedFile: (repo: string, path: string, branch: string) => void;
+  removeTrackedFile: (repo: string, path: string, branch: string) => void;
 }
-// --- FIN DE CAMBIOS ---
 
 export const ContentDisplay = ({ 
   activeTab, 
@@ -55,15 +52,17 @@ export const ContentDisplay = ({
   actions, 
   releases,
   activeNotifications,
-  // --- INICIO DE CAMBIOS ---
-  // 3. Desestructuramos las nuevas props
   directoryContent,
   currentPath,
   viewedFile,
   handlePathChange,
   handleFileSelect,
   setViewedFile,
-  // --- FIN DE CAMBIOS ---
+  repoFullName,
+  selectedBranch,
+  isTracked,
+  addTrackedFile,
+  removeTrackedFile,
 }: ContentDisplayProps) => {
 
   const formatCommitDate = (dateString: string) => {
@@ -100,7 +99,14 @@ export const ContentDisplay = ({
     <ul className="item-list">
       {items.map((item) => {
         const notificationsForRepo = activeNotifications[selectedRepo] || {};
-        const isNew = notificationKeys.some(key => notificationsForRepo[key]?.includes(item.id));
+        // --- INICIO DE CAMBIOS ---
+        // 1. Hacemos la comprobación de 'isNew' más segura a nivel de tipos.
+        const isNew = notificationKeys.some(key => {
+            const notifications = notificationsForRepo[key];
+            // Aseguramos que el array contiene números antes de usar 'includes'
+            return Array.isArray(notifications) && (notifications as number[]).includes(item.id);
+        });
+        // --- FIN DE CAMBIOS ---
         
         let dateLabel = '';
         let dateValue = '';
@@ -153,7 +159,6 @@ export const ContentDisplay = ({
 
   const hasDataForOtherTabs = commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0;
   
-  // 4. Actualizamos la lógica de carga para que no afecte a la pestaña 'Code' mientras navegamos
   if (isContentLoading && !hasDataForOtherTabs && activeTab !== 'README' && activeTab !== 'Code') {
     return (
       <div className="content-placeholder">
@@ -177,11 +182,19 @@ export const ContentDisplay = ({
     return <p className="loading-text">No se encontró un archivo README para este repositorio.</p>;
   }
   
-  // --- INICIO DE CAMBIOS ---
-  // 5. Lógica de renderizado para la pestaña 'Code'
   if (activeTab === 'Code') {
     if (viewedFile) {
-      return <FileViewer file={viewedFile} onBack={() => setViewedFile(null)} />;
+      return (
+        <FileViewer 
+          file={viewedFile} 
+          onBack={() => setViewedFile(null)}
+          repoFullName={repoFullName}
+          selectedBranch={selectedBranch}
+          isTracked={isTracked}
+          addTrackedFile={addTrackedFile}
+          removeTrackedFile={removeTrackedFile}
+        />
+      );
     }
     return (
       <FileBrowser 
@@ -189,10 +202,14 @@ export const ContentDisplay = ({
         currentPath={currentPath}
         onPathChange={handlePathChange}
         onFileSelect={handleFileSelect}
+        repoFullName={repoFullName}
+        selectedBranch={selectedBranch}
+        isTracked={isTracked}
+        addTrackedFile={addTrackedFile}
+        removeTrackedFile={removeTrackedFile}
       />
     );
   }
-  // --- FIN DE CAMBIOS ---
     
   const notificationsForRepo = activeNotifications[selectedRepo] || {};
   

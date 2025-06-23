@@ -19,8 +19,6 @@ function App() {
   const [isRepoModalOpen, setIsRepoModalOpen] = useState(false);
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
 
-  // --- INICIO DE CAMBIOS ---
-  // 1. Extraemos todos los nuevos estados y funciones del hook
   const {
     user,
     allRepos,
@@ -66,8 +64,14 @@ function App() {
     handlePathChange,
     handleFileSelect,
     setViewedFile,
+    // --- INICIO DE CAMBIOS ---
+    // 1. Extraemos los nuevos estados y funciones del hook
+    trackedFiles,
+    addTrackedFile,
+    removeTrackedFile,
+    isTracked,
+    // --- FIN DE CAMBIOS ---
   } = useGithubData();
-  // --- FIN DE CAMBIOS ---
 
   useEffect(() => {
     if (user !== undefined) {
@@ -103,6 +107,9 @@ function App() {
         onAdd={addRepoToManagedList}
         onRemove={removeRepoFromManagedList}
       />
+
+      {/* --- INICIO DE CAMBIOS --- */}
+      {/* 2. Pasamos las nuevas props al modal de alertas */}
       <AlertsManagerModal
         isOpen={isAlertsModalOpen}
         onClose={() => setIsAlertsModalOpen(false)}
@@ -111,7 +118,11 @@ function App() {
         onSettingsChange={handleAlertSettingsChange}
         alertFrequency={alertFrequency}
         onFrequencyChange={handleFrequencyChange}
+        trackedFiles={trackedFiles}
+        addTrackedFile={addTrackedFile}
+        removeTrackedFile={removeTrackedFile}
       />
+      {/* --- FIN DE CAMBIOS --- */}
 
       <div className="app-container">
         {activeView === 'main' ? (
@@ -159,7 +170,7 @@ function App() {
 
             <div className={isContentLoading ? 'content-revalidating' : ''}>
               {/* --- INICIO DE CAMBIOS --- */}
-              {/* 2. Pasamos todas las nuevas props a ContentDisplay */}
+              {/* 3. Pasamos las nuevas props a ContentDisplay */}
               <ContentDisplay
                 activeTab={activeTab}
                 isContentLoading={isContentLoading}
@@ -177,6 +188,11 @@ function App() {
                 handlePathChange={handlePathChange}
                 handleFileSelect={handleFileSelect}
                 setViewedFile={setViewedFile}
+                repoFullName={selectedRepo!}
+                selectedBranch={selectedBranch}
+                isTracked={isTracked}
+                addTrackedFile={addTrackedFile}
+                removeTrackedFile={removeTrackedFile}
               />
               {/* --- FIN DE CAMBIOS --- */}
             </div>
