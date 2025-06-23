@@ -258,7 +258,6 @@ export function useGithubData() {
     const newTotalCount = Object.values(newNotifications).flatMap(Object.values).flat().length;
     chrome.action.setBadgeText({ text: newTotalCount > 0 ? `+${newTotalCount}` : '' });
   }, [activeNotifications, user]);
-  // --- FIN DE CAMBIOS ---
   
   const handlePathChange = useCallback((newPath: string) => {
     setCurrentPath(newPath);
