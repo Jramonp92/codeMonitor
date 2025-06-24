@@ -1,0 +1,90 @@
+/* src/components/WorkflowFilterDropdown.css */
+
+.workflow-dropdown-container {
+    position: relative;
+    display: inline-block;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  
+  .dropdown-button {
+    background-color: #f6f8fa;
+    border: 1px solid #d1d5da;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 150px;
+    text-align: left;
+  }
+  
+  .dropdown-button:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .dropdown-button .arrow {
+    border: solid black;
+    border-width: 0 1.5px 1.5px 0;
+    display: inline-block;
+    padding: 2.5px;
+    margin-left: 8px;
+  }
+  
+  .dropdown-button .arrow.up {
+    transform: rotate(-135deg);
+  }
+  
+  .dropdown-button .arrow.down {
+    transform: rotate(45deg);
+  }
+  
+  .dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #d1d5da;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(149, 157, 165, 0.2);
+    list-style: none;
+    margin-top: 4px;
+    padding: 4px 0;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 100;
+  }
+  
+  .dropdown-list li {
+    padding: 8px 16px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  
+  .dropdown-list li:hover {
+    background-color: #0969da;
+    color: white;
+  }
+  
+  .dropdown-list li.selected {
+    font-weight: 600;
+    background-color: #f6f8fa;
+  }
+  
+  .workflow-dropdown-container .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #3498db;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+      animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+  }

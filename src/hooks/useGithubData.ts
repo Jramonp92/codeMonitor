@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos los nuevos tipos que creamos en githubClient.ts
 import { type ReviewState, type PRReviewInfo, type Reviewer } from '../background/githubClient';
-// --- FIN DE CAMBIOS ---
 
 export type TabKey = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions' | 'Releases';
 export type Tab = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
@@ -31,10 +28,16 @@ export type TabVisibility = Record<TabKey, boolean>;
 
 export interface Branch { name: string; }
 
+export interface Workflow {
+  id: number;
+  name: string;
+}
+
 // --- INICIO DE CAMBIOS ---
-// 2. Exportamos los nuevos tipos para que estén disponibles en otros archivos.
+// 1. Eliminamos 'Workflow' de esta línea para evitar la exportación duplicada.
 export type { IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo, ReviewState, PRReviewInfo, Reviewer };
 // --- FIN DE CAMBIOS ---
+
 
 type IssueState = 'open' | 'closed' | 'all';
 type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
@@ -48,16 +51,11 @@ export interface GitHubUser { login: string; avatar_url: string; html_url: strin
 
 interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; closed_at: string | null; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
 
-// --- INICIO DE CAMBIOS ---
-// 3. Actualizamos la interfaz PullRequestInfo para usar la nueva estructura de datos.
 interface PullRequestInfo extends IssueInfo { 
   merged_at: string | null;
-  // requested_reviewers ya viene en el objeto base de la API, lo mantenemos.
   requested_reviewers?: GitHubUser[];
-  // Reemplazamos 'approvalState' por el objeto completo 'reviewInfo'.
   reviewInfo?: PRReviewInfo;
 }
-// --- FIN DE CAMBIOS ---
 
 interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; run_number: number; event: string; head_branch: string; actor: { login: string; avatar_url: string; }; pull_requests: { html_url: string; number: number; }[]; }
 interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; avatar_url: string; html_url: string; }; published_at: string; prerelease: boolean; }
@@ -99,6 +97,11 @@ export function useGithubData() {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>('');
   const [areBranchesLoading, setAreBranchesLoading] = useState<boolean>(false);
+
+  const [workflows, setWorkflows] = useState<Workflow[]>([]);
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState<number | null>(null);
+  const [areWorkflowsLoading, setAreWorkflowsLoading] = useState<boolean>(false);
+
 
   const [currentPath, setCurrentPath] = useState('');
   const [directoryContent, setDirectoryContent] = useState<DirectoryContentItem[]>([]);
@@ -161,6 +164,23 @@ export function useGithubData() {
     }
   }, [selectedRepo]);
 
+  const fetchWorkflowsForRepo = useCallback(() => {
+    if (selectedRepo) {
+      setAreWorkflowsLoading(true);
+      chrome.runtime.sendMessage({ type: 'getWorkflows', repoFullName: selectedRepo }, (response) => {
+        if (response?.success) {
+          setWorkflows(response.data || []);
+        } else {
+          console.error(`Error fetching workflows for ${selectedRepo}:`, response?.error);
+          setWorkflows([]);
+        }
+        setAreWorkflowsLoading(false);
+      });
+    } else {
+      setWorkflows([]);
+    }
+  }, [selectedRepo]);
+
 
   useEffect(() => {
     if (selectedRepo) {
@@ -170,12 +190,14 @@ export function useGithubData() {
       }
       setCurrentPath('');
       setViewedFile(null);
+      setSelectedWorkflowId(null);
     }
   }, [selectedRepo, managedRepos]);
   
   useEffect(() => {
     fetchBranchesForRepo();
-  }, [fetchBranchesForRepo]); 
+    fetchWorkflowsForRepo();
+  }, [fetchBranchesForRepo, fetchWorkflowsForRepo]); 
   
   const handleTabVisibilityChange = useCallback((tab: TabKey, isVisible: boolean) => {
     const newVisibility = { ...tabVisibility, [tab]: isVisible };
@@ -395,6 +417,7 @@ export function useGithubData() {
       case 'Actions': 
         messageType = 'getActions';
         message.status = actionStatusFilter;
+        message.workflowId = selectedWorkflowId;
         break;
       case 'Releases':
         messageType = 'getReleases';
@@ -421,21 +444,16 @@ export function useGithubData() {
                 const prsWithReviewInfo = await Promise.all(
                   items.map(async (pr: PullRequestInfo) => {
                     return new Promise((resolve) => {
-                      // --- INICIO DE CAMBIOS ---
-                      // 4. Actualizamos la lógica para que guarde el objeto 'reviewInfo' completo
                       chrome.runtime.sendMessage(
                         { type: 'getPullRequestApprovalState', repoFullName: selectedRepo, prNumber: pr.number },
                         (reviewResponse) => {
                           if (reviewResponse.success) {
-                            // Asignamos la respuesta a la nueva propiedad 'reviewInfo'
                             resolve({ ...pr, reviewInfo: reviewResponse.data });
                           } else {
-                            // Si falla, resolvemos el PR original sin información de revisión
                             resolve(pr);
                           }
                         }
                       );
-                      // --- FIN DE CAMBIOS ---
                     });
                   })
                 );
@@ -465,7 +483,7 @@ export function useGithubData() {
         }
         setIsContentLoading(false);
     });
-  }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter, selectedBranch, currentPath]);
+  }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter, selectedBranch, currentPath, selectedWorkflowId]);
 
   useEffect(() => {
     fetchDataForTab();
@@ -537,6 +555,12 @@ export function useGithubData() {
     setCurrentPage(1);
   };
 
+  const handleWorkflowFilterChange = (workflowId: number | null) => {
+    setSelectedWorkflowId(workflowId);
+    setCurrentPage(1);
+  };
+
+
   const clearAllNotifications = useCallback(() => {
     if (!user) return;
     const notificationsKey = `notifications_${user.login}`;
@@ -606,5 +630,9 @@ export function useGithubData() {
     addTrackedFile,
     removeTrackedFile,
     isTracked,
+    workflows,
+    areWorkflowsLoading,
+    selectedWorkflowId,
+    handleWorkflowFilterChange,
   };
 }

@@ -70,4 +70,10 @@
     /* 2. Aplicamos la animación al punto */
     animation: pulse 2s infinite;
   }
-  /* --- FIN DE LA MEJORA --- */
+
+  .actions-filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px; /* Espacio entre el dropdown de workflows y los filtros de estado */
+  }

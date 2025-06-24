@@ -18,9 +18,10 @@ import {
   fetchDirectoryContent,
   fetchFileContent,
   fetchLastCommitForFile,
+  fetchPullRequestReviewInfo,
   // --- INICIO DE CAMBIOS ---
-  // 1. Reemplazamos la función antigua por la nueva
-  fetchPullRequestReviewInfo
+  // 1. Importamos la nueva función que creamos en el paso anterior
+  fetchWorkflows
   // --- FIN DE CAMBIOS ---
 } from './githubClient';
 
@@ -74,6 +75,23 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })();
     return true;
   }
+
+  // --- INICIO DE CAMBIOS ---
+  // 2. Añadimos un nuevo manejador de mensajes para 'getWorkflows'
+  if (message.type === 'getWorkflows') {
+    (async () => {
+      try {
+        const { repoFullName } = message;
+        if (!repoFullName) throw new Error('repoFullName is required for getWorkflows.');
+        const workflows = await fetchWorkflows(repoFullName);
+        sendResponse({ success: true, data: workflows });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+  // --- FIN DE CAMBIOS ---
 
   if (message.type === 'getReadme') {
     (async () => {
@@ -217,10 +235,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === 'getActions') {
     (async () => {
       try {
-        const { repoFullName, status, page } = message;
+        // --- INICIO DE CAMBIOS ---
+        // 3. Añadimos workflowId a los parámetros que recibimos y pasamos a la función
+        const { repoFullName, status, workflowId, page } = message;
         if (!repoFullName) throw new Error('repoFullName is required.');
-        const data = await fetchActions(repoFullName, status, page);
+        const data = await fetchActions(repoFullName, status, workflowId, page);
         sendResponse({ success: true, data });
+        // --- FIN DE CAMBIOS ---
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
       }
@@ -289,8 +310,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
-  // --- INICIO DE CAMBIOS ---
-  // 2. Actualizamos este bloque para que use la nueva función
   if (message.type === 'getPullRequestApprovalState') {
     (async () => {
       try {
@@ -298,7 +317,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (!repoFullName || !prNumber) {
           throw new Error('repoFullName and prNumber are required.');
         }
-        // Llamamos a la nueva función que devuelve el objeto completo
         const reviewInfo = await fetchPullRequestReviewInfo(repoFullName, prNumber);
         sendResponse({ success: true, data: reviewInfo });
       } catch (error: any) {
@@ -307,6 +325,5 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     })();
     return true;
   }
-  // --- FIN DE CAMBIOS ---
   
 });

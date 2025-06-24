@@ -19,6 +19,8 @@ function App() {
   const [isRepoModalOpen, setIsRepoModalOpen] = useState(false);
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
 
+  // --- INICIO DE CAMBIOS ---
+  // 1. Extraemos los nuevos estados y funciones del hook useGithubData
   const {
     user,
     allRepos,
@@ -68,7 +70,12 @@ function App() {
     addTrackedFile,
     removeTrackedFile,
     isTracked,
+    workflows,
+    areWorkflowsLoading,
+    selectedWorkflowId,
+    handleWorkflowFilterChange,
   } = useGithubData();
+  // --- FIN DE CAMBIOS ---
 
   useEffect(() => {
     if (user !== undefined) {
@@ -144,23 +151,30 @@ function App() {
               notifications={activeNotifications}
             />
             
+            {/* --- INICIO DE CAMBIOS --- */}
+            {/* 2. Pasamos las nuevas props al componente TabContainer */}
             <TabContainer
-                activeTab={activeTab}
-                handleTabChange={handleTabChange}
-                selectedRepo={selectedRepo}
-                activeNotifications={activeNotifications}
-                issueStateFilter={issueStateFilter}
-                handleIssueFilterChange={handleIssueFilterChange}
-                prStateFilter={prStateFilter}
-                handlePrFilterChange={handlePrFilterChange}
-                actionStatusFilter={actionStatusFilter}
-                handleActionStatusChange={handleActionStatusChange}
-                tabVisibility={tabVisibility}
-                branches={branches}
-                selectedBranch={selectedBranch}
-                areBranchesLoading={areBranchesLoading}
-                handleBranchChange={handleBranchChange}
+              activeTab={activeTab}
+              handleTabChange={handleTabChange}
+              selectedRepo={selectedRepo}
+              activeNotifications={activeNotifications}
+              issueStateFilter={issueStateFilter}
+              handleIssueFilterChange={handleIssueFilterChange}
+              prStateFilter={prStateFilter}
+              handlePrFilterChange={handlePrFilterChange}
+              actionStatusFilter={actionStatusFilter}
+              handleActionStatusChange={handleActionStatusChange}
+              tabVisibility={tabVisibility}
+              branches={branches}
+              selectedBranch={selectedBranch}
+              areBranchesLoading={areBranchesLoading}
+              handleBranchChange={handleBranchChange}
+              workflows={workflows}
+              selectedWorkflowId={selectedWorkflowId}
+              areWorkflowsLoading={areWorkflowsLoading}
+              handleWorkflowFilterChange={handleWorkflowFilterChange}
             />
+            {/* --- FIN DE CAMBIOS --- */}
 
             <div className={isContentLoading ? 'content-revalidating' : ''}>
               <ContentDisplay

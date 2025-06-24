@@ -9,8 +9,6 @@ async function getAuthToken() {
 const GITHUB_API_URL = "https://api.github.com";
 const ITEMS_PER_PAGE = 7;
 
-// --- INICIO DE CAMBIOS ---
-// 1. Añadimos 'export' a todos los tipos y funciones que deben ser públicos.
 export type ReviewState = 'APPROVED' | 'CHANGES_REQUESTED' | 'PENDING' | 'COMMENTED';
 
 export interface Reviewer {
@@ -196,9 +194,18 @@ export async function fetchMyAssignedPullRequests(repoFullName: string, page: nu
     return { items, totalPages: totalPages > 0 ? totalPages : 1 };
 }
 
-export async function fetchActions(repoFullName: string, status?: string, page: number = 1) {
+// --- INICIO DE CAMBIOS ---
+// 1. Modificamos fetchActions para aceptar un workflowId opcional
+export async function fetchActions(repoFullName: string, status?: string, workflowId?: number, page: number = 1) {
     const token = await getAuthToken();
-    let url = `${GITHUB_API_URL}/repos/${repoFullName}/actions/runs?per_page=${ITEMS_PER_PAGE}&page=${page}`;
+    
+    // La URL base cambia si se especifica un workflowId
+    const baseUrl = workflowId
+        ? `${GITHUB_API_URL}/repos/${repoFullName}/actions/workflows/${workflowId}/runs`
+        : `${GITHUB_API_URL}/repos/${repoFullName}/actions/runs`;
+
+    let url = `${baseUrl}?per_page=${ITEMS_PER_PAGE}&page=${page}`;
+    
     if (status && status !== 'all') {
         url += `&status=${status}`;
     }
@@ -207,12 +214,39 @@ export async function fetchActions(repoFullName: string, status?: string, page: 
     });
     if (!response.ok) throw new Error(`Failed to fetch actions.`);
     const data: any = await response.json();
-    const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE);
+    // La API de workflow runs no devuelve el total en el mismo lugar, así que lo calculamos diferente
+    const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE) || 1;
     return {
         items: data.workflow_runs,
-        totalPages: totalPages > 0 ? totalPages : 1
+        totalPages: totalPages
     };
 }
+
+// 2. Añadimos la nueva función fetchWorkflows
+export async function fetchWorkflows(repoFullName: string) {
+    const token = await getAuthToken();
+    let allWorkflows: any[] = [];
+    let nextPageUrl: string | null = `${GITHUB_API_URL}/repos/${repoFullName}/actions/workflows?per_page=100`;
+
+    while (nextPageUrl) {
+        const response: Response = await fetch(nextPageUrl, {
+            headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+        });
+        if (!response.ok) throw new Error('Failed to fetch workflows.');
+        const data = await response.json();
+        allWorkflows = [...allWorkflows, ...data.workflows];
+        
+        const linkHeader: string | null = response.headers.get('Link');
+        const nextLinkMatch = linkHeader?.match(/<([^>]+)>;\s*rel="next"/);
+        nextPageUrl = nextLinkMatch ? nextLinkMatch[1] : null;
+    }
+    
+    // Devolvemos solo los campos que nos interesan
+    return allWorkflows
+        .filter(wf => wf.state === 'active') // Nos interesan solo los workflows activos
+        .map((wf: any) => ({ id: wf.id, name: wf.name }));
+}
+// --- FIN DE CAMBIOS ---
 
 export async function fetchReleases(repoFullName: string, page: number = 1) {
     const token = await getAuthToken();

@@ -3,7 +3,11 @@
 import './TabContainer.css';
 import { FilterBar } from './FilterBar';
 import { BranchSelector } from './BranchSelector';
-import type { Tab, IssueState, PRState, ActionStatus, TabVisibility, TabKey, Branch } from '../hooks/useGithubData';
+// --- INICIO DE CAMBIOS ---
+// 1. Importamos el nuevo componente y el tipo Workflow
+import { WorkflowFilterDropdown } from './WorkflowFilterDropdown';
+import type { Tab, IssueState, PRState, ActionStatus, TabVisibility, TabKey, Branch, Workflow } from '../hooks/useGithubData';
+// --- FIN DE CAMBIOS ---
 import type { ActiveNotifications } from '../background/alarms';
 
 interface TabContainerProps {
@@ -22,6 +26,13 @@ interface TabContainerProps {
   selectedBranch: string;
   areBranchesLoading: boolean;
   handleBranchChange: (branchName: string) => void;
+  // --- INICIO DE CAMBIOS ---
+  // 2. Añadimos las nuevas props para manejar los workflows
+  workflows: Workflow[];
+  selectedWorkflowId: number | null;
+  areWorkflowsLoading: boolean;
+  handleWorkflowFilterChange: (workflowId: number | null) => void;
+  // --- FIN DE CAMBIOS ---
 }
 
 const TABS: Tab[] = ['README', 'Code', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'];
@@ -29,7 +40,7 @@ const TABS: Tab[] = ['README', 'Code', 'Commits', 'Issues', 'PRs', 'Actions', 'R
 const NOTIFICATION_KEY_MAP: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
   'Code': ['fileChanges'],
   'Issues': ['issues'],
-  'PRs': ['newPRs', 'assignedPRs'],
+  'PRs': ['newPRs', 'assignedPRs', 'prStatusChanges'],
   'Actions': ['actions'],
   'Releases': ['newReleases']
 };
@@ -49,7 +60,14 @@ export const TabContainer = ({
   branches,
   selectedBranch,
   areBranchesLoading,
-  handleBranchChange
+  handleBranchChange,
+  // --- INICIO DE CAMBIOS ---
+  // 3. Desestructuramos las nuevas props
+  workflows,
+  selectedWorkflowId,
+  areWorkflowsLoading,
+  handleWorkflowFilterChange
+  // --- FIN DE CAMBIOS ---
 }: TabContainerProps) => {
   
   if (!selectedRepo) {
@@ -78,8 +96,6 @@ export const TabContainer = ({
       </div>
 
       {(activeTab === 'Commits' || activeTab === 'Code') && (
-        // --- INICIO DE CAMBIOS ---
-        // 1. Pasamos las props de notificaciones y repositorio al selector de ramas
         <BranchSelector 
           branches={branches}
           selectedBranch={selectedBranch}
@@ -88,12 +104,30 @@ export const TabContainer = ({
           activeNotifications={activeNotifications}
           repoFullName={selectedRepo}
         />
-        // --- FIN DE CAMBIOS ---
       )}
 
       {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
       {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }, { label: 'Merged', value: 'merged' }, { label: 'Asignados a mi', value: 'assigned_to_me' }]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
-      {activeTab === 'Actions' && <FilterBar name="Actions" filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} currentFilter={actionStatusFilter} onFilterChange={handleActionStatusChange} />}
+      
+      {/* --- INICIO DE CAMBIOS --- */}
+      {/* 4. En la pestaña de Actions, ahora mostramos ambos filtros */}
+      {activeTab === 'Actions' && (
+        <div className="actions-filter-container">
+          <WorkflowFilterDropdown 
+            workflows={workflows}
+            selectedWorkflowId={selectedWorkflowId}
+            onFilterChange={handleWorkflowFilterChange}
+            isLoading={areWorkflowsLoading}
+          />
+          <FilterBar 
+            name="Actions" 
+            filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} 
+            currentFilter={actionStatusFilter} 
+            onFilterChange={handleActionStatusChange} 
+          />
+        </div>
+      )}
+      {/* --- FIN DE CAMBIOS --- */}
     </>
   );
 };
