@@ -71,8 +71,6 @@
     padding-bottom: 0.75rem;
     margin-bottom: 0.75rem;
     border-bottom: 1px solid #e1e4e8;
-    /* --- CORRECCIÓN CLAVE --- */
-    /* Se establece el contexto de posicionamiento para el punto rojo del ítem. */
     position: relative; 
   }
   .item-list li:last-child { border-bottom: none; }
@@ -210,14 +208,10 @@
 
     .action-status-icon {
       vertical-align: middle;
-      /* Un pequeño margen para separarlo del texto */
-      /* Define un tamaño base */
       font-size: 1.1em;
-      /* --- AÑADE ESTA LÍNEA --- */
-      stroke-width: 0.5; /* Aumenta el grosor del ícono. Puedes probar valores como 0.5, 1, etc. */
+      stroke-width: 0.5;
     }
     
-    /* Colores según el estado */
     .status-success {
       color: #2da44e; /* Verde de GitHub */
     }
@@ -233,3 +227,45 @@
     .status-cancelled {
       color: #8b949e; /* Gris de GitHub */
     }
+
+/* --- INICIO DE CAMBIOS --- */
+
+/* 1. Contenedor para el estado y los asignados. Necesita ser relativo
+      para que podamos posicionar el estado de aprobación de forma absoluta. */
+.assignee-and-status-container {
+  position: relative;
+  /* Damos un poco de espacio arriba para que quepa el indicador de estado */
+  padding-top: 22px; 
+}
+
+/* 2. Estilos para el indicador de estado de aprobación */
+.approval-status {
+  position: absolute;
+  top: 0; /* Lo colocamos arriba del todo */
+  right: 0; /* Lo alineamos a la derecha del contenedor */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9em;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+}
+
+/* 3. Colores específicos para cada estado */
+.approval-status.approved {
+  color: #2da44e; /* Verde de GitHub */
+  background-color: #e6ffec; /* Un fondo verde muy claro */
+}
+
+.approval-status.changes-requested {
+  color: #cf222e; /* Rojo de GitHub */
+  background-color: #ffeef0; /* Un fondo rojo muy claro */
+}
+
+.approval-status svg {
+  stroke-width: 1;
+  font-size: 1.1em;
+}
+
+/* --- FIN DE CAMBIOS --- */

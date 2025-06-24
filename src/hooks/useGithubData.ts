@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
+import { type ReviewState } from '../background/githubClient';
 
 export type TabKey = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions' | 'Releases';
 export type Tab = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
@@ -26,7 +27,10 @@ export interface TrackedFile {
 export type TabVisibility = Record<TabKey, boolean>;
 
 export interface Branch { name: string; }
-export type { IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo };
+// --- INICIO DE CAMBIOS ---
+// 1. Añadimos ReviewState a la línea de exportación
+export type { IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo, ReviewState };
+// --- FIN DE CAMBIOS ---
 
 type IssueState = 'open' | 'closed' | 'all';
 type PRState = 'all' | 'open' | 'closed' | 'merged' | 'assigned_to_me';
@@ -37,7 +41,12 @@ interface Repo { id: number; name: string; full_name: string; private: boolean; 
 interface CommitInfo { sha: string; html_url: string; commit: { author: { name: string; date: string; }; message: string; }; author: { login: string; avatar_url: string; html_url: string; } | null; }
 export interface GitHubUser { login: string; avatar_url: string; html_url: string; }
 interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; closed_at: string | null; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
-interface PullRequestInfo extends IssueInfo { merged_at: string | null; }
+
+interface PullRequestInfo extends IssueInfo { 
+  merged_at: string | null; 
+  approvalState?: ReviewState;
+}
+
 interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; run_number: number; event: string; head_branch: string; actor: { login: string; avatar_url: string; }; pull_requests: { html_url: string; number: number; }[]; }
 interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; avatar_url: string; html_url: string; }; published_at: string; prerelease: boolean; }
 
@@ -221,15 +230,12 @@ export function useGithubData() {
   };
   
   const clearNotificationsForTab = useCallback((repo: string, tab: Tab) => {
-    // --- INICIO DE CAMBIOS ---
-    // 1. La limpieza de 'fileChanges' ya no se gestiona aquí para evitar el borrado prematuro.
     const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
       'Issues': ['issues'],
       'PRs': ['newPRs', 'assignedPRs'],
       'Actions': ['actions'],
       'Releases': ['newReleases']
     };
-    // --- FIN DE CAMBIOS ---
     const keysToClear = notificationMap[tab];
     
     if (!keysToClear || !user || !activeNotifications[repo]) return;
@@ -256,7 +262,16 @@ export function useGithubData() {
     setActiveNotifications(newNotifications);
     chrome.storage.local.set({ [`notifications_${user.login}`]: newNotifications });
 
-    const newTotalCount = Object.values(newNotifications).flatMap(Object.values).flat().length;
+    let newTotalCount = 0;
+    Object.values(newNotifications).forEach(repoNotifications => {
+      if (repoNotifications) {
+        Object.values(repoNotifications).forEach(notificationsArray => {
+          if (Array.isArray(notificationsArray)) {
+            newTotalCount += notificationsArray.length;
+          }
+        });
+      }
+    });
     chrome.action.setBadgeText({ text: newTotalCount > 0 ? `+${newTotalCount}` : '' });
   }, [activeNotifications, user]);
   
@@ -265,7 +280,6 @@ export function useGithubData() {
     setViewedFile(null);
   }, []);
 
-  // --- INICIO DE CAMBIOS ---
   const clearSingleFileNotification = useCallback((repo: string, path: string, branch: string) => {
     if (!user || !activeNotifications[repo]?.fileChanges) return;
 
@@ -278,7 +292,7 @@ export function useGithubData() {
     );
 
     if (updatedFileChanges.length === initialCount) {
-        return; // No se encontró ninguna notificación que limpiar
+        return;
     }
 
     if (updatedFileChanges.length === 0) {
@@ -304,13 +318,13 @@ export function useGithubData() {
         });
       }
     });
+    chrome.action.setBadgeText({ text: newTotalCount > 0 ? `+${newTotalCount}` : '' });
 
   }, [activeNotifications, user]);
 
   const handleFileSelect = useCallback((filePath: string) => {
     if (!selectedRepo || !selectedBranch) return;
     
-    // 2. Limpiamos la notificación específica de este archivo al seleccionarlo.
     clearSingleFileNotification(selectedRepo, filePath, selectedBranch);
     
     setIsContentLoading(true);
@@ -324,9 +338,8 @@ export function useGithubData() {
       setIsContentLoading(false);
     });
   }, [selectedRepo, selectedBranch, clearSingleFileNotification]);
-  // --- FIN DE CAMBIOS ---
 
-  const fetchDataForTab = useCallback(() => {
+  const fetchDataForTab = useCallback(async () => {
     if (!selectedRepo || ((activeTab === 'Commits' || activeTab === 'Code') && !selectedBranch)) {
       return;
     }
@@ -338,6 +351,7 @@ export function useGithubData() {
     }
     
     let messageType = '';
+    let isPrTab = false;
 
     switch(activeTab) {
       case 'README': messageType = 'getReadme'; break;
@@ -355,6 +369,7 @@ export function useGithubData() {
         message.state = issueStateFilter;
         break;
       case 'PRs': 
+        isPrTab = true;
         switch (prStateFilter) {
           case 'merged': messageType = 'getMergedPullRequests'; break;
           case 'closed': messageType = 'getClosedUnmergedPullRequests'; break;
@@ -381,7 +396,7 @@ export function useGithubData() {
     
     message.type = messageType;
 
-    chrome.runtime.sendMessage(message, (response) => {
+    chrome.runtime.sendMessage(message, async (response) => {
         if (response?.success) {
             if (activeTab === 'README') {
               setReadmeHtml(response.data || '');
@@ -389,17 +404,38 @@ export function useGithubData() {
               setDirectoryContent(response.data || []);
             } else {
               const { items, totalPages: newTotalPages } = response.data;
-              switch(activeTab) {
-                case 'Commits': setCommits(items || []); break;
-                case 'Issues': 
-                  const onlyIssues = items?.filter((item: IssueInfo) => !item.pull_request) || [];
-                  setIssues(onlyIssues);
-                  break;
-                case 'PRs': 
-                  setPullRequests(items || []);
-                  break;
-                case 'Actions': setActions(items || []); break;
-                case 'Releases': setReleases(items || []); break;
+              
+              if (isPrTab && items) {
+                const prsWithApproval = await Promise.all(
+                  items.map(async (pr: PullRequestInfo) => {
+                    return new Promise((resolve) => {
+                      chrome.runtime.sendMessage(
+                        { type: 'getPullRequestApprovalState', repoFullName: selectedRepo, prNumber: pr.number },
+                        (approvalResponse) => {
+                          if (approvalResponse.success) {
+                            resolve({ ...pr, approvalState: approvalResponse.data });
+                          } else {
+                            resolve(pr);
+                          }
+                        }
+                      );
+                    });
+                  })
+                );
+                setPullRequests(prsWithApproval);
+              } else {
+                switch(activeTab) {
+                  case 'Commits': setCommits(items || []); break;
+                  case 'Issues': 
+                    const onlyIssues = items?.filter((item: IssueInfo) => !item.pull_request) || [];
+                    setIssues(onlyIssues);
+                    break;
+                  case 'PRs': 
+                    setPullRequests(items || []);
+                    break;
+                  case 'Actions': setActions(items || []); break;
+                  case 'Releases': setReleases(items || []); break;
+                }
               }
               setTotalPages(newTotalPages || 1);
             }
@@ -444,10 +480,7 @@ export function useGithubData() {
   };
 
   useEffect(() => {
-    // --- INICIO DE CAMBIOS ---
-    // 4. Modificamos este useEffect para que no actúe en la pestaña 'Code'
     if (!selectedRepo || activeTab === 'Code') return;
-    // --- FIN DE CAMBIOS ---
 
     const timer = setTimeout(() => {
       clearNotificationsForTab(selectedRepo, activeTab);

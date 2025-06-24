@@ -17,16 +17,21 @@ import {
   fetchReleases,
   fetchDirectoryContent,
   fetchFileContent,
-  fetchLastCommitForFile
+  fetchLastCommitForFile,
+  fetchPullRequestApprovalState
 } from './githubClient';
 
 initializeAlarms();
 
+// --- INICIO DE CORRECCIÓN ---
+// El listener que se encarga de abrir el panel al hacer clic en el icono.
+// Este bloque faltaba en tu archivo.
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.windowId) {
     await chrome.sidePanel.open({ windowId: tab.windowId });
   }
 });
+// --- FIN DE CORRECCIÓN ---
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
@@ -277,6 +282,22 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }
         const commit = await fetchLastCommitForFile(repoFullName, branch, path);
         sendResponse({ success: true, data: commit });
+      } catch (error: any) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
+    return true;
+  }
+
+  if (message.type === 'getPullRequestApprovalState') {
+    (async () => {
+      try {
+        const { repoFullName, prNumber } = message;
+        if (!repoFullName || !prNumber) {
+          throw new Error('repoFullName and prNumber are required.');
+        }
+        const state = await fetchPullRequestApprovalState(repoFullName, prNumber);
+        sendResponse({ success: true, data: state });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
       }

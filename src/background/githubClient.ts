@@ -236,18 +236,8 @@ export async function fetchFileContent(repoFullName: string, filePath: string, b
     return response.text();
 }
 
-// --- INICIO DE CÓDIGO AÑADIDO ---
-
-/**
- * Obtiene el último commit que modificó un archivo específico en una rama.
- * @param repoFullName - El nombre completo del repositorio (ej: "owner/repo").
- * @param branchName - El nombre de la rama.
- * @param path - La ruta del archivo a consultar.
- * @returns El objeto del último commit que afectó al archivo.
- */
 export async function fetchLastCommitForFile(repoFullName: string, branchName: string, path: string) {
     const token = await getAuthToken();
-    // Pedimos solo el último commit (per_page=1) para ser eficientes.
     const url = `${GITHUB_API_URL}/repos/${repoFullName}/commits?sha=${branchName}&path=${encodeURIComponent(path)}&per_page=1`;
     
     const response = await fetch(url, {
@@ -262,13 +252,59 @@ export async function fetchLastCommitForFile(repoFullName: string, branchName: s
     }
 
     const commits = await response.json();
-    // Si la respuesta está vacía, significa que el archivo no existe en esa rama o la ruta es incorrecta.
     if (commits.length === 0) {
         return null;
     }
     
-    // Devolvemos solo el primer commit, que es el más reciente.
     return commits[0];
 }
 
+// --- INICIO DE CÓDIGO AÑADIDO ---
+export type ReviewState = 'APPROVED' | 'CHANGES_REQUESTED' | 'PENDING';
+
+export async function fetchPullRequestApprovalState(repoFullName: string, prNumber: number): Promise<ReviewState> {
+    const token = await getAuthToken();
+    const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/pulls/${prNumber}/reviews`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'X-GitHub-Api-Version': '2022-11-28'
+        },
+    });
+
+    if (!response.ok) {
+        if (response.status === 404) return 'PENDING'; // No hay revisiones todavía
+        throw new Error(`Failed to fetch reviews for PR #${prNumber}. Status: ${response.status}`);
+    }
+
+    const reviews: any[] = await response.json();
+    if (reviews.length === 0) {
+        return 'PENDING';
+    }
+
+    // Obtenemos la última revisión de cada usuario para saber su estado actual
+    const latestReviewsByUser: { [key: string]: any } = {};
+    for (const review of reviews) {
+        // Solo nos interesan las revisiones con un estado, no los comentarios simples
+        if (review.state === 'COMMENTED') continue;
+        // Si el usuario no está en el mapa o esta revisión es más reciente, la guardamos
+        if (!latestReviewsByUser[review.user.login] || new Date(review.submitted_at) > new Date(latestReviewsByUser[review.user.login].submitted_at)) {
+            latestReviewsByUser[review.user.login] = review;
+        }
+    }
+
+    const finalStates = Object.values(latestReviewsByUser).map(review => review.state);
+
+    // Si algún usuario ha solicitado cambios, ese es el estado dominante
+    if (finalStates.includes('CHANGES_REQUESTED')) {
+        return 'CHANGES_REQUESTED';
+    }
+
+    // Si al menos un usuario ha aprobado (y nadie ha pedido cambios), está aprobado
+    if (finalStates.includes('APPROVED')) {
+        return 'APPROVED';
+    }
+    
+    // De lo contrario, sigue pendiente (ej: solo hay comentarios o revisiones desestimadas)
+    return 'PENDING';
+}
 // --- FIN DE CÓDIGO AÑADIDO ---

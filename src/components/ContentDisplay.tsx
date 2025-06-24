@@ -12,7 +12,8 @@ import type {
   CommitInfo, 
   ReleaseInfo,
   DirectoryContentItem,
-  ViewedFile
+  ViewedFile,
+  ReviewState
 } from '../hooks/useGithubData';
 import type { ActiveNotifications } from '../background/alarms';
 import { VscCheck, VscError, VscCircleSlash, VscLoading, VscQuestion, VscVmRunning } from 'react-icons/vsc';
@@ -40,6 +41,26 @@ export interface ContentDisplayProps {
   addTrackedFile: (repo: string, path: string, branch: string) => void;
   removeTrackedFile: (repo: string, path: string, branch: string) => void;
 }
+
+const ApprovalStatusIndicator = ({ state }: { state?: ReviewState }) => {
+  if (!state || state === 'PENDING') {
+    return null;
+  }
+
+  const statusInfo = {
+    APPROVED: { text: 'Aprobado', className: 'approved', icon: <VscCheck /> },
+    CHANGES_REQUESTED: { text: 'Cambios solicitados', className: 'changes-requested', icon: <VscError /> },
+  }[state];
+
+  if (!statusInfo) return null;
+
+  return (
+    <div className={`approval-status ${statusInfo.className}`}>
+      {statusInfo.icon}
+      <span>{statusInfo.text}</span>
+    </div>
+  );
+};
 
 export const ContentDisplay = ({ 
   activeTab, 
@@ -118,6 +139,8 @@ export const ContentDisplay = ({
           dateValue = formatCommitDate(item.created_at);
         }
 
+        const prItem = item as PullRequestInfo;
+
         return (
           <li key={item.id}>
               <div className="item-title-container">
@@ -130,20 +153,23 @@ export const ContentDisplay = ({
                     <span>Creado por <strong>{item.user.login}</strong></span>
                     <span className="item-date">{dateLabel}: {dateValue}</span>
                   </div>
-                  {item.assignees && item.assignees.length > 0 ? (
-                      <div className="assignee-info">
-                          <span>Asignado a:</span>
-                          {item.assignees.map(assignee => (
-                              <a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}>
-                                  <img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" />
-                              </a>
-                          ))}
-                      </div>
-                  ) : (
-                      <div className="assignee-info">
-                          <span>No asignado</span>
-                      </div>
-                  )}
+                  <div className="assignee-and-status-container">
+                    <ApprovalStatusIndicator state={prItem.approvalState} />
+                    {item.assignees && item.assignees.length > 0 ? (
+                        <div className="assignee-info">
+                            <span>Asignado a:</span>
+                            {item.assignees.map(assignee => (
+                                <a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}>
+                                    <img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" />
+                                </a>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="assignee-info">
+                            <span>No asignado</span>
+                        </div>
+                    )}
+                  </div>
               </div>
           </li>
         );
