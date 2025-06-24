@@ -16,7 +16,7 @@ import type {
   ReviewState
 } from '../hooks/useGithubData';
 import type { ActiveNotifications } from '../background/alarms';
-import { VscCheck, VscError, VscCircleSlash, VscLoading, VscQuestion, VscVmRunning } from 'react-icons/vsc';
+import { VscCheck, VscError, VscCircleSlash, VscLoading, VscQuestion, VscVmRunning, VscHistory } from 'react-icons/vsc';
 
 export interface ContentDisplayProps {
   activeTab: Tab;
@@ -42,25 +42,35 @@ export interface ContentDisplayProps {
   removeTrackedFile: (repo: string, path: string, branch: string) => void;
 }
 
+// --- INICIO DE LA CORRECCIÓN ---
 const ApprovalStatusIndicator = ({ state }: { state?: ReviewState }) => {
-  if (!state || state === 'PENDING') {
-    return null;
+  // Verificamos el estado y devolvemos el componente correspondiente.
+  // Si el estado es undefined (aún no se ha cargado), no mostramos nada.
+  switch (state) {
+    case 'APPROVED':
+      return (
+        <div className="approval-status approved">
+          <VscCheck /> <span>Aprobado</span>
+        </div>
+      );
+    case 'CHANGES_REQUESTED':
+      return (
+        <div className="approval-status changes-requested">
+          <VscError /> <span>Cambios solicitados</span>
+        </div>
+      );
+    case 'PENDING':
+      return (
+        <div className="approval-status pending">
+          <VscHistory /> <span>Pendiente</span>
+        </div>
+      );
+    default:
+      return null;
   }
-
-  const statusInfo = {
-    APPROVED: { text: 'Aprobado', className: 'approved', icon: <VscCheck /> },
-    CHANGES_REQUESTED: { text: 'Cambios solicitados', className: 'changes-requested', icon: <VscError /> },
-  }[state];
-
-  if (!statusInfo) return null;
-
-  return (
-    <div className={`approval-status ${statusInfo.className}`}>
-      {statusInfo.icon}
-      <span>{statusInfo.text}</span>
-    </div>
-  );
 };
+// --- FIN DE LA CORRECCIÓN ---
+
 
 export const ContentDisplay = ({ 
   activeTab, 
@@ -120,9 +130,21 @@ export const ContentDisplay = ({
     <ul className="item-list">
       {items.map((item) => {
         const notificationsForRepo = activeNotifications[selectedRepo] || {};
+        
         const isNew = notificationKeys.some(key => {
             const notifications = notificationsForRepo[key];
-            return Array.isArray(notifications) && (notifications as number[]).includes(item.id);
+            if (!Array.isArray(notifications) || notifications.length === 0) {
+              return false;
+            }
+            return notifications.some(notification => {
+              if (typeof notification === 'number') {
+                return notification === item.id;
+              }
+              if (typeof notification === 'object' && notification && 'id' in notification) {
+                return (notification as { id: number }).id === item.id;
+              }
+              return false;
+            });
         });
         
         let dateLabel = '';
@@ -234,8 +256,6 @@ export const ContentDisplay = ({
     );
   }
     
-  const notificationsForRepo = activeNotifications[selectedRepo] || {};
-  
   if (activeTab === 'Commits' && commits.length > 0) {
     return (
       <ul className="item-list">
@@ -273,9 +293,13 @@ export const ContentDisplay = ({
   }
   
   if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues, ['issues']);
-  if (activeTab === 'PRs' && pullRequests.length > 0) return renderItemList(pullRequests, ['newPRs', 'assignedPRs']);
+  
+  if (activeTab === 'PRs' && pullRequests.length > 0) {
+    return renderItemList(pullRequests, ['newPRs', 'assignedPRs', 'prStatusChanges']);
+  }
   
   if (activeTab === 'Actions' && actions.length > 0) {
+    const notificationsForRepo = activeNotifications[selectedRepo] || {};
     return (
       <ul className="item-list">
         {actions.map((action) => {
@@ -323,6 +347,7 @@ export const ContentDisplay = ({
   }
   
   if (activeTab === 'Releases' && releases.length > 0) {
+    const notificationsForRepo = activeNotifications[selectedRepo] || {};
     return (
       <ul className="item-list">
         {releases.map((release, index) => {
