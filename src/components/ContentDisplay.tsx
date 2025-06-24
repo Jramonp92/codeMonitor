@@ -4,6 +4,8 @@ import './ContentDisplay.css';
 import { ItemStatus } from './ItemStatus';
 import { FileBrowser } from './FileBrowser';
 import { FileViewer } from './FileViewer';
+// --- INICIO DE CAMBIOS ---
+// 1. Importamos los nuevos tipos que vamos a necesitar desde nuestro hook
 import type { 
   Tab, 
   IssueInfo, 
@@ -13,8 +15,12 @@ import type {
   ReleaseInfo,
   DirectoryContentItem,
   ViewedFile,
-  ReviewState
+  ReviewState,
+  PRReviewInfo,
+  Reviewer,
+  GitHubUser
 } from '../hooks/useGithubData';
+// --- FIN DE CAMBIOS ---
 import type { ActiveNotifications } from '../background/alarms';
 import { VscCheck, VscError, VscCircleSlash, VscLoading, VscQuestion, VscVmRunning, VscHistory } from 'react-icons/vsc';
 
@@ -42,34 +48,69 @@ export interface ContentDisplayProps {
   removeTrackedFile: (repo: string, path: string, branch: string) => void;
 }
 
-// --- INICIO DE LA CORRECCIÓN ---
-const ApprovalStatusIndicator = ({ state }: { state?: ReviewState }) => {
-  // Verificamos el estado y devolvemos el componente correspondiente.
-  // Si el estado es undefined (aún no se ha cargado), no mostramos nada.
-  switch (state) {
-    case 'APPROVED':
-      return (
-        <div className="approval-status approved">
-          <VscCheck /> <span>Aprobado</span>
-        </div>
-      );
-    case 'CHANGES_REQUESTED':
-      return (
-        <div className="approval-status changes-requested">
-          <VscError /> <span>Cambios solicitados</span>
-        </div>
-      );
-    case 'PENDING':
-      return (
-        <div className="approval-status pending">
-          <VscHistory /> <span>Pendiente</span>
-        </div>
-      );
-    default:
-      return null;
+// --- INICIO DE CAMBIOS ---
+// 2. Este componente ahora muestra el estado general del PR
+const ApprovalStatusIndicator = ({ reviewInfo }: { reviewInfo?: PRReviewInfo }) => {
+  const state = reviewInfo?.overallState;
+
+  if (!state || state === 'PENDING') {
+    return null;
   }
+
+  const statusInfo = {
+    APPROVED: { text: 'Aprobado', className: 'approved', icon: <VscCheck /> },
+    CHANGES_REQUESTED: { text: 'Cambios solicitados', className: 'changes-requested', icon: <VscError /> },
+    PENDING: { text: 'Pendiente', className: 'pending', icon: <VscHistory /> },
+    COMMENTED: {text: 'Comentado', className: 'commented', icon: <VscHistory /> }
+  }[state];
+
+  if (!statusInfo) return null;
+
+  return (
+    <div className={`approval-status ${statusInfo.className}`}>
+      {statusInfo.icon}
+      <span>{statusInfo.text}</span>
+    </div>
+  );
 };
-// --- FIN DE LA CORRECCIÓN ---
+
+// 3. Este nuevo componente se encarga de mostrar la lista unificada de revisores
+const ReviewerDisplay = ({ pr }: { pr: PullRequestInfo }) => {
+  const allReviewers = new Map<string, { user: GitHubUser | Reviewer, state: ReviewState }>();
+
+  // Prioridad 1: Los que ya han enviado una revisión
+  pr.reviewInfo?.reviewers.forEach(reviewer => {
+    allReviewers.set(reviewer.login, { user: reviewer, state: reviewer.state });
+  });
+
+  // Prioridad 2: Los que han sido solicitados pero aún no responden
+  pr.requested_reviewers?.forEach(requested => {
+    if (!allReviewers.has(requested.login)) {
+      allReviewers.set(requested.login, { user: requested, state: 'PENDING' });
+    }
+  });
+
+  if (allReviewers.size === 0) {
+    return <div className="assignee-info"><span>No reviewers</span></div>;
+  }
+
+  return (
+    <div className="assignee-info">
+      <span>Reviewers:</span>
+      {Array.from(allReviewers.values()).map(({ user, state }) => (
+        <div key={user.login} className="reviewer-avatar-container">
+          <a href={user.html_url} target="_blank" rel="noopener noreferrer" title={`${user.login} (${state})`}>
+            <img src={user.avatar_url} alt={`Avatar de ${user.login}`} className="assignee-avatar" />
+            {state === 'APPROVED' && <VscCheck className="reviewer-status-icon approved" />}
+            {state === 'CHANGES_REQUESTED' && <VscError className="reviewer-status-icon changes-requested" />}
+            {state === 'PENDING' && <VscHistory className="reviewer-status-icon pending" />}
+          </a>
+        </div>
+      ))}
+    </div>
+  );
+};
+// --- FIN DE CAMBIOS ---
 
 
 export const ContentDisplay = ({ 
@@ -126,7 +167,7 @@ export const ContentDisplay = ({
     return <VscLoading {...iconProps} />;
   };
 
-  const renderItemList = (items: (IssueInfo | PullRequestInfo)[], notificationKeys: (keyof ActiveNotifications[string])[]) => (
+  const renderItemList = (items: (IssueInfo | PullRequestInfo)[], notificationKeys: (keyof ActiveNotifications[string])[], itemType: 'issue' | 'pr') => (
     <ul className="item-list">
       {items.map((item) => {
         const notificationsForRepo = activeNotifications[selectedRepo] || {};
@@ -161,8 +202,6 @@ export const ContentDisplay = ({
           dateValue = formatCommitDate(item.created_at);
         }
 
-        const prItem = item as PullRequestInfo;
-
         return (
           <li key={item.id}>
               <div className="item-title-container">
@@ -176,21 +215,31 @@ export const ContentDisplay = ({
                     <span className="item-date">{dateLabel}: {dateValue}</span>
                   </div>
                   <div className="assignee-and-status-container">
-                    <ApprovalStatusIndicator state={prItem.approvalState} />
-                    {item.assignees && item.assignees.length > 0 ? (
-                        <div className="assignee-info">
-                            <span>Asignado a:</span>
-                            {item.assignees.map(assignee => (
-                                <a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}>
-                                    <img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" />
-                                </a>
-                            ))}
-                        </div>
+                    {/* --- INICIO DE CAMBIOS --- */}
+                    {/* 4. Usamos nuestros nuevos componentes aquí */}
+                    {itemType === 'pr' ? (
+                      <>
+                        <ApprovalStatusIndicator reviewInfo={(item as PullRequestInfo).reviewInfo} />
+                        <ReviewerDisplay pr={item as PullRequestInfo} />
+                      </>
                     ) : (
+                      // Lógica original para los Issues
+                      (item as IssueInfo).assignees && (item as IssueInfo).assignees.length > 0 ? (
                         <div className="assignee-info">
-                            <span>No asignado</span>
+                          <span>Asignado a:</span>
+                          {(item as IssueInfo).assignees.map(assignee => (
+                            <a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}>
+                              <img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" />
+                            </a>
+                          ))}
                         </div>
+                      ) : (
+                        <div className="assignee-info">
+                          <span>No asignado</span>
+                        </div>
+                      )
                     )}
+                    {/* --- FIN DE CAMBIOS --- */}
                   </div>
               </div>
           </li>
@@ -292,10 +341,10 @@ export const ContentDisplay = ({
     );
   }
   
-  if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues, ['issues']);
+  if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues, ['issues'], 'issue');
   
   if (activeTab === 'PRs' && pullRequests.length > 0) {
-    return renderItemList(pullRequests, ['newPRs', 'assignedPRs', 'prStatusChanges']);
+    return renderItemList(pullRequests, ['newPRs', 'assignedPRs', 'prStatusChanges'], 'pr');
   }
   
   if (activeTab === 'Actions' && actions.length > 0) {

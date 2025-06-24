@@ -7,8 +7,11 @@ import {
   fetchReleases,
   fetchMyAssignedPullRequests,
   fetchLastCommitForFile,
-  fetchPullRequestApprovalState,
+  // --- INICIO DE CAMBIOS ---
+  // 1. Cambiamos la importación al nuevo nombre de la función
+  fetchPullRequestReviewInfo,
   type ReviewState,
+  // --- FIN DE CAMBIOS ---
 } from './githubClient';
 import type { TrackedFile, PullRequestInfo } from '../hooks/useGithubData';
 
@@ -17,6 +20,7 @@ export interface AlertSettings {
   [repoFullName: string]: {
     issues?: boolean;
     newPRs?: boolean;
+
     assignedPRs?: boolean;
     actions?: boolean;
     newReleases?: boolean;
@@ -117,9 +121,11 @@ async function checkForUpdates() {
         const lastPRStates = lastData[repo]?.prStates || {};
         const newPRStates: { [prNumber: number]: ReviewState } = {};
 
-        // CORRECCIÓN FINAL: Aseguramos el tipo de 'pr' a 'PullRequestInfo' en el bucle
         for (const pr of openPRs as PullRequestInfo[]) {
-            const currentState = await fetchPullRequestApprovalState(repo, pr.number);
+            // --- INICIO DE CAMBIOS ---
+            // 2. Llamamos a la nueva función y desestructuramos el resultado
+            const { overallState: currentState } = await fetchPullRequestReviewInfo(repo, pr.number);
+            // --- FIN DE CAMBIOS ---
             newPRStates[pr.number] = currentState;
             const previousState = lastPRStates[pr.number];
 

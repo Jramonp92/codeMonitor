@@ -18,20 +18,20 @@ import {
   fetchDirectoryContent,
   fetchFileContent,
   fetchLastCommitForFile,
-  fetchPullRequestApprovalState
+  // --- INICIO DE CAMBIOS ---
+  // 1. Reemplazamos la función antigua por la nueva
+  fetchPullRequestReviewInfo
+  // --- FIN DE CAMBIOS ---
 } from './githubClient';
 
 initializeAlarms();
 
-// --- INICIO DE CORRECCIÓN ---
 // El listener que se encarga de abrir el panel al hacer clic en el icono.
-// Este bloque faltaba en tu archivo.
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.windowId) {
     await chrome.sidePanel.open({ windowId: tab.windowId });
   }
 });
-// --- FIN DE CORRECCIÓN ---
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
@@ -289,6 +289,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true;
   }
 
+  // --- INICIO DE CAMBIOS ---
+  // 2. Actualizamos este bloque para que use la nueva función
   if (message.type === 'getPullRequestApprovalState') {
     (async () => {
       try {
@@ -296,13 +298,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         if (!repoFullName || !prNumber) {
           throw new Error('repoFullName and prNumber are required.');
         }
-        const state = await fetchPullRequestApprovalState(repoFullName, prNumber);
-        sendResponse({ success: true, data: state });
+        // Llamamos a la nueva función que devuelve el objeto completo
+        const reviewInfo = await fetchPullRequestReviewInfo(repoFullName, prNumber);
+        sendResponse({ success: true, data: reviewInfo });
       } catch (error: any) {
         sendResponse({ success: false, error: error.message });
       }
     })();
     return true;
   }
+  // --- FIN DE CAMBIOS ---
   
 });

@@ -279,3 +279,32 @@
   background-color: #f1f3f4; /* Gris claro */
   color: #5f6368;
 }
+
+/* Estilos para los avatares de los reviewers y sus íconos de estado */
+.reviewer-avatar-container {
+  position: relative;
+  display: inline-block;
+}
+
+.reviewer-status-icon {
+  position: absolute;
+  bottom: -2px;
+  right: -4px;
+  background-color: white;
+  border-radius: 50%;
+  padding: 1px;
+  font-size: 0.8em;
+  box-shadow: 0 0 2px rgba(0,0,0,0.3);
+}
+
+.reviewer-status-icon.approved {
+  color: #2da44e; /* Verde de GitHub */
+}
+
+.reviewer-status-icon.changes-requested {
+  color: #cf222e; /* Rojo de GitHub */
+}
+
+.reviewer-status-icon.pending {
+  color: #8b949e; /* Gris de GitHub */
+}

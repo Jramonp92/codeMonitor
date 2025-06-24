@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
-import { type ReviewState } from '../background/githubClient';
+// --- INICIO DE CAMBIOS ---
+// 1. Importamos los nuevos tipos que creamos en githubClient.ts
+import { type ReviewState, type PRReviewInfo, type Reviewer } from '../background/githubClient';
+// --- FIN DE CAMBIOS ---
 
 export type TabKey = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions' | 'Releases';
 export type Tab = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
@@ -27,9 +30,10 @@ export interface TrackedFile {
 export type TabVisibility = Record<TabKey, boolean>;
 
 export interface Branch { name: string; }
+
 // --- INICIO DE CAMBIOS ---
-// 1. Añadimos ReviewState a la línea de exportación
-export type { IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo, ReviewState };
+// 2. Exportamos los nuevos tipos para que estén disponibles en otros archivos.
+export type { IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo, ReviewState, PRReviewInfo, Reviewer };
 // --- FIN DE CAMBIOS ---
 
 type IssueState = 'open' | 'closed' | 'all';
@@ -39,13 +43,21 @@ type ActionStatus = 'all' | 'success' | 'failure' | 'in_progress' | 'queued' | '
 interface Repo { id: number; name: string; full_name: string; private: boolean; owner: { login: string; }; default_branch: string; }
 
 interface CommitInfo { sha: string; html_url: string; commit: { author: { name: string; date: string; }; message: string; }; author: { login: string; avatar_url: string; html_url: string; } | null; }
+
 export interface GitHubUser { login: string; avatar_url: string; html_url: string; }
+
 interface IssueInfo { id: number; title: string; html_url: string; number: number; user: GitHubUser; created_at: string; closed_at: string | null; state: 'open' | 'closed'; assignees: GitHubUser[]; pull_request?: object; }
 
+// --- INICIO DE CAMBIOS ---
+// 3. Actualizamos la interfaz PullRequestInfo para usar la nueva estructura de datos.
 interface PullRequestInfo extends IssueInfo { 
-  merged_at: string | null; 
-  approvalState?: ReviewState;
+  merged_at: string | null;
+  // requested_reviewers ya viene en el objeto base de la API, lo mantenemos.
+  requested_reviewers?: GitHubUser[];
+  // Reemplazamos 'approvalState' por el objeto completo 'reviewInfo'.
+  reviewInfo?: PRReviewInfo;
 }
+// --- FIN DE CAMBIOS ---
 
 interface ActionInfo { id: number; name: string; status: 'queued' | 'in_progress' | 'completed' | 'waiting'; conclusion: 'success' | 'failure' | 'neutral' | 'cancelled' | 'skipped' | 'timed_out' | 'action_required' | null; html_url: string; created_at: string; run_number: number; event: string; head_branch: string; actor: { login: string; avatar_url: string; }; pull_requests: { html_url: string; number: number; }[]; }
 interface ReleaseInfo { id: number; name: string; tag_name: string; html_url: string; author: { login: string; avatar_url: string; html_url: string; }; published_at: string; prerelease: boolean; }
@@ -232,7 +244,7 @@ export function useGithubData() {
   const clearNotificationsForTab = useCallback((repo: string, tab: Tab) => {
     const notificationMap: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
       'Issues': ['issues'],
-      'PRs': ['newPRs', 'assignedPRs'],
+      'PRs': ['newPRs', 'assignedPRs', 'prStatusChanges'],
       'Actions': ['actions'],
       'Releases': ['newReleases']
     };
@@ -245,7 +257,7 @@ export function useGithubData() {
     let didClear = false;
 
     keysToClear.forEach(key => {
-      if (newRepoNotifications[key] && newRepoNotifications[key]!.length > 0) {
+      if (newRepoNotifications[key] && (newRepoNotifications[key] as any[]).length > 0) {
         delete newRepoNotifications[key];
         didClear = true;
       }
@@ -406,23 +418,28 @@ export function useGithubData() {
               const { items, totalPages: newTotalPages } = response.data;
               
               if (isPrTab && items) {
-                const prsWithApproval = await Promise.all(
+                const prsWithReviewInfo = await Promise.all(
                   items.map(async (pr: PullRequestInfo) => {
                     return new Promise((resolve) => {
+                      // --- INICIO DE CAMBIOS ---
+                      // 4. Actualizamos la lógica para que guarde el objeto 'reviewInfo' completo
                       chrome.runtime.sendMessage(
                         { type: 'getPullRequestApprovalState', repoFullName: selectedRepo, prNumber: pr.number },
-                        (approvalResponse) => {
-                          if (approvalResponse.success) {
-                            resolve({ ...pr, approvalState: approvalResponse.data });
+                        (reviewResponse) => {
+                          if (reviewResponse.success) {
+                            // Asignamos la respuesta a la nueva propiedad 'reviewInfo'
+                            resolve({ ...pr, reviewInfo: reviewResponse.data });
                           } else {
+                            // Si falla, resolvemos el PR original sin información de revisión
                             resolve(pr);
                           }
                         }
                       );
+                      // --- FIN DE CAMBIOS ---
                     });
                   })
                 );
-                setPullRequests(prsWithApproval);
+                setPullRequests(prsWithReviewInfo);
               } else {
                 switch(activeTab) {
                   case 'Commits': setCommits(items || []); break;

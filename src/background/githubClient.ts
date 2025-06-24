@@ -1,4 +1,5 @@
 // src/background/githubClient.ts
+
 async function getAuthToken() {
     const result = await chrome.storage.local.get('token');
     if (!result.token) throw new Error('No authentication token found.');
@@ -7,6 +8,22 @@ async function getAuthToken() {
 
 const GITHUB_API_URL = "https://api.github.com";
 const ITEMS_PER_PAGE = 7;
+
+// --- INICIO DE CAMBIOS ---
+// 1. Añadimos 'export' a todos los tipos y funciones que deben ser públicos.
+export type ReviewState = 'APPROVED' | 'CHANGES_REQUESTED' | 'PENDING' | 'COMMENTED';
+
+export interface Reviewer {
+  login: string;
+  avatar_url: string;
+  html_url: string;
+  state: ReviewState;
+}
+
+export interface PRReviewInfo {
+  overallState: ReviewState;
+  reviewers: Reviewer[];
+}
 
 const normalizePRData = (item: any) => ({
     ...item,
@@ -259,10 +276,7 @@ export async function fetchLastCommitForFile(repoFullName: string, branchName: s
     return commits[0];
 }
 
-// --- INICIO DE CÓDIGO AÑADIDO ---
-export type ReviewState = 'APPROVED' | 'CHANGES_REQUESTED' | 'PENDING';
-
-export async function fetchPullRequestApprovalState(repoFullName: string, prNumber: number): Promise<ReviewState> {
+export async function fetchPullRequestReviewInfo(repoFullName: string, prNumber: number): Promise<PRReviewInfo> {
     const token = await getAuthToken();
     const response = await fetch(`${GITHUB_API_URL}/repos/${repoFullName}/pulls/${prNumber}/reviews`, {
         headers: {
@@ -272,39 +286,39 @@ export async function fetchPullRequestApprovalState(repoFullName: string, prNumb
     });
 
     if (!response.ok) {
-        if (response.status === 404) return 'PENDING'; // No hay revisiones todavía
+        if (response.status === 404) return { overallState: 'PENDING', reviewers: [] };
         throw new Error(`Failed to fetch reviews for PR #${prNumber}. Status: ${response.status}`);
     }
 
     const reviews: any[] = await response.json();
     if (reviews.length === 0) {
-        return 'PENDING';
+        return { overallState: 'PENDING', reviewers: [] };
     }
 
-    // Obtenemos la última revisión de cada usuario para saber su estado actual
-    const latestReviewsByUser: { [key: string]: any } = {};
+    const latestReviewsByUser: Map<string, any> = new Map();
     for (const review of reviews) {
-        // Solo nos interesan las revisiones con un estado, no los comentarios simples
-        if (review.state === 'COMMENTED') continue;
-        // Si el usuario no está en el mapa o esta revisión es más reciente, la guardamos
-        if (!latestReviewsByUser[review.user.login] || new Date(review.submitted_at) > new Date(latestReviewsByUser[review.user.login].submitted_at)) {
-            latestReviewsByUser[review.user.login] = review;
+        if (review.state !== 'COMMENTED') {
+            latestReviewsByUser.set(review.user.login, review);
         }
     }
 
-    const finalStates = Object.values(latestReviewsByUser).map(review => review.state);
+    const finalReviews = Array.from(latestReviewsByUser.values());
 
-    // Si algún usuario ha solicitado cambios, ese es el estado dominante
+    const reviewers: Reviewer[] = finalReviews.map(review => ({
+        login: review.user.login,
+        avatar_url: review.user.avatar_url,
+        html_url: review.user.html_url,
+        state: review.state as ReviewState,
+    }));
+    
+    const finalStates = reviewers.map(r => r.state);
+
+    let overallState: ReviewState = 'PENDING';
     if (finalStates.includes('CHANGES_REQUESTED')) {
-        return 'CHANGES_REQUESTED';
-    }
-
-    // Si al menos un usuario ha aprobado (y nadie ha pedido cambios), está aprobado
-    if (finalStates.includes('APPROVED')) {
-        return 'APPROVED';
+        overallState = 'CHANGES_REQUESTED';
+    } else if (finalStates.includes('APPROVED')) {
+        overallState = 'APPROVED';
     }
     
-    // De lo contrario, sigue pendiente (ej: solo hay comentarios o revisiones desestimadas)
-    return 'PENDING';
+    return { overallState, reviewers };
 }
-// --- FIN DE CÓDIGO AÑADIDO ---
