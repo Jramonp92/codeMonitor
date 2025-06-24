@@ -33,10 +33,13 @@ export interface Workflow {
   name: string;
 }
 
-// --- INICIO DE CAMBIOS ---
-// 1. Eliminamos 'Workflow' de esta línea para evitar la exportación duplicada.
-export type { IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo, ReviewState, PRReviewInfo, Reviewer };
-// --- FIN DE CAMBIOS ---
+// --- INICIO DE NUEVOS TIPOS Y EXPORTACIONES ---
+// 1. Aquí definimos el nuevo tipo para el filtro de revisión.
+export type PRReviewStateFilter = 'all' | 'APPROVED' | 'CHANGES_REQUESTED' | 'PENDING';
+
+// 2. Exportamos todos los tipos necesarios, incluyendo el nuevo.
+export type { IssueState, PRState, ActionStatus, IssueInfo, PullRequestInfo, ActionInfo, CommitInfo, ReleaseInfo, Repo, ReviewState, PRReviewInfo, Reviewer }; // <--- 'Workflow' ha sido eliminado de esta lista
+// --- FIN DE NUEVOS TIPOS Y EXPORTACIONES ---
 
 
 type IssueState = 'open' | 'closed' | 'all';
@@ -72,6 +75,12 @@ export function useGithubData() {
   const [issueStateFilter, setIssueStateFilter] = useState<IssueState>('all');
   const [prStateFilter, setPrStateFilter] = useState<PRState>('all');
   const [actionStatusFilter, setActionStatusFilter] = useState<ActionStatus>('all');
+  
+  // --- INICIO DE NUEVO ESTADO ---
+  // 3. Añadimos el nuevo estado para el filtro de revisión.
+  const [prReviewFilter, setPrReviewFilter] = useState<PRReviewStateFilter>('all');
+  // --- FIN DE NUEVO ESTADO ---
+
   const [readmeHtml, setReadmeHtml] = useState<string>('');
   const [commits, setCommits] = useState<CommitInfo[]>([]);
   const [issues, setIssues] = useState<IssueInfo[]>([]);
@@ -378,6 +387,10 @@ export function useGithubData() {
       return;
     }
     
+    if (activeTab === 'PRs' && prReviewFilter !== 'all') {
+      return;
+    }
+
     setIsContentLoading(true);
     let message: any = { repoFullName: selectedRepo };
     if (activeTab !== 'README' && activeTab !== 'Code') {
@@ -483,7 +496,7 @@ export function useGithubData() {
         }
         setIsContentLoading(false);
     });
-  }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter, selectedBranch, currentPath, selectedWorkflowId]);
+  }, [selectedRepo, activeTab, currentPage, issueStateFilter, prStateFilter, actionStatusFilter, selectedBranch, currentPath, selectedWorkflowId, prReviewFilter]);
 
   useEffect(() => {
     fetchDataForTab();
@@ -504,6 +517,9 @@ export function useGithubData() {
     if (newTab !== 'Code') {
       setCurrentPath('');
       setViewedFile(null);
+    }
+    if (newTab !== 'PRs') {
+      setPrReviewFilter('all');
     }
   };
 
@@ -547,6 +563,7 @@ export function useGithubData() {
 
   const handlePrFilterChange = (newFilter: PRState) => {
     setPrStateFilter(newFilter);
+    setPrReviewFilter('all');
     setCurrentPage(1);
   };
 
@@ -559,6 +576,19 @@ export function useGithubData() {
     setSelectedWorkflowId(workflowId);
     setCurrentPage(1);
   };
+
+  // --- INICIO DE NUEVA FUNCIÓN ---
+  // 4. Creamos la función para manejar el cambio del nuevo filtro.
+  const handlePrReviewFilterChange = (newFilter: PRReviewStateFilter) => {
+    setPrReviewFilter(newFilter);
+    setCurrentPage(1);
+    // Si el usuario filtra por un estado de revisión, tiene más sentido
+    // que la lista base sea la de PRs abiertos. Forzamos este cambio.
+    if (prStateFilter !== 'open') {
+      setPrStateFilter('open');
+    }
+  };
+  // --- FIN DE NUEVA FUNCIÓN ---
 
 
   const clearAllNotifications = useCallback(() => {
@@ -634,5 +664,10 @@ export function useGithubData() {
     areWorkflowsLoading,
     selectedWorkflowId,
     handleWorkflowFilterChange,
+    // --- INICIO DE EXPORTACIÓN ---
+    // 5. Exponemos el nuevo estado y su manejador para que otros componentes los usen.
+    prReviewFilter,
+    handlePrReviewFilterChange,
+    // --- FIN DE EXPORTACIÓN ---
   };
 }

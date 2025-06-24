@@ -19,8 +19,6 @@ function App() {
   const [isRepoModalOpen, setIsRepoModalOpen] = useState(false);
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
 
-  // --- INICIO DE CAMBIOS ---
-  // 1. Extraemos los nuevos estados y funciones del hook useGithubData
   const {
     user,
     allRepos,
@@ -74,8 +72,9 @@ function App() {
     areWorkflowsLoading,
     selectedWorkflowId,
     handleWorkflowFilterChange,
+    prReviewFilter,
+    handlePrReviewFilterChange
   } = useGithubData();
-  // --- FIN DE CAMBIOS ---
 
   useEffect(() => {
     if (user !== undefined) {
@@ -151,8 +150,6 @@ function App() {
               notifications={activeNotifications}
             />
             
-            {/* --- INICIO DE CAMBIOS --- */}
-            {/* 2. Pasamos las nuevas props al componente TabContainer */}
             <TabContainer
               activeTab={activeTab}
               handleTabChange={handleTabChange}
@@ -173,8 +170,9 @@ function App() {
               selectedWorkflowId={selectedWorkflowId}
               areWorkflowsLoading={areWorkflowsLoading}
               handleWorkflowFilterChange={handleWorkflowFilterChange}
+              prReviewFilter={prReviewFilter}
+              handlePrReviewFilterChange={handlePrReviewFilterChange}
             />
-            {/* --- FIN DE CAMBIOS --- */}
 
             <div className={isContentLoading ? 'content-revalidating' : ''}>
               <ContentDisplay
@@ -199,6 +197,9 @@ function App() {
                 isTracked={isTracked}
                 addTrackedFile={addTrackedFile}
                 removeTrackedFile={removeTrackedFile}
+                // --- INICIO DEL CAMBIO FINAL ---
+                prReviewFilter={prReviewFilter}
+                // --- FIN DEL CAMBIO FINAL ---
               />
             </div>
 

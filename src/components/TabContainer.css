@@ -71,9 +71,11 @@
     animation: pulse 2s infinite;
   }
 
-  .actions-filter-container {
+  .filters-group-container {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 20px; /* Espacio entre el dropdown de workflows y los filtros de estado */
+    flex-direction: column; /* Apila los filtros verticalmente */
+    gap: 16px; /* Espacio entre las barras de filtros */
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e1e4e8;
+    margin-bottom: 1rem;
   }

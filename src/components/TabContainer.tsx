@@ -3,10 +3,10 @@
 import './TabContainer.css';
 import { FilterBar } from './FilterBar';
 import { BranchSelector } from './BranchSelector';
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos el nuevo componente y el tipo Workflow
 import { WorkflowFilterDropdown } from './WorkflowFilterDropdown';
-import type { Tab, IssueState, PRState, ActionStatus, TabVisibility, TabKey, Branch, Workflow } from '../hooks/useGithubData';
+// --- INICIO DE CAMBIOS ---
+// 1. Importamos el nuevo tipo que necesitamos
+import type { Tab, IssueState, PRState, ActionStatus, TabVisibility, TabKey, Branch, Workflow, PRReviewStateFilter } from '../hooks/useGithubData';
 // --- FIN DE CAMBIOS ---
 import type { ActiveNotifications } from '../background/alarms';
 
@@ -26,12 +26,14 @@ interface TabContainerProps {
   selectedBranch: string;
   areBranchesLoading: boolean;
   handleBranchChange: (branchName: string) => void;
-  // --- INICIO DE CAMBIOS ---
-  // 2. Añadimos las nuevas props para manejar los workflows
   workflows: Workflow[];
   selectedWorkflowId: number | null;
   areWorkflowsLoading: boolean;
   handleWorkflowFilterChange: (workflowId: number | null) => void;
+  // --- INICIO DE CAMBIOS ---
+  // 2. Añadimos las nuevas props para el filtro de revisión
+  prReviewFilter: PRReviewStateFilter;
+  handlePrReviewFilterChange: (newFilter: PRReviewStateFilter) => void;
   // --- FIN DE CAMBIOS ---
 }
 
@@ -61,18 +63,30 @@ export const TabContainer = ({
   selectedBranch,
   areBranchesLoading,
   handleBranchChange,
-  // --- INICIO DE CAMBIOS ---
-  // 3. Desestructuramos las nuevas props
   workflows,
   selectedWorkflowId,
   areWorkflowsLoading,
-  handleWorkflowFilterChange
+  handleWorkflowFilterChange,
+  // --- INICIO DE CAMBIOS ---
+  // 3. Desestructuramos las nuevas props
+  prReviewFilter,
+  handlePrReviewFilterChange,
   // --- FIN DE CAMBIOS ---
 }: TabContainerProps) => {
   
   if (!selectedRepo) {
     return null;
   }
+  
+  // --- INICIO DE CAMBIOS ---
+  // 4. Definimos las opciones para la nueva barra de filtros de PR
+  const prReviewFilters = [
+    { label: 'All Reviews', value: 'all' },
+    { label: 'Approved', value: 'APPROVED' },
+    { label: 'Needs Changes', value: 'CHANGES_REQUESTED' },
+    { label: 'Pending', value: 'PENDING' },
+  ];
+  // --- FIN DE CAMBIOS ---
 
   return (
     <>
@@ -107,12 +121,19 @@ export const TabContainer = ({
       )}
 
       {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
-      {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }, { label: 'Merged', value: 'merged' }, { label: 'Asignados a mi', value: 'assigned_to_me' }]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
       
       {/* --- INICIO DE CAMBIOS --- */}
-      {/* 4. En la pestaña de Actions, ahora mostramos ambos filtros */}
+      {/* 5. Modificamos la sección de PRs para que muestre ambas barras de filtros */}
+      {activeTab === 'PRs' && (
+        <div className="filters-group-container">
+          <FilterBar name="PRs" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }, { label: 'Merged', value: 'merged' }, { label: 'Asignados a mi', value: 'assigned_to_me' }]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />
+          <FilterBar name="PRReview" filters={prReviewFilters} currentFilter={prReviewFilter} onFilterChange={handlePrReviewFilterChange} />
+        </div>
+      )}
+      {/* --- FIN DE CAMBIOS --- */}
+      
       {activeTab === 'Actions' && (
-        <div className="actions-filter-container">
+        <div className="filters-group-container">
           <WorkflowFilterDropdown 
             workflows={workflows}
             selectedWorkflowId={selectedWorkflowId}
@@ -127,7 +148,6 @@ export const TabContainer = ({
           />
         </div>
       )}
-      {/* --- FIN DE CAMBIOS --- */}
     </>
   );
 };

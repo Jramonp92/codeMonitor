@@ -1,11 +1,10 @@
 // src/components/ContentDisplay.tsx
 
+import { useMemo } from 'react'; // Importamos useMemo
 import './ContentDisplay.css';
 import { ItemStatus } from './ItemStatus';
 import { FileBrowser } from './FileBrowser';
 import { FileViewer } from './FileViewer';
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos los nuevos tipos que vamos a necesitar desde nuestro hook
 import type { 
   Tab, 
   IssueInfo, 
@@ -18,9 +17,12 @@ import type {
   ReviewState,
   PRReviewInfo,
   Reviewer,
-  GitHubUser
+  GitHubUser,
+  // --- INICIO DE CAMBIOS ---
+  // 1. Importamos el nuevo tipo de filtro
+  PRReviewStateFilter
+  // --- FIN DE CAMBIOS ---
 } from '../hooks/useGithubData';
-// --- FIN DE CAMBIOS ---
 import type { ActiveNotifications } from '../background/alarms';
 import { VscCheck, VscError, VscCircleSlash, VscLoading, VscQuestion, VscVmRunning, VscHistory } from 'react-icons/vsc';
 
@@ -46,10 +48,12 @@ export interface ContentDisplayProps {
   isTracked: (repo: string, path: string, branch: string) => boolean;
   addTrackedFile: (repo: string, path: string, branch: string) => void;
   removeTrackedFile: (repo: string, path: string, branch: string) => void;
+  // --- INICIO DE CAMBIOS ---
+  // 2. Añadimos la nueva prop para recibir el filtro seleccionado
+  prReviewFilter: PRReviewStateFilter;
+  // --- FIN DE CAMBIOS ---
 }
 
-// --- INICIO DE CAMBIOS ---
-// 2. Este componente ahora muestra el estado general del PR
 const ApprovalStatusIndicator = ({ reviewInfo }: { reviewInfo?: PRReviewInfo }) => {
   const state = reviewInfo?.overallState;
 
@@ -57,12 +61,12 @@ const ApprovalStatusIndicator = ({ reviewInfo }: { reviewInfo?: PRReviewInfo }) 
     return null;
   }
 
-  const statusInfo = {
+  const statusInfoMap = {
     APPROVED: { text: 'Aprobado', className: 'approved', icon: <VscCheck /> },
     CHANGES_REQUESTED: { text: 'Cambios solicitados', className: 'changes-requested', icon: <VscError /> },
-    PENDING: { text: 'Pendiente', className: 'pending', icon: <VscHistory /> },
-    COMMENTED: {text: 'Comentado', className: 'commented', icon: <VscHistory /> }
-  }[state];
+  };
+
+  const statusInfo = statusInfoMap[state as keyof typeof statusInfoMap];
 
   if (!statusInfo) return null;
 
@@ -74,16 +78,13 @@ const ApprovalStatusIndicator = ({ reviewInfo }: { reviewInfo?: PRReviewInfo }) 
   );
 };
 
-// 3. Este nuevo componente se encarga de mostrar la lista unificada de revisores
 const ReviewerDisplay = ({ pr }: { pr: PullRequestInfo }) => {
   const allReviewers = new Map<string, { user: GitHubUser | Reviewer, state: ReviewState }>();
 
-  // Prioridad 1: Los que ya han enviado una revisión
   pr.reviewInfo?.reviewers.forEach(reviewer => {
     allReviewers.set(reviewer.login, { user: reviewer, state: reviewer.state });
   });
 
-  // Prioridad 2: Los que han sido solicitados pero aún no responden
   pr.requested_reviewers?.forEach(requested => {
     if (!allReviewers.has(requested.login)) {
       allReviewers.set(requested.login, { user: requested, state: 'PENDING' });
@@ -110,7 +111,6 @@ const ReviewerDisplay = ({ pr }: { pr: PullRequestInfo }) => {
     </div>
   );
 };
-// --- FIN DE CAMBIOS ---
 
 
 export const ContentDisplay = ({ 
@@ -135,7 +135,21 @@ export const ContentDisplay = ({
   isTracked,
   addTrackedFile,
   removeTrackedFile,
+  // --- INICIO DE CAMBIOS ---
+  // 3. Desestructuramos la nueva prop
+  prReviewFilter,
+  // --- FIN DE CAMBIOS ---
 }: ContentDisplayProps) => {
+
+  // --- INICIO DE CAMBIOS ---
+  // 4. Creamos la lista filtrada de Pull Requests usando useMemo
+  const filteredPullRequests = useMemo(() => {
+    if (prReviewFilter === 'all') {
+      return pullRequests;
+    }
+    return pullRequests.filter(pr => pr.reviewInfo?.overallState === prReviewFilter);
+  }, [pullRequests, prReviewFilter]);
+  // --- FIN DE CAMBIOS ---
 
   const formatCommitDate = (dateString: string) => {
     if (!dateString) return '';
@@ -215,15 +229,12 @@ export const ContentDisplay = ({
                     <span className="item-date">{dateLabel}: {dateValue}</span>
                   </div>
                   <div className="assignee-and-status-container">
-                    {/* --- INICIO DE CAMBIOS --- */}
-                    {/* 4. Usamos nuestros nuevos componentes aquí */}
                     {itemType === 'pr' ? (
                       <>
                         <ApprovalStatusIndicator reviewInfo={(item as PullRequestInfo).reviewInfo} />
                         <ReviewerDisplay pr={item as PullRequestInfo} />
                       </>
                     ) : (
-                      // Lógica original para los Issues
                       (item as IssueInfo).assignees && (item as IssueInfo).assignees.length > 0 ? (
                         <div className="assignee-info">
                           <span>Asignado a:</span>
@@ -239,7 +250,6 @@ export const ContentDisplay = ({
                         </div>
                       )
                     )}
-                    {/* --- FIN DE CAMBIOS --- */}
                   </div>
               </div>
           </li>
@@ -343,9 +353,12 @@ export const ContentDisplay = ({
   
   if (activeTab === 'Issues' && issues.length > 0) return renderItemList(issues, ['issues'], 'issue');
   
-  if (activeTab === 'PRs' && pullRequests.length > 0) {
-    return renderItemList(pullRequests, ['newPRs', 'assignedPRs', 'prStatusChanges'], 'pr');
+  // --- INICIO DE CAMBIOS ---
+  // 5. Modificamos la condición y la llamada para usar la nueva lista filtrada
+  if (activeTab === 'PRs' && filteredPullRequests.length > 0) {
+    return renderItemList(filteredPullRequests, ['newPRs', 'assignedPRs', 'prStatusChanges'], 'pr');
   }
+  // --- FIN DE CAMBIOS ---
   
   if (activeTab === 'Actions' && actions.length > 0) {
     const notificationsForRepo = activeNotifications[selectedRepo] || {};
