@@ -269,3 +269,13 @@
 }
 
 /* --- FIN DE CAMBIOS --- */
+
+.approval-status.changes-requested {
+  background-color: #fce8e6; /* Rojo claro */
+  color: #a50e0e;
+}
+
+.approval-status.pending {
+  background-color: #f1f3f4; /* Gris claro */
+  color: #5f6368;
+}
