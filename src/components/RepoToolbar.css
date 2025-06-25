@@ -6,22 +6,23 @@
   margin-bottom: 1rem;
 }
 
-/* --- INICIO DEL CAMBIO: Estilos para el nuevo botón de ícono --- */
 .refresh-button {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 8px;
-  border: 1px solid #d0d7de;
-  background-color: #f6f8fa;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
+  /* CAMBIO: Usando variables */
+  border: 1px solid var(--border-color);
+  background-color: var(--button-background);
 }
 
 .refresh-button:hover {
-  background-color: #e1e4e8;
-  border-color: #a0a8b1;
+  /* CAMBIO: Usando variables */
+  background-color: var(--button-background-hover);
+  border-color: var(--border-color-hover);
 }
 
 .refresh-button:disabled {
@@ -30,6 +31,6 @@
 }
 
 .refresh-button svg {
-  color: #57606a;
+  /* CAMBIO: Usando variable */
+  color: var(--text-secondary);
 }
-/* --- FIN DEL CAMBIO --- */

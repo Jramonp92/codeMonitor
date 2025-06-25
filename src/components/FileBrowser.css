@@ -1,102 +1,108 @@
 /* src/components/FileBrowser.css */
 
 .file-browser-container {
-    padding: 8px;
-    background-color: var(--vscode-sideBar-background);
-    color: var(--vscode-foreground);
-    font-size: 14px;
+  padding: 8px;
+  font-size: 14px;
+  /* CAMBIO: Usando variables de tema */
+  background-color: var(--background-primary);
+  color: var(--text-primary);
 }
-  
+
 .breadcrumbs {
-  margin-bottom: 12px;
-  padding: 6px 8px;
-  background-color: var(--vscode-editorGroupHeader-tabsBackground);
-  border-radius: 4px;
-  white-space: nowrap;
-  overflow-x: auto;
-  text-align: left; 
+margin-bottom: 12px;
+padding: 6px 8px;
+border-radius: 4px;
+white-space: nowrap;
+overflow-x: auto;
+text-align: left; 
+/* CAMBIO: Usando variable de tema */
+background-color: var(--background-secondary);
 }
-  
+
 .breadcrumb-item {
-  cursor: pointer;
-  color: #007acc; 
-  font-weight: 500;
+cursor: pointer;
+font-weight: 500;
+/* CAMBIO: Usando variable de tema */
+color: var(--accent-color);
 }
-  
+
 .breadcrumb-item:hover {
-  text-decoration: underline;
+text-decoration: underline;
 }
-  
+
 .file-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+list-style: none;
+padding: 0;
+margin: 0;
 }
-  
+
 .file-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.1s ease-in-out;
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 6px 8px;
+border-radius: 4px;
+cursor: pointer;
+transition: background-color 0.1s ease-in-out;
 }
-  
+
 .file-item:hover {
-  background-color: var(--vscode-list-hoverBackground);
+/* CAMBIO: Usando variable de tema */
+background-color: var(--button-background-hover);
 }
 
 .item-main-content {
-  display: flex;
-  align-items: center;
-  overflow: hidden;
+display: flex;
+align-items: center;
+overflow: hidden;
 }
 
 .item-icon {
-  margin-right: 8px;
-  display: flex;
-  align-items: center;
-  color: var(--vscode-icon-foreground);
-  font-size: 1.1em;
+margin-right: 8px;
+display: flex;
+align-items: center;
+font-size: 1.1em;
+/* CAMBIO: Usando variable de tema */
+color: var(--text-secondary);
 }
-  
+
 .item-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
 }
 
 .track-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 4px;
-  color: var(--vscode-icon-foreground);
-  opacity: 0.6;
-  transition: opacity 0.2s;
+background: none;
+border: none;
+cursor: pointer;
+padding: 2px 4px;
+border-radius: 4px;
+opacity: 0.6;
+transition: opacity 0.2s;
+/* CAMBIO: Usando variable de tema */
+color: var(--text-secondary);
 }
 
 .track-button:hover {
-  opacity: 1;
+opacity: 1;
 }
 
 .track-button.tracked {
-  opacity: 1;
-  color: var(--vscode-textLink-activeForeground, #007acc);
-}
-  
-.empty-directory {
-  padding: 10px 8px;
-  color: var(--vscode-descriptionForeground);
-  font-style: italic;
+opacity: 1;
+/* CAMBIO: Usando variable de tema */
+color: var(--accent-color);
 }
 
-/* --- INICIO DE CAMBIOS --- */
+.empty-directory {
+padding: 10px 8px;
+font-style: italic;
+/* CAMBIO: Usando variable de tema */
+color: var(--text-secondary);
+}
+
 /* 1. Estilo para el punto de notificación dentro de la lista de archivos */
 .item-dot {
-    margin-left: 8px;
-    align-self: center; /* Asegura que esté centrado verticalmente con el texto */
+  margin-left: 8px;
+  align-self: center; /* Asegura que esté centrado verticalmente con el texto */
 }
-/* --- FIN DE CAMBIOS --- */

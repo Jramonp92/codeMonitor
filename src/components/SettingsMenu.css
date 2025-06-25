@@ -2,20 +2,19 @@
 
 /* El menú desplegable */
 .settings-menu {
-  /* Posicionamiento absoluto relativo al contenedor .app-header__actions */
   position: absolute;
-  top: 115%; /* Ligeramente debajo del botón del avatar */
+  top: 115%; 
   right: 0;
-  
-  background-color: white;
-  border: 1px solid #d0d7de;
-  border-radius: 6px;
-  box-shadow: 0 8px 24px rgba(140,149,159,0.2);
   padding: 4px 0;
   min-width: 220px;
   z-index: 100;
   list-style: none;
   margin: 0;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(140,149,159,0.2);
+  /* CAMBIO: Usando variables de tema */
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color);
 }
 
 .settings-menu li {
@@ -33,35 +32,29 @@
   background: none;
   cursor: pointer;
   font-size: 0.9em;
-  color: #24292f;
+  /* CAMBIO: Usando variable */
+  color: var(--text-primary);
 }
 
 .settings-menu-item:hover {
-  background-color: #f6f8fa;
+  /* CAMBIO: Usando variable */
+  background-color: var(--button-background-hover);
 }
 
-/* --- INICIO DE CAMBIOS --- */
-/* 1. Nuevo estilo para el botón de limpiar notificaciones */
-.settings-menu-item.clear-notifications {
-  color: #d73a49; /* Usamos el mismo color rojo que el logout */
-  border-top: 1px solid #d0d7de;
-  margin-top: 4px;
-  padding-top: 8px;
-}
-/* --- FIN DE CAMBIOS --- */
-
-
-/* Opción de logout con separador */
+/* Se mantiene el color rojo semántico para estas acciones */
+.settings-menu-item.clear-notifications,
 .settings-menu-item.logout {
-  color: #d73a49;
-  border-top: 1px solid #d0d7de;
+  color: #d73a49; 
+  /* CAMBIO: Usando variable */
+  border-top: 1px solid var(--border-color);
   margin-top: 4px;
   padding-top: 8px;
 }
 
 /* Estilo para opciones deshabilitadas */
 .settings-menu-item:disabled {
-  color: #8c959f;
   cursor: not-allowed;
   background-color: transparent;
+  /* CAMBIO: Usando variable */
+  color: var(--text-secondary);
 }

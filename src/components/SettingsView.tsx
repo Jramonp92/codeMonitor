@@ -17,14 +17,22 @@ const ShieldIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
 );
 
+// --- INICIO DE CAMBIOS (PASO 3) ---
+
+// 1. Definimos el tipo Theme, igual que en App.tsx
+type Theme = 'light' | 'dark';
+
+// 2. Actualizamos la interfaz de props para que acepte el tema y la función de cambio.
 interface SettingsViewProps {
   onClose: () => void;
   tabVisibility: TabVisibility;
   onTabVisibilityChange: (tab: TabKey, isVisible: boolean) => void;
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
 }
+// --- FIN DE CAMBIOS (PASO 3) ---
 
-// --- INICIO DE CAMBIOS ---
-// 1. Añadimos la pestaña 'Code' a la lista de toggles
+
 const configurableTabs: { id: TabKey, label: string }[] = [
     { id: 'README', label: 'README' },
     { id: 'Code', label: 'Code' },
@@ -34,9 +42,18 @@ const configurableTabs: { id: TabKey, label: string }[] = [
     { id: 'Actions', label: 'Actions' },
     { id: 'Releases', label: 'Releases' },
 ];
-// --- FIN DE CAMBIOS ---
 
-export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange }: SettingsViewProps) => {
+// --- INICIO DE CAMBIOS (PASO 3) ---
+// 3. Desestructuramos las nuevas props para poder usarlas.
+export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange, theme, onThemeChange }: SettingsViewProps) => {
+
+  // 4. Creamos una función que maneje el cambio del interruptor.
+  const handleThemeToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Si el interruptor está marcado (checked), el tema es 'dark', si no, 'light'.
+    onThemeChange(e.target.checked ? 'dark' : 'light');
+  };
+// --- FIN DE CAMBIOS (PASO 3) ---
+
   return (
     <div className="settings-view-container">
       <header className="settings-header">
@@ -62,10 +79,20 @@ export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange }: 
           <div className="theme-toggle">
             <span>Claro</span>
             <label className="switch">
-              <input type="checkbox" />
+              {/* --- INICIO DE CAMBIOS (PASO 3) --- */}
+              {/* 5. Conectamos el estado y el manejador al input del interruptor. */}
+              <input 
+                type="checkbox"
+                checked={theme === 'dark'}
+                onChange={handleThemeToggle}
+              />
+              {/* --- FIN DE CAMBIOS (PASO 3) --- */}
               <span className="slider round"></span>
             </label>
-            <span>Oscuro (no funcional)</span>
+            {/* --- INICIO DE CAMBIOS (PASO 3) --- */}
+            {/* 6. Eliminamos el texto "(no funcional)". */}
+            <span>Oscuro</span>
+            {/* --- FIN DE CAMBIOS (PASO 3) --- */}
           </div>
         </section>
         

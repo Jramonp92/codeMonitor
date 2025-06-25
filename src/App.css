@@ -1,3 +1,46 @@
+/* src/App.css */
+
+/*
+  PASO 1: DEFINICIÓN DE TEMAS
+  - Se definen variables de color para el tema claro (:root) y el tema oscuro (.dark).
+  - Se modifican los estilos existentes para que usen estas variables.
+*/
+:root {
+  /* Paleta de colores para el tema claro */
+  --background-primary: #ffffff;
+  --text-primary: #24292e;
+  --text-secondary: #586069;
+  --border-color: #d0d7de;
+  --border-color-hover: #8b949e;
+  --accent-color: #0969da;
+  --input-border-color: #d0d7de; /* #d0d7de */
+  --input-background: var(--background-primary); /* #ffffff */
+  --switch-slider-background: var(--background-primary); /* #ffffff */
+  --button-background-hover: #f3f4f6; /* Fondo de botones/items al hacer hover */
+  --switch-slider-before-background: var(--background-primary); /* Círculo del switch (inactivo): #ffffff */
+
+
+
+}
+
+.dark {
+  /* Paleta de colores para el tema oscuro */
+  --background-primary: #0d1117;
+  --text-primary: #c9d1d9;
+  --text-secondary: #8b949e;
+  --border-color: #30363d;
+  --border-color-hover: #8b949e;
+  --accent-color: #58a6ff;
+  --input-border-color: var(--border-color); /* #30363d */
+  --input-background: var(--background-primary); /* #0d1117 */
+  --switch-slider-background: var(--background-primary); /* #ffffff */
+  --button-background-hover: #161b22; /* Fondo de botones/items al hacer hover */
+  --switch-slider-before-background: var(--text-primary); /* Círculo del switch (inactivo): #c9d1d9 */
+
+
+}
+
+
 /* Estilo general del contenedor de la App */
 .app-container {
   width: 100%; 
@@ -6,20 +49,24 @@
   padding: 0 1rem 1rem 1rem; /* Ajustamos padding para que el contenido empiece justo debajo del header */
   text-align: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-
-  /* --- INICIO DE LA MEJORA DE SCROLL (Parte 1) --- */
-  /* Hacemos que este contenedor sea el que tenga el scroll */
   display: flex;
   flex-direction: column;
   overflow-y: auto; 
-  /* --- FIN DE LA MEJORA DE SCROLL (Parte 1) --- */
+  
+  /* Aplicamos las variables de tema */
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  
+  /* Estilos para Firefox - Usamos las variables de tema */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
 }
-
-/* El contenedor de las pestañas ahora tiene su propio archivo CSS */
 
 /* Área de contenido */
 .content-area { margin-top: 1rem; }
-.loading-text { color: #586069; }
+.loading-text { 
+  color: var(--text-secondary); /* Usamos variable */
+}
 
 /* El punto en un ítem de la lista va a la DERECHA del título. */
 .item-title-container .notification-dot {
@@ -40,22 +87,15 @@
 
 /* Estilo del "pulgar" (la parte que se mueve) */
 .app-container::-webkit-scrollbar-thumb {
-  background-color: #d0d7de; /* Un gris sutil */
+  background-color: var(--border-color); /* Usamos variable */
   border-radius: 10px;
   border: 2px solid transparent; /* Crea un efecto de padding alrededor del pulgar */
   background-clip: content-box;
 }
 
 .app-container::-webkit-scrollbar-thumb:hover {
-  background-color: #8b949e; /* Un poco más oscuro al pasar el ratón */
+  background-color: var(--border-color-hover); /* Usamos variable */
 }
-
-/* Estilos para Firefox */
-.app-container {
-  scrollbar-width: thin;
-  scrollbar-color: #d0d7de transparent;
-}
-/* --- FIN DE LA MEJORA DE SCROLL (Parte 2) --- */
 
 @keyframes pulse {
   0% {
@@ -76,7 +116,12 @@
   display: inline-block;
   width: 8px;
   height: 8px;
-  background-color: #0969da; /* Azul de GitHub */
+  background-color: var(--accent-color); /* Usamos variable */
   border-radius: 50%;
   animation: pulse 2s infinite;
+}
+
+/* --- Transición suave de colores al cambiar de tema --- */
+* {
+  transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
 }

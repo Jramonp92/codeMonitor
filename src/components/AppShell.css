@@ -14,12 +14,15 @@
   
   /* Estilos específicos para la vista de login */
   .login-view {
-    background-color: #f0f2f5; /* Un fondo gris muy claro para dar contraste */
+    /* CAMBIO: Usando variable */
+    background-color: var(--background-secondary);
   }
   
   /* La tarjeta de login que contiene todo. */
   .login-card {
-    background-color: white;
+    /* CAMBIO: Usando variables */
+    background-color: var(--background-primary);
+    border: 1px solid var(--border-color);
     padding: 2.5rem;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
@@ -36,14 +39,16 @@
     margin: 0;
     font-size: 1.75rem;
     font-weight: 600;
-    color: #1f2328;
+    /* CAMBIO: Usando variable */
+    color: var(--text-primary);
   }
   
   /* Eslogan o texto descriptivo debajo del título */
   .login-tagline {
-    margin: 0 0 1rem 0; /* Margen inferior para separarlo de la lista */
+    margin: 0 0 1rem 0;
     font-size: 1rem;
-    color: #57606a;
+    /* CAMBIO: Usando variable */
+    color: var(--text-secondary);
   }
   
   /* Lista de características */
@@ -55,7 +60,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    color: #444c56;
+    /* CAMBIO: Usando variable */
+    color: var(--text-primary);
   }
   
   .features-list li {
@@ -64,7 +70,7 @@
     gap: 0.5rem; /* Espacio entre el ícono y el texto */
   }
   
-  /* Botón principal de login */
+  /* Botón principal de login (se mantienen los colores de marca de GitHub) */
   .login-button {
     display: inline-flex;
     align-items: center;
@@ -81,13 +87,11 @@
     transition: background-color 0.2s ease-in-out, filter 0.2s ease-in-out;
   }
   
-  /* Efecto al pasar el cursor sobre el botón */
   .login-button:hover {
     background-color: #1f2328;
     filter: brightness(1.1);
   }
   
-  /* El SVG dentro del botón hereda el color del texto (blanco) */
   .login-button svg {
     fill: currentColor;
   }
@@ -95,8 +99,9 @@
   .spinner {
     width: 48px;
     height: 48px;
-    border: 5px solid rgba(0, 0, 0, 0.1);
-    border-left-color: #24292e; /* El mismo color del botón de login */
+    /* CAMBIO: Usando variables */
+    border: 5px solid var(--border-color);
+    border-left-color: var(--text-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }

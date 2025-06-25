@@ -1,67 +1,68 @@
 /* src/components/SearchableRepoDropdown.css */
 
 .searchable-dropdown {
-    position: relative;
-    width: 100%;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  }
-  
-  .search-input {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 14px;
-    box-sizing: border-box;
-    background-color: #fff;
-  }
-  
-  .search-input:disabled {
-    background-color: #f3f3f3;
-    cursor: not-allowed;
-  }
-  
-  .repo-list {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background-color: white;
-    border: 1px solid #ccc;
-    border-top: none;
-    border-radius: 0 0 6px 6px;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    max-height: 200px;
-    overflow-y: auto;
-    z-index: 1000;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-  
-  .repo-list li {
-    padding: 10px 12px;
-    cursor: pointer;
-    font-size: 14px;
-    /* --- CORRECCIÓN CLAVE --- */
-    /* Se establece el contexto de posicionamiento para el punto rojo. */
-    position: relative; 
-  }
-  
-  .repo-list li:hover {
-    background-color: #f0f0f0;
-  }
-  
-  .repo-list li.no-results {
-    cursor: default;
-    color: #888;
-  }
+  position: relative;
+  width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
 
-  .repo-dot {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    margin-left: 0; /* Asegurarse de que no tenga margen */
-  }
-  
+.search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+  /* CORRECCIÓN: Se usa el fondo secundario para darle contraste */
+  background-color: var(--background-secondary);
+  border: 1px solid var(--input-border-color);
+  color: var(--text-primary);
+}
+
+.search-input:disabled {
+  cursor: not-allowed;
+  background-color: var(--button-background);
+  color: var(--text-secondary);
+}
+
+.repo-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: var(--background-primary);
+  border: 1px solid var(--border-color);
+}
+
+.repo-list li {
+  padding: 10px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  position: relative; 
+  color: var(--text-primary);
+}
+
+.repo-list li:hover {
+  background-color: var(--button-background-hover);
+}
+
+.repo-list li.no-results {
+  cursor: default;
+  color: var(--text-secondary);
+}
+
+.repo-dot {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0;
+}

@@ -4,13 +4,15 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 0 12px 0px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  /* CAMBIO: Se reemplaza la sombra por un borde inferior que funciona en ambos temas */
+  border-bottom: 1px solid var(--border-color);
 }
 
 .app-header__title {
   font-size: 1.1em;
   font-weight: 600;
-  color: #1f2328;
+  /* CAMBIO: Usando variable */
+  color: var(--text-primary);
 }
 
 /* Contenedor de acciones, necesita ser relativo para posicionar el menú */
@@ -32,7 +34,8 @@
 }
 
 .app-header__user-trigger:hover {
-  background-color: #f6f8fa; /* Un sutil hover para indicar que es interactivo */
+  /* CAMBIO: Usando variable */
+  background-color: var(--button-background-hover);
 }
 
 .app-header__avatar {
@@ -44,10 +47,12 @@
 .app-header__username {
   font-weight: 600;
   font-size: 0.9em;
-  color: #1f2328;
+  /* CAMBIO: Usando variable */
+  color: var(--text-primary);
 }
 
 /* Estilos para el ícono de la flecha */
 .app-header__user-trigger svg {
-  color: #57606a;
+  /* CAMBIO: Usando variable */
+  color: var(--text-secondary);
 }

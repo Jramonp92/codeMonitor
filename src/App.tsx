@@ -13,14 +13,53 @@ import { AppShell } from './components/AppShell';
 import { TabContainer } from './components/TabContainer';
 import { SettingsView } from './components/SettingsView';
 
+// --- INICIO DE CAMBIOS (PASO 2) ---
+
+// Definimos el tipo para el tema para asegurar que solo pueda ser 'light' o 'dark'.
+type Theme = 'light' | 'dark';
+
+// --- FIN DE CAMBIOS (PASO 2) ---
+
 function App() {
   const [activeView, setActiveView] = useState<'main' | 'settings'>('main');
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isRepoModalOpen, setIsRepoModalOpen] = useState(false);
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
 
-  // --- INICIO DE CAMBIOS ---
-  // 1. Extraemos los nuevos estados y funciones del hook useGithubData
+  // --- INICIO DE CAMBIOS (PASO 2) ---
+
+  // 1. Añadimos un estado para el tema actual.
+  const [theme, setTheme] = useState<Theme>('light');
+
+  // 2. Usamos useEffect para cargar el tema guardado al iniciar la extensión.
+  useEffect(() => {
+    // Intentamos obtener el tema desde el almacenamiento local de Chrome.
+    chrome.storage.local.get('theme', (result) => {
+      if (result.theme) {
+        // Si encontramos un tema guardado, lo establecemos en el estado.
+        setTheme(result.theme);
+      }
+    });
+  }, []);
+
+  // 3. Este efecto se ejecuta cada vez que el tema cambia.
+  useEffect(() => {
+    const body = document.body;
+    // Limpiamos las clases de tema anteriores para evitar conflictos.
+    body.classList.remove('light', 'dark');
+    // Añadimos la clase del tema actual al body del documento.
+    // Esto activará las variables CSS que definimos en App.css.
+    body.classList.add(theme);
+  }, [theme]);
+
+  // 4. Función para cambiar el tema y guardarlo en el almacenamiento.
+  const handleThemeChange = (newTheme: Theme) => {
+    setTheme(newTheme);
+    chrome.storage.local.set({ theme: newTheme });
+  };
+
+  // --- FIN DE CAMBIOS (PASO 2) ---
+  
   const {
     user,
     allRepos,
@@ -75,7 +114,6 @@ function App() {
     selectedWorkflowId,
     handleWorkflowFilterChange,
   } = useGithubData();
-  // --- FIN DE CAMBIOS ---
 
   useEffect(() => {
     if (user !== undefined) {
@@ -151,8 +189,6 @@ function App() {
               notifications={activeNotifications}
             />
             
-            {/* --- INICIO DE CAMBIOS --- */}
-            {/* 2. Pasamos las nuevas props al componente TabContainer */}
             <TabContainer
               activeTab={activeTab}
               handleTabChange={handleTabChange}
@@ -174,7 +210,6 @@ function App() {
               areWorkflowsLoading={areWorkflowsLoading}
               handleWorkflowFilterChange={handleWorkflowFilterChange}
             />
-            {/* --- FIN DE CAMBIOS --- */}
 
             <div className={isContentLoading ? 'content-revalidating' : ''}>
               <ContentDisplay
@@ -211,6 +246,11 @@ function App() {
             onClose={() => setActiveView('main')}
             tabVisibility={tabVisibility}
             onTabVisibilityChange={handleTabVisibilityChange}
+            // --- INICIO DE CAMBIOS (PASO 2) ---
+            // 5. Pasamos el estado y la función de cambio a SettingsView.
+            theme={theme}
+            onThemeChange={handleThemeChange}
+            // --- FIN DE CAMBIOS (PASO 2) ---
           />
         )}
       </div>

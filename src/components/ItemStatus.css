@@ -1,10 +1,27 @@
 .item-status-pill {
-    display: inline-block;
-    padding: 2px 8px;
-    margin-left: 8px;
-    border-radius: 12px;
-    font-size: 0.75em;
-    font-weight: bold;
-    color: white;
-    text-transform: capitalize;
-  }
+  display: inline-block;
+  padding: 2px 8px;
+  margin-left: 8px;
+  border-radius: 12px;
+  font-size: 0.75em;
+  font-weight: bold;
+  color: white; /* El texto es blanco para todos los estados */
+  text-transform: capitalize;
+}
+
+/* CAMBIO: Se añaden clases para cada estado.
+Estos colores semánticos (verde, rojo, morado) funcionan bien
+tanto en tema claro como oscuro, por lo que no necesitan
+una versión específica para .dark
+*/
+.item-status-pill.status-open {
+background-color: #2cbe4e;
+}
+
+.item-status-pill.status-closed {
+background-color: #cb2431;
+}
+
+.item-status-pill.status-merged {
+background-color: #6f42c1;
+}

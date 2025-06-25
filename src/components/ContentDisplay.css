@@ -1,248 +1,213 @@
 /* Estilos para el componente ContentDisplay.tsx */
 
-/* --- INICIO DE LA MEJORA --- */
-/* Placeholder para los estados de carga o contenido vacío.
-   Usamos flexbox para centrar perfectamente el spinner. */
-   .content-placeholder {
+.content-placeholder, .loading-text {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  padding: 40px;
+  text-align: center;
+  /* CAMBIO: Usando variable */
+  color: var(--text-secondary);
+}
+
+.item-title-container--with-margin {
+    margin-bottom: 8px;
+  }
+  
+.item-meta-column {
     display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px; /* Le damos una altura mínima para que el centrado sea visible */
-    padding: 40px;
-    text-align: center;
-    color: #586069;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
   
-  .loading-text {
-    padding: 40px;
-    text-align: center;
-    color: #586069;
-  }
-  /* --- FIN DE LA MEJORA --- */
-  
-  .item-title-container--with-margin {
-      margin-bottom: 8px;
-    }
-    
-    .item-meta-column {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 4px;
-    }
-    
-    .commit-meta-details {
-      font-size: 0.8em;
-      color: #586069;
-    }
-    
-    .commit-author-name {
-      margin-left: 4px;
-    }
-    
-    .item-date {
-      font-size: 0.8em;
-      color: #586069;
-    }
-    
-    .action-details-container {
-      margin: 4px 0;
-    }
-    
-    .action-details-text {
-      font-size: 0.8em;
-      color: #586069;
-    }
-    
-    .action-pr-link {
-      margin-left: 8px;
-    }
-    
-    .release-tags {
-      display: flex;
-      gap: 6px;
-      font-size: 0.8em;
-      font-weight: bold;
-    }
-    
-    /* Lista de ítems (commits/issues/prs) */
-  .item-list { list-style: none; padding: 0; margin: 0; text-align: left; }
-  .item-list li {
-    padding-bottom: 0.75rem;
-    margin-bottom: 0.75rem;
-    border-bottom: 1px solid #e1e4e8;
-    position: relative; 
-  }
-  .item-list li:last-child { border-bottom: none; }
-  
-  .item-title-container {
-    display: flex;
-    align-items: center;
-    margin-bottom: 4px;
-  }
-  
-  .item-list a { text-decoration: none; color: #0366d6; font-weight: 500; }
-  .item-list a:hover { text-decoration: underline; }
-  
-  .item-meta {
+.commit-meta-details, .item-date, .action-details-text, .item-meta, .action-meta {
     font-size: 0.8em;
-    color: #586069;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    /* CAMBIO: Usando variable */
+    color: var(--text-secondary);
   }
-  .item-meta > span { flex-grow: 1; } 
+
+.commit-author-name {
+    margin-left: 4px;
+  }
+
+.action-details-container {
+    margin: 4px 0;
+  }
   
-  .action-meta {
+.action-pr-link {
+    margin-left: 8px;
+  }
+  
+.release-tags {
+    display: flex;
+    gap: 6px;
     font-size: 0.8em;
-    color: #586069;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 5px;
-    margin-top: 4px;
+    font-weight: bold;
   }
   
-  .pr-link {
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  
-  .assignee-info {
-    display: flex;
-    align-items: center;
-  }
-  
-  .assignee-info span {
-    margin-right: 5px;
-  }
-  
-  .assignee-avatar {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    margin-left: 2px;
-    border: 1px solid #e1e4e8;
-  }
-  
-  .readme-content {
-      padding: 1rem;
-      background-color: #ffffff;
-      border: 1px solid #d1d5da;
-      border-radius: 6px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-      line-height: 1.6;
-      color: #24292e;
-      text-align: left;
-    }
-    .readme-content h1, .readme-content h2, .readme-content h3 {
-      border-bottom: 1px solid #eaecef;
-      padding-bottom: 0.3em;
-      margin-top: 24px;
-      margin-bottom: 16px;
-    }
-    .readme-content h1 { font-size: 2em; }
-    .readme-content h2 { font-size: 1.5em; }
-    .readme-content h3 { font-size: 1.25em; }
-    .readme-content p {
-      margin-bottom: 16px;
-    }
-    .readme-content a {
-      color: #0366d6;
-      text-decoration: none;
-    }
-    .readme-content a:hover {
-      text-decoration: underline;
-    }
-    .readme-content ul, .readme-content ol {
-      padding-left: 2em;
-      margin-bottom: 16px;
-    }
-    .readme-content li {
-      margin-bottom: 0.25em;
-    }
-    .readme-content pre {
-      background-color: #f6f8fa;
-      border-radius: 6px;
-      font-size: 85%;
-      line-height: 1.45;
-      overflow: auto;
-      padding: 16px;
-      margin-bottom: 16px;
-    }
-    .readme-content code {
-      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
-      font-size: 12px;
-    }
-    .readme-content pre > code {
-      padding: 0;
-      margin: 0;
-      font-size: 100%;
-      word-break: normal;
-      white-space: pre;
-      background: transparent;
-      border: 0;
-    }
-    .readme-content :not(pre) > code {
-      padding: .2em .4em;
-      margin: 0;
-      font-size: 85%;
-      background-color: rgba(27,31,35,.05);
-      border-radius: 3px;
-    }
-    .readme-content blockquote {
-      margin: 0 0 16px 0;
-      padding: 0 1em;
-      color: #6a737d;
-      border-left: .25em solid #dfe2e5;
-    }
-    .readme-content img {
-      max-width: 100%;
-    }
-  
-    .item-title-container .notification-dot {
-      margin-left: 8px; 
-      margin-right: 0;
-    }
+.item-list { list-style: none; padding: 0; margin: 0; text-align: left; }
+.item-list li {
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+  position: relative; 
+  /* CAMBIO: Usando variable */
+  border-bottom: 1px solid var(--border-color);
+}
+.item-list li:last-child { border-bottom: none; }
 
+.item-title-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
 
-    .action-status-icon {
-      vertical-align: middle;
-      font-size: 1.1em;
-      stroke-width: 0.5;
-    }
-    
-    .status-success {
-      color: #2da44e; /* Verde de GitHub */
-    }
-    
-    .status-failure {
-      color: #cf222e; /* Rojo de GitHub */
-    }
-    
-    .status-inprogress {
-      color: #d29922; /* Amarillo/Naranja de GitHub */
-    }
-    
-    .status-cancelled {
-      color: #8b949e; /* Gris de GitHub */
-    }
+.item-list a { 
+  text-decoration: none; 
+  font-weight: 500;
+  /* CAMBIO: Usando variable */
+  color: var(--accent-color);
+}
+.item-list a:hover { text-decoration: underline; }
 
-/* --- INICIO DE CAMBIOS --- */
+.item-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.item-meta > span { flex-grow: 1; } 
 
-/* 1. Contenedor para el estado y los asignados. Necesita ser relativo
-      para que podamos posicionar el estado de aprobación de forma absoluta. */
+.action-meta {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.pr-link {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.assignee-info {
+  display: flex;
+  align-items: center;
+}
+
+.assignee-info span {
+  margin-right: 5px;
+}
+
+.assignee-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-left: 2px;
+  /* CAMBIO: Usando variable */
+  border: 1px solid var(--border-color);
+}
+
+.readme-content {
+    padding: 1rem;
+    border-radius: 6px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    line-height: 1.6;
+    text-align: left;
+    /* CAMBIO: Usando variables */
+    background-color: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+  }
+  .readme-content h1, .readme-content h2, .readme-content h3 {
+    padding-bottom: 0.3em;
+    margin-top: 24px;
+    margin-bottom: 16px;
+    /* CAMBIO: Usando variable */
+    border-bottom: 1px solid var(--border-color);
+  }
+  .readme-content h1 { font-size: 2em; }
+  .readme-content h2 { font-size: 1.5em; }
+  .readme-content h3 { font-size: 1.25em; }
+  .readme-content p { margin-bottom: 16px; }
+  .readme-content a { 
+    text-decoration: none;
+    /* CAMBIO: Usando variable */
+    color: var(--accent-color);
+  }
+  .readme-content a:hover { text-decoration: underline; }
+  .readme-content ul, .readme-content ol {
+    padding-left: 2em;
+    margin-bottom: 16px;
+  }
+  .readme-content li { margin-bottom: 0.25em; }
+  .readme-content pre {
+    border-radius: 6px;
+    font-size: 85%;
+    line-height: 1.45;
+    overflow: auto;
+    padding: 16px;
+    margin-bottom: 16px;
+    /* CAMBIO: Usando variable */
+    background-color: var(--background-primary);
+  }
+  .readme-content code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    font-size: 12px;
+  }
+  .readme-content pre > code {
+    padding: 0;
+    margin: 0;
+    font-size: 100%;
+    word-break: normal;
+    white-space: pre;
+    background: transparent;
+    border: 0;
+  }
+  .readme-content :not(pre) > code {
+    padding: .2em .4em;
+    margin: 0;
+    font-size: 85%;
+    border-radius: 3px;
+    /* CAMBIO: Usando variable */
+    background-color: var(--button-background);
+  }
+  .readme-content blockquote {
+    margin: 0 0 16px 0;
+    padding: 0 1em;
+    /* CAMBIO: Usando variables */
+    color: var(--text-secondary);
+    border-left: .25em solid var(--border-color);
+  }
+  .readme-content img { max-width: 100%; }
+
+  .item-title-container .notification-dot {
+    margin-left: 8px; 
+    margin-right: 0;
+  }
+
+  .action-status-icon {
+    vertical-align: middle;
+    font-size: 1.1em;
+    stroke-width: 0.5;
+  }
+  
+  /* Se mantienen colores semánticos para los estados */
+  .status-success { color: #2da44e; }
+  .status-failure { color: #cf222e; }
+  .status-inprogress { color: #d29922; }
+  .status-cancelled { color: var(--text-secondary); }
+
 .assignee-and-status-container {
   position: relative;
-  /* Damos un poco de espacio arriba para que quepa el indicador de estado */
   padding-top: 22px; 
 }
 
-/* 2. Estilos para el indicador de estado de aprobación */
 .approval-status {
   position: absolute;
-  top: 0; /* Lo colocamos arriba del todo */
-  right: 0; /* Lo alineamos a la derecha del contenedor */
+  top: 0;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -252,35 +217,33 @@
   border-radius: 10px;
 }
 
-/* 3. Colores específicos para cada estado */
-.approval-status.approved {
-  color: #2da44e; /* Verde de GitHub */
-  background-color: #e6ffec; /* Un fondo verde muy claro */
-}
-
-.approval-status.changes-requested {
-  color: #cf222e; /* Rojo de GitHub */
-  background-color: #ffeef0; /* Un fondo rojo muy claro */
-}
-
 .approval-status svg {
   stroke-width: 1;
   font-size: 1.1em;
 }
 
-/* --- FIN DE CAMBIOS --- */
+/* Colores para cada estado, con adaptación para tema oscuro */
+.approval-status.approved {
+  color: #2da44e;
+  background-color: #e6ffec;
+}
+.dark .approval-status.approved {
+  background-color: rgba(45, 164, 78, 0.15);
+}
 
 .approval-status.changes-requested {
-  background-color: #fce8e6; /* Rojo claro */
-  color: #a50e0e;
+  color: #cf222e;
+  background-color: #ffeef0;
+}
+.dark .approval-status.changes-requested {
+  background-color: rgba(207, 34, 46, 0.15);
 }
 
 .approval-status.pending {
-  background-color: #f1f3f4; /* Gris claro */
-  color: #5f6368;
+  color: var(--text-secondary);
+  background-color: var(--button-background);
 }
 
-/* Estilos para los avatares de los reviewers y sus íconos de estado */
 .reviewer-avatar-container {
   position: relative;
   display: inline-block;
@@ -290,21 +253,14 @@
   position: absolute;
   bottom: -2px;
   right: -4px;
-  background-color: white;
   border-radius: 50%;
   padding: 1px;
   font-size: 0.8em;
   box-shadow: 0 0 2px rgba(0,0,0,0.3);
+  /* CAMBIO: Usando variable */
+  background-color: var(--background-primary);
 }
 
-.reviewer-status-icon.approved {
-  color: #2da44e; /* Verde de GitHub */
-}
-
-.reviewer-status-icon.changes-requested {
-  color: #cf222e; /* Rojo de GitHub */
-}
-
-.reviewer-status-icon.pending {
-  color: #8b949e; /* Gris de GitHub */
-}
+.reviewer-status-icon.approved { color: #2da44e; }
+.reviewer-status-icon.changes-requested { color: #cf222e; }
+.reviewer-status-icon.pending { color: var(--text-secondary); }

@@ -2,210 +2,233 @@
 
 /* El overlay oscuro que cubre toda la pantalla */
 .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
 /* El contenedor principal del contenido del modal */
 .modal-content.alerts-modal {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 700px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
+  /* CAMBIO: Usando variables */
+  background: var(--background-primary);
+  color: var(--text-primary);
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 700px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid #dee2e6;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
+display: flex;
+justify-content: space-between;
+align-items: center;
+/* CAMBIO: Usando variable */
+border-bottom: 1px solid var(--border-color);
+padding-bottom: 10px;
+margin-bottom: 15px;
 }
 
 .modal-header h2 {
-  margin: 0;
-  font-size: 1.2em;
+margin: 0;
+font-size: 1.2em;
+color: var(--text-primary);
 }
 
 .close-button {
-  background: none;
-  border: none;
-  font-size: 1.8em;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
+background: none;
+border: none;
+font-size: 1.8em;
+cursor: pointer;
+padding: 0;
+line-height: 1;
+/* CAMBIO: Usando variable */
+color: var(--text-secondary);
+}
+
+.close-button:hover {
+color: var(--text-primary);
 }
 
 /* Configuración de la frecuencia de alertas */
 .frequency-settings {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  /* CAMBIO: Usando variable */
+  border-bottom: 1px solid var(--border-color);
 }
 
 .frequency-settings label {
-    font-weight: bold;
-    font-size: 0.9em;
+  font-weight: bold;
+  font-size: 0.9em;
+  color: var(--text-primary);
 }
 
 .frequency-settings select {
-    padding: 5px 8px;
-    border-radius: 6px;
-    border: 1px solid #ced4da;
+  padding: 5px 8px;
+  border-radius: 6px;
+  /* CAMBIO: Usando variables */
+  border: 1px solid var(--input-border-color);
+  background-color: var(--input-background);
+  color: var(--text-primary);
 }
 
 /* Contenedor de la tabla para permitir scroll si es necesario */
 .alerts-table-container {
-    max-height: 400px;
-    overflow-y: auto;
-    overflow-x: auto;
-    border: 1px solid #dee2e6;
-    border-radius: 6px;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: auto;
+  /* CAMBIO: Usando variable */
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
 }
 
 /* Estilos de la tabla de alertas */
 .alerts-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.9em;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
 }
 
 .alerts-table th,
 .alerts-table td {
-    padding: 10px 12px;
-    text-align: center;
-    border-bottom: 1px solid #dee2e6;
+  padding: 10px 12px;
+  text-align: center;
+  /* CAMBIO: Usando variable */
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
 }
 
 .alerts-table th {
-    background-color: #e9ecef;
-    font-weight: 600;
-    position: sticky; 
-    top: 0;
+  /* CAMBIO: Usando variables */
+  background-color: var(--background-secondary);
+  font-weight: 600;
+  position: sticky; 
+  top: 0;
 }
 
 .alerts-table th:first-child,
 .alerts-table td:first-child {
-    text-align: left;
-    font-weight: bold;
-    min-width: 150px;
+  text-align: left;
+  font-weight: bold;
+  min-width: 150px;
 }
 
 .alerts-table tr:last-child td {
-    border-bottom: none;
+  border-bottom: none;
 }
 
 .alerts-table tr:hover {
-    background-color: #f1f3f5;
+  /* CAMBIO: Usando variable */
+  background-color: var(--button-background-hover);
 }
 
 .alerts-table input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
 }
 
 .no-repos-message {
-    margin-top: 20px;
-    color: #6c757d;
-    text-align: center;
-    padding: 20px;
-    background-color: #f1f3f5;
-    border-radius: 6px;
+  margin-top: 20px;
+  text-align: center;
+  padding: 20px;
+  border-radius: 6px;
+  /* CAMBIO: Usando variables */
+  color: var(--text-secondary);
+  background-color: var(--background-secondary);
 }
-
-/* --- INICIO DE CAMBIOS --- */
 
 /* Estilos para la celda de archivos observados */
 .tracked-files-cell {
-  min-width: 250px;
-  text-align: left;
-  vertical-align: top;
+min-width: 250px;
+text-align: left;
+vertical-align: top;
 }
 
 .branch-group {
-  margin-bottom: 10px;
+margin-bottom: 10px;
 }
 
 .branch-group:last-child {
-  margin-bottom: 0;
+margin-bottom: 0;
 }
 
 .branch-group strong {
-  font-size: 0.95em;
-  color: #333;
+font-size: 0.95em;
+/* CAMBIO: Usando variable */
+color: var(--text-primary);
 }
 
 .tracked-files-cell ul {
-  list-style: none;
-  padding: 0;
-  margin: 4px 0 0 10px;
+list-style: none;
+padding: 0;
+margin: 4px 0 0 10px;
 }
 
 .tracked-files-cell li {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 0.9em;
-  padding: 2px 0;
+display: flex;
+justify-content: space-between; /* Ajustado para alinear el botón */
+align-items: center;
+font-size: 0.9em;
+padding: 2px 0;
+gap: 8px; /* Espacio entre el nombre y el botón */
 }
 
 .tracked-files-cell li span {
-  /* Para truncar nombres de archivo largos */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+max-width: 200px;
+flex-grow: 1; /* Permite que el span ocupe el espacio */
 }
 
 .remove-file-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #888;
-  font-weight: bold;
-  font-size: 1.2em;
-  padding: 0 5px;
+background: none;
+border: none;
+cursor: pointer;
+font-weight: bold;
+font-size: 1.2em;
+padding: 0 5px;
+/* CAMBIO: Usando variable */
+color: var(--text-secondary);
 }
 
 .remove-file-btn:hover {
-  color: #d73a49; /* Rojo de GitHub */
+color: #d73a49; /* Se mantiene el rojo de "peligro" */
 }
 
 .add-file-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #007acc;
-  font-size: 0.9em;
-  font-weight: 500;
-  padding: 4px 0;
-  margin-top: 5px;
+background: none;
+border: none;
+cursor: pointer;
+font-size: 0.9em;
+font-weight: 500;
+padding: 4px 0;
+margin-top: 5px;
+/* CAMBIO: Usando variable */
+color: var(--accent-color);
 }
 
 .add-file-btn:hover {
-  text-decoration: underline;
+text-decoration: underline;
 }
 
 .add-file-btn:disabled {
-  color: #888;
-  cursor: not-allowed;
+/* CAMBIO: Usando variable */
+color: var(--text-secondary);
+cursor: not-allowed;
+text-decoration: none;
 }
-
-/* --- FIN DE CAMBIOS --- */

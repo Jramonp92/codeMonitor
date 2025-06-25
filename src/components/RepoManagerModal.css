@@ -13,7 +13,9 @@
 }
 
 .modal-content {
-  background-color: white;
+  /* CAMBIO: Usando variables */
+  background-color: var(--background-primary);
+  color: var(--text-primary);
   padding: 20px;
   border-radius: 8px;
   width: 90%;
@@ -27,14 +29,16 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #eee;
   padding-bottom: 10px;
   margin-bottom: 15px;
+  /* CAMBIO: Usando variable */
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 1.2em;
+  color: var(--text-primary);
 }
 
 .close-button {
@@ -44,6 +48,11 @@
   cursor: pointer;
   padding: 0;
   line-height: 1;
+  /* CAMBIO: Usando variable */
+  color: var(--text-secondary);
+}
+.close-button:hover {
+  color: var(--text-primary);
 }
 
 .modal-body {
@@ -64,16 +73,20 @@
 .repo-column h3 {
   margin-top: 0;
   font-size: 1em;
-  color: #555;
+  /* CAMBIO: Usando variable */
+  color: var(--text-secondary);
 }
 
 .modal-search-input {
   width: 100%;
   padding: 8px;
   border-radius: 4px;
-  border: 1px solid #ccc;
   margin-bottom: 10px;
   box-sizing: border-box;
+  /* CAMBIO: Usando variables */
+  border: 1px solid var(--input-border-color);
+  background-color: var(--input-background);
+  color: var(--text-primary);
 }
 
 .repo-list-modal {
@@ -81,9 +94,10 @@
   padding: 0;
   margin: 0;
   overflow-y: auto;
-  border: 1px solid #eee;
   border-radius: 4px;
   flex-grow: 1;
+  /* CAMBIO: Usando variable */
+  border: 1px solid var(--border-color);
 }
 
 .repo-list-modal li {
@@ -91,7 +105,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  border-bottom: 1px solid #eee;
+  /* CAMBIO: Usando variable */
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+}
+
+.repo-list-modal li:hover {
+  background-color: var(--button-background-hover);
 }
 
 .repo-list-modal li:last-child {
@@ -110,10 +130,10 @@
   padding: 4px;
 }
 
+/* Se mantienen colores semánticos */
 .add-button {
   color: green;
 }
-
 .remove-button {
   color: #c0392b;
 }
@@ -122,12 +142,14 @@
 .external-add-section {
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #eee;
+  /* CAMBIO: Usando variable */
+  border-top: 1px solid var(--border-color);
 }
 
 .external-add-section h4 {
   margin: 0 0 10px 0;
   font-size: 0.95em;
+  color: var(--text-primary);
 }
 
 .external-add-form {
@@ -140,6 +162,7 @@
   flex-grow: 1;
 }
 
+/* Se mantienen colores semánticos */
 .add-external-button {
   padding: 8px 12px;
   border: 1px solid #27ae60;
@@ -151,19 +174,16 @@
 }
 
 .add-external-button:disabled {
-  background-color: #95a5a6;
-  border-color: #7f8c8d;
+  /* CAMBIO: Usando variables */
+  background-color: var(--button-background);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
   cursor: not-allowed;
 }
 
+/* Se mantienen colores semánticos */
 .error-message {
   color: #c0392b;
   font-size: 0.85em;
   margin-top: 8px;
-}
-
-.remove-button {
-  color: #c0392b;
-  font-weight: bold;
-  font-size: 24px;
 }

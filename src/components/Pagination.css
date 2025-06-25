@@ -5,36 +5,50 @@
     align-items: center;
     margin-top: 1rem;
     padding-top: 1rem;
-    border-top: 1px solid #e1e4e8;
+    /* CAMBIO: Usando variable */
+    border-top: 1px solid var(--border-color);
 }
+
 .pagination-container button {
     padding: 0.3rem 0.8rem;
     border-radius: 6px;
-    border: 1px solid #d1d5da;
-    background-color: #f6f8fa;
     cursor: pointer;
+    /* CAMBIO: Usando variables */
+    border: 1px solid var(--border-color);
+    background-color: var(--button-background);
+    color: var(--text-primary);
 }
+
 .pagination-container button:hover:not(:disabled) {
-    background-color: #f3f4f6;
+    /* CAMBIO: Usando variable */
+    background-color: var(--button-background-hover);
 }
+
 .pagination-container button:disabled {
     cursor: not-allowed;
     opacity: 0.5;
 }
+
 .pagination-pages {
     display: flex;
     gap: 4px;
 }
+
 .pagination-pages button {
     padding: 0.3rem 0.6rem;
     min-width: 28px;
 }
+
 .pagination-pages button.active {
-    background-color: #0366d6;
-    color: white;
-    border-color: #0366d6;
+    /* CAMBIO: Usando variables */
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #ffffff; /* El texto blanco contrasta bien con el acento en ambos temas */
 }
+
 .pagination-pages span {
     padding: 0.3rem 0.2rem;
     align-self: center;
+    /* CAMBIO: Usando variable */
+    color: var(--text-primary);
 }

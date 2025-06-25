@@ -1,180 +1,190 @@
 .settings-view-container {
-    padding: 0 1rem;
-    animation: fadeIn 0.3s ease-in-out;
-  }
-  
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  
-  .settings-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    border-bottom: 1px solid #e1e4e8;
-    margin-bottom: 20px;
-  }
-  
-  .settings-header h2 {
-    margin: 0;
-    font-size: 1.2em;
-  }
-  
-  .back-button {
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-  }
-  
-  .back-button:hover {
-    background-color: #f6f8fa;
-  }
-  
-  .settings-body {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    text-align: left;
-  }
-  
-  .settings-section h3 {
-    margin: 0 0 4px 0;
-    font-size: 1em;
-    font-weight: 600;
-  }
-  
-  .settings-section h3 span {
-    margin-right: 8px;
-  }
-  
-  .settings-section p {
-    margin: 0 0 12px 0;
-    font-size: 0.9em;
-    color: #586069;
-  }
-  
-  .settings-select {
-    width: 100%;
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #d1d5da;
-    background-color: #f6f8fa;
-  }
-  
-  .theme-toggle {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 0.9em;
-  }
-  
-  /* Estilos para el switch de Dark Mode */
-  .switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 28px;
-  }
-  
-  .switch input { 
-    opacity: 0;
-    width: 0;
-    height: 0;
-  }
-  
-  .slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-  }
-  
-  .slider:before {
-    position: absolute;
-    content: "";
-    height: 20px;
-    width: 20px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-  }
-  
-  input:checked + .slider {
-    background-color: #2196F3;
-  }
-  
-  input:checked + .slider:before {
-    transform: translateX(22px);
-  }
-  
-  .slider.round {
-    border-radius: 34px;
-  }
-  
-  .slider.round:before {
-    border-radius: 50%;
-  }
+  padding: 0 1rem;
+  animation: fadeIn 0.3s ease-in-out;
+  color: var(--text-primary);
+  /* Aseguramos que el fondo principal se aplique */
+  background-color: var(--background-primary); 
+}
 
-  .settings-links-container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 4px;
-  }
-  
-  .settings-link-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    border-radius: 6px;
-    text-decoration: none;
-    color: #24292e;
-    font-weight: 500;
-    transition: background-color 0.2s;
-    border: 1px solid #e1e4e8;
-  }
-  
-  .settings-link-item:hover {
-    background-color: #f6f8fa;
-  }
-  
-  .settings-link-item svg {
-    color: #586069;
-  }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
-  /* --- INICIO DE CAMBIOS: Estilos para la lista de toggles --- */
-  .toggle-list-container {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 12px;
-  }
-  
-  .toggle-list-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px 12px;
-    border-radius: 6px;
-    background-color: #f6f8fa;
-    border: 1px solid #e1e4e8;
-  }
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+}
 
-  .toggle-list-item span {
-    font-weight: 500;
-  }
-  /* --- FIN DE CAMBIOS --- */
+.settings-header h2 {
+  margin: 0;
+  font-size: 1.2em;
+  color: var(--text-primary);
+}
+
+.back-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  color: var(--text-primary);
+}
+
+.back-button:hover {
+  background-color: var(--button-background-hover);
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  text-align: left;
+}
+
+.settings-section h3 {
+  margin: 0 0 4px 0;
+  font-size: 1em;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-section h3 span {
+  margin-right: 8px;
+}
+
+.settings-section p {
+  margin: 0 0 12px 0;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.settings-select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--input-border-color);
+  background-color: var(--input-background);
+  color: var(--text-primary);
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9em;
+}
+
+/* --- ESTILOS PARA EL INTERRUPTOR (TOGGLE) --- */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: .4s;
+  /* CORRECCIÓN: Color de fondo del riel del interruptor */
+  background-color: var(--switch-slider-background);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  transition: .4s;
+  /* CORRECCIÓN: Color de fondo del círculo del interruptor */
+  background-color: var(--switch-slider-before-background);
+}
+
+input:checked + .slider {
+  /* CORRECCIÓN: Color del riel cuando está activo */
+  background-color: var(--accent-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* --- ESTILOS PARA LOS CONTENEDORES DE LOS TOGGLES --- */
+.settings-links-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.settings-link-item, .toggle-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  /* CORRECCIÓN: Contenedor de cada toggle con fondo secundario para contraste */
+  background-color: var(--background-secondary); 
+}
+
+.toggle-list-item {
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.settings-link-item {
+  text-decoration: none;
+}
+
+.settings-link-item:hover, .toggle-list-item:hover {
+    /* El hover se unifica para ambos tipos de item */
+  background-color: var(--button-background-hover);
+}
+
+.settings-link-item svg {
+  color: var(--text-secondary);
+}
+
+.toggle-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.toggle-list-item span {
+  font-weight: 500;
+}

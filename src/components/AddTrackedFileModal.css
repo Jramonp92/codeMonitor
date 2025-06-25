@@ -1,92 +1,112 @@
 /* src/components/AddTrackedFileModal.css */
 
 .modal-overlay-small {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3000; /* Un z-index más alto para que aparezca por encima del otro modal */
-  }
-  
-  .modal-content-small {
-    background-color: white;
-    padding: 15px 20px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-  }
-  
-  .modal-header-small {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-  }
-  
-  .modal-header-small h4 {
-    margin: 0;
-    font-size: 1.1em;
-  }
-  
-  .close-button-small {
-    background: none;
-    border: none;
-    font-size: 1.7em;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-  }
-  
-  .modal-body-small {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  
-  .form-group label {
-    font-weight: 500;
-    font-size: 0.9em;
-  }
-  
-  .form-group input,
-  .form-group select {
-    width: 100%;
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-  }
-  
-  .add-button-small {
-    padding: 10px;
-    border: none;
-    background-color: #27ae60;
-    color: white;
-    font-weight: bold;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-  
-  .add-button-small:hover {
-    background-color: #229954;
-  }
-  
-  .add-button-small:disabled {
-    background-color: #95a5a6;
-    cursor: not-allowed;
-  }
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.modal-content-small {
+  /* CAMBIO: Usando variables para el fondo */
+  background-color: var(--background-primary);
+  color: var(--text-primary);
+  padding: 15px 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header-small {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* CAMBIO: Usando variable para el borde */
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
+}
+
+.modal-header-small h4 {
+  margin: 0;
+  font-size: 1.1em;
+  /* CAMBIO: Usando variable para el texto */
+  color: var(--text-primary);
+}
+
+.close-button-small {
+  background: none;
+  border: none;
+  font-size: 1.7em;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  /* CAMBIO: Usando variable para el texto */
+  color: var(--text-secondary);
+}
+
+.close-button-small:hover {
+  color: var(--text-primary);
+}
+
+.modal-body-small {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-weight: 500;
+  font-size: 0.9em;
+  color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  box-sizing: border-box;
+  /* CAMBIO: Usando variables para los inputs */
+  border: 1px solid var(--input-border-color);
+  background-color: var(--input-background);
+  color: var(--text-primary);
+}
+
+.add-button-small {
+  padding: 10px;
+  border: none;
+  /* CAMBIO: Usando el color de acento del tema. El color original era verde. */
+  background-color: var(--accent-color);
+  color: #ffffff; /* Mantenemos el texto blanco que contrasta bien con el acento */
+  font-weight: bold;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.add-button-small:hover {
+  /* CAMBIO: Usando un filtro para el efecto hover */
+  filter: brightness(0.9);
+}
+
+.add-button-small:disabled {
+  /* CAMBIO: Usando variables para el estado deshabilitado */
+  background-color: var(--button-background);
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  filter: none;
+}
