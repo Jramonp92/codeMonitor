@@ -210,7 +210,7 @@ function App() {
               areWorkflowsLoading={areWorkflowsLoading}
               handleWorkflowFilterChange={handleWorkflowFilterChange}
             />
-
+            <div className='Border'>
             <div className={isContentLoading ? 'content-revalidating' : ''}>
               <ContentDisplay
                 activeTab={activeTab}
@@ -236,7 +236,7 @@ function App() {
                 removeTrackedFile={removeTrackedFile}
               />
             </div>
-
+            </div>
             {selectedRepo && activeTab !== 'README' && activeTab !== 'Code' && !isContentLoading && (commits.length > 0 || issues.length > 0 || pullRequests.length > 0 || actions.length > 0 || releases.length > 0) && (
               <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
             )}

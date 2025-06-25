@@ -1,10 +1,8 @@
 .branch-selector-container {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
   gap: 8px;
   margin-bottom: 1rem;
-  border-bottom: 1px solid var(--border-color);
   background-color: var(--background-secondary);
 }
 

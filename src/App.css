@@ -15,7 +15,7 @@
   --accent-color: #0969da;
   --input-border-color: #d0d7de; /* #d0d7de */
   --input-background: var(--background-primary); /* #ffffff */
-  --switch-slider-background: var(--background-primary); /* #ffffff */
+  --switch-slider-background: var(--border-color-hover); /* #ffffff */
   --button-background-hover: #f3f4f6; /* Fondo de botones/items al hacer hover */
   --switch-slider-before-background: var(--background-primary); /* Círculo del switch (inactivo): #ffffff */
 
@@ -124,4 +124,10 @@
 /* --- Transición suave de colores al cambiar de tema --- */
 * {
   transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.Border {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 1rem;
 }
