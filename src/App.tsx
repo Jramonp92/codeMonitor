@@ -13,12 +13,7 @@ import { AppShell } from './components/AppShell';
 import { TabContainer } from './components/TabContainer';
 import { SettingsView } from './components/SettingsView';
 
-// --- INICIO DE CAMBIOS (PASO 2) ---
-
-// Definimos el tipo para el tema para asegurar que solo pueda ser 'light' o 'dark'.
 type Theme = 'light' | 'dark';
-
-// --- FIN DE CAMBIOS (PASO 2) ---
 
 function App() {
   const [activeView, setActiveView] = useState<'main' | 'settings'>('main');
@@ -26,39 +21,38 @@ function App() {
   const [isRepoModalOpen, setIsRepoModalOpen] = useState(false);
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
 
-  // --- INICIO DE CAMBIOS (PASO 2) ---
-
-  // 1. Añadimos un estado para el tema actual.
+  // --- INICIO DEL CAMBIO ---
+  // El estado inicial ahora puede ser cualquiera, ya que el useEffect lo establecerá inmediatamente.
   const [theme, setTheme] = useState<Theme>('light');
 
-  // 2. Usamos useEffect para cargar el tema guardado al iniciar la extensión.
+  // Este useEffect ahora tiene la lógica mejorada para detectar el tema del sistema.
   useEffect(() => {
-    // Intentamos obtener el tema desde el almacenamiento local de Chrome.
+    // 1. Primero, intentamos obtener el tema que el usuario guardó explícitamente.
     chrome.storage.local.get('theme', (result) => {
       if (result.theme) {
-        // Si encontramos un tema guardado, lo establecemos en el estado.
+        // Si hay un tema guardado, lo usamos y terminamos.
         setTheme(result.theme);
+      } else {
+        // 2. Si NO hay un tema guardado, consultamos la preferencia del sistema.
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(systemPrefersDark ? 'dark' : 'light');
       }
     });
   }, []);
 
-  // 3. Este efecto se ejecuta cada vez que el tema cambia.
+  // Este efecto no cambia, se encarga de aplicar la clase CSS al body.
   useEffect(() => {
     const body = document.body;
-    // Limpiamos las clases de tema anteriores para evitar conflictos.
     body.classList.remove('light', 'dark');
-    // Añadimos la clase del tema actual al body del documento.
-    // Esto activará las variables CSS que definimos en App.css.
     body.classList.add(theme);
   }, [theme]);
 
-  // 4. Función para cambiar el tema y guardarlo en el almacenamiento.
+  // Esta función no cambia, permite al usuario cambiar el tema manualmente.
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
     chrome.storage.local.set({ theme: newTheme });
   };
-
-  // --- FIN DE CAMBIOS (PASO 2) ---
+  // --- FIN DEL CAMBIO ---
   
   const {
     user,
@@ -246,11 +240,8 @@ function App() {
             onClose={() => setActiveView('main')}
             tabVisibility={tabVisibility}
             onTabVisibilityChange={handleTabVisibilityChange}
-            // --- INICIO DE CAMBIOS (PASO 2) ---
-            // 5. Pasamos el estado y la función de cambio a SettingsView.
             theme={theme}
             onThemeChange={handleThemeChange}
-            // --- FIN DE CAMBIOS (PASO 2) ---
           />
         )}
       </div>
