@@ -194,12 +194,9 @@ export async function fetchMyAssignedPullRequests(repoFullName: string, page: nu
     return { items, totalPages: totalPages > 0 ? totalPages : 1 };
 }
 
-// --- INICIO DE CAMBIOS ---
-// 1. Modificamos fetchActions para aceptar un workflowId opcional
 export async function fetchActions(repoFullName: string, status?: string, workflowId?: number, page: number = 1) {
     const token = await getAuthToken();
     
-    // La URL base cambia si se especifica un workflowId
     const baseUrl = workflowId
         ? `${GITHUB_API_URL}/repos/${repoFullName}/actions/workflows/${workflowId}/runs`
         : `${GITHUB_API_URL}/repos/${repoFullName}/actions/runs`;
@@ -212,9 +209,16 @@ export async function fetchActions(repoFullName: string, status?: string, workfl
     const response: Response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
     });
-    if (!response.ok) throw new Error(`Failed to fetch actions.`);
+
+    // --- INICIO DEL CAMBIO ---
+    // Modificamos el manejo de errores para que sea más descriptivo
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Failed to fetch actions. Status: ${response.status}. Body: ${errorBody}`);
+    }
+    // --- FIN DEL CAMBIO ---
+
     const data: any = await response.json();
-    // La API de workflow runs no devuelve el total en el mismo lugar, así que lo calculamos diferente
     const totalPages = Math.ceil((data.total_count || 0) / ITEMS_PER_PAGE) || 1;
     return {
         items: data.workflow_runs,
@@ -222,7 +226,6 @@ export async function fetchActions(repoFullName: string, status?: string, workfl
     };
 }
 
-// 2. Añadimos la nueva función fetchWorkflows
 export async function fetchWorkflows(repoFullName: string) {
     const token = await getAuthToken();
     let allWorkflows: any[] = [];
@@ -241,12 +244,10 @@ export async function fetchWorkflows(repoFullName: string) {
         nextPageUrl = nextLinkMatch ? nextLinkMatch[1] : null;
     }
     
-    // Devolvemos solo los campos que nos interesan
     return allWorkflows
-        .filter(wf => wf.state === 'active') // Nos interesan solo los workflows activos
+        .filter(wf => wf.state === 'active')
         .map((wf: any) => ({ id: wf.id, name: wf.name }));
 }
-// --- FIN DE CAMBIOS ---
 
 export async function fetchReleases(repoFullName: string, page: number = 1) {
     const token = await getAuthToken();
