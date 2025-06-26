@@ -118,12 +118,10 @@ async function checkForUpdates() {
         newLastData[repo] = { ...newLastData[repo], prs: newPRIds };
     }
     
-    // 2. Check for PR status changes (The critical, corrected part)
+    // 2. Check for PR status changes
     if (settings.newPRs || settings.assignedPRs) {
         const lastPRStates = lastData[repo]?.prStates || {};
         const newPRStates: { [prNumber: number]: ReviewState } = {};
-
-        // IMPORTANT! Limit the check to the 10 most recent PRs to avoid rate limiting.
         const prsToCheck = openPRs.slice(0, 10);
 
         for (const pr of prsToCheck) {
@@ -136,7 +134,6 @@ async function checkForUpdates() {
                     if (!currentNotifications[repo].prStatusChanges) {
                         currentNotifications[repo].prStatusChanges = [];
                     }
-                    // Avoid duplicate notifications for the same state change
                     if (!currentNotifications[repo].prStatusChanges!.some(n => n.id === pr.id && n.state === currentState)) {
                         currentNotifications[repo].prStatusChanges!.push({
                             id: pr.id,
@@ -148,13 +145,11 @@ async function checkForUpdates() {
                 }
             } catch (error) {
                 console.error(`Error checking PR status for ${repo}#${pr.number}:`, error);
-                // If it fails, keep the previous state to avoid losing it
                 if (lastPRStates[pr.number]) {
                     newPRStates[pr.number] = lastPRStates[pr.number];
                 }
             }
         }
-        // Combine the newly checked states with the old ones that weren't checked
         newLastData[repo] = { ...newLastData[repo], prStates: { ...lastPRStates, ...newPRStates } };
     }
 
@@ -173,7 +168,12 @@ async function checkForUpdates() {
 
     // Check for Actions status changes
     if (settings.actions) {
-      const { items: actionRuns } = await fetchActions(repo, undefined, 1);
+      // --- INICIO DEL CAMBIO ---
+      // Corregimos la llamada para no pasar un workflowId hardcodeado.
+      // fetchActions(repo, status, workflowId, page)
+      const { items: actionRuns } = await fetchActions(repo, undefined, undefined, 1);
+      // --- FIN DEL CAMBIO ---
+
       const lastRunStates = lastData[repo]?.actions || {};
       const newRunStates: { [runId: number]: string } = {};
 
