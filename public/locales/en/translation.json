@@ -1,0 +1,17 @@
+{
+    "settingsTitle": "Settings",
+    "manageReposTitle": "Manage Repositories",
+    "availableRepos": "Available Repositories",
+    "visibleRepos": "Visible Repositories",
+    "searchPlaceholder": "Search in your repositories...",
+    "addByUrl": "Add by URL or Name",
+    "add": "Add",
+    "saveChanges": "Save Changes",
+    "cancel": "Cancel",
+    "language": "Language",
+    "languageSelector": "Select the interface language.",
+    "appearance": "Appearance",
+    "themeDescription": "Choose between light and dark theme.",
+    "lightTheme": "Light",
+    "darkTheme": "Dark"
+}

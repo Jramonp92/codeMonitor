@@ -1,7 +1,13 @@
+// src/components/SettingsView.tsx
+
 import './SettingsView.css';
 import type { TabVisibility, TabKey } from '../hooks/useGithubData';
+// --- INICIO DE CAMBIOS ---
+// 1. Importamos el hook que nos da acceso a las traducciones
+import { useTranslation } from 'react-i18next';
+// --- FIN DE CAMBIOS ---
 
-// --- Iconos ---
+// --- Iconos (Sin cambios) ---
 const BackArrowIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 12H5"></path>
@@ -17,12 +23,8 @@ const ShieldIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
 );
 
-// --- INICIO DE CAMBIOS (PASO 3) ---
-
-// 1. Definimos el tipo Theme, igual que en App.tsx
 type Theme = 'light' | 'dark';
 
-// 2. Actualizamos la interfaz de props para que acepte el tema y la función de cambio.
 interface SettingsViewProps {
   onClose: () => void;
   tabVisibility: TabVisibility;
@@ -30,8 +32,6 @@ interface SettingsViewProps {
   theme: Theme;
   onThemeChange: (theme: Theme) => void;
 }
-// --- FIN DE CAMBIOS (PASO 3) ---
-
 
 const configurableTabs: { id: TabKey, label: string }[] = [
     { id: 'README', label: 'README' },
@@ -43,16 +43,22 @@ const configurableTabs: { id: TabKey, label: string }[] = [
     { id: 'Releases', label: 'Releases' },
 ];
 
-// --- INICIO DE CAMBIOS (PASO 3) ---
-// 3. Desestructuramos las nuevas props para poder usarlas.
 export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange, theme, onThemeChange }: SettingsViewProps) => {
+  
+  // --- INICIO DE CAMBIOS ---
+  // 2. Usamos el hook. 't' es la función para traducir, 'i18n' es la instancia de i18next.
+  const { t, i18n } = useTranslation();
 
-  // 4. Creamos una función que maneje el cambio del interruptor.
   const handleThemeToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Si el interruptor está marcado (checked), el tema es 'dark', si no, 'light'.
     onThemeChange(e.target.checked ? 'dark' : 'light');
   };
-// --- FIN DE CAMBIOS (PASO 3) ---
+
+  // 3. Creamos un manejador para el cambio de idioma.
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const lang = e.target.value;
+    i18n.changeLanguage(lang); // Esta función cambia el idioma de toda la app.
+  };
+  // --- FIN DE CAMBIOS ---
 
   return (
     <div className="settings-view-container">
@@ -60,39 +66,42 @@ export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange, th
         <button onClick={onClose} className="back-button" aria-label="Volver">
           <BackArrowIcon />
         </button>
-        <h2>Configuración</h2>
+        {/* Usamos la función t() con la clave del JSON */}
+        <h2>{t('settingsTitle')}</h2>
       </header>
       
       <div className="settings-body">
         <section className="settings-section">
-          <h3><span role="img" aria-label="globo">🌍</span> Idioma</h3>
-          <p>Selecciona el idioma de la interfaz.</p>
-          <select className="settings-select" defaultValue="es">
+          <h3><span role="img" aria-label="globo">🌍</span> {t('language')}</h3>
+          <p>{t('languageSelector')}</p>
+          {/* --- INICIO DE CAMBIOS --- */}
+          {/* 4. Conectamos el valor y el manejador al <select> */}
+          <select 
+            className="settings-select" 
+            value={i18n.language} 
+            onChange={handleLanguageChange}
+          >
             <option value="es">Español</option>
-            <option value="en">Inglés (no funcional)</option>
+            <option value="en">English</option>
           </select>
+          {/* --- FIN DE CAMBIOS --- */}
         </section>
 
         <section className="settings-section">
-          <h3><span role="img" aria-label="paleta">🎨</span> Apariencia</h3>
-          <p>Elige entre el tema claro u oscuro.</p>
+          <h3><span role="img" aria-label="paleta">🎨</span> {t('appearance')}</h3>
+          <p>{t('themeDescription')}</p>
           <div className="theme-toggle">
-            <span>Claro</span>
+            {/* Traducimos los textos de los temas */}
+            <span>{t('lightTheme')}</span>
             <label className="switch">
-              {/* --- INICIO DE CAMBIOS (PASO 3) --- */}
-              {/* 5. Conectamos el estado y el manejador al input del interruptor. */}
               <input 
                 type="checkbox"
                 checked={theme === 'dark'}
                 onChange={handleThemeToggle}
               />
-              {/* --- FIN DE CAMBIOS (PASO 3) --- */}
               <span className="slider round"></span>
             </label>
-            {/* --- INICIO DE CAMBIOS (PASO 3) --- */}
-            {/* 6. Eliminamos el texto "(no funcional)". */}
-            <span>Oscuro</span>
-            {/* --- FIN DE CAMBIOS (PASO 3) --- */}
+            <span>{t('darkTheme')}</span>
           </div>
         </section>
         

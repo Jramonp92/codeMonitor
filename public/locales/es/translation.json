@@ -1,0 +1,17 @@
+{
+    "settingsTitle": "Configuración",
+    "manageReposTitle": "Gestionar Repositorios",
+    "availableRepos": "Repositorios Disponibles",
+    "visibleRepos": "Repositorios Visibles",
+    "searchPlaceholder": "Buscar en tus repositorios...",
+    "addByUrl": "Añadir por URL o Nombre",
+    "add": "Añadir",
+    "saveChanges": "Guardar Cambios",
+    "cancel": "Cancelar",
+    "language": "Idioma",
+    "languageSelector": "Selecciona el idioma de la interfaz.",
+    "appearance": "Apariencia",
+    "themeDescription": "Elige entre el tema claro u oscuro.",
+    "lightTheme": "Claro",
+    "darkTheme": "Oscuro"
+}
