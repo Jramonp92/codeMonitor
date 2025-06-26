@@ -7,11 +7,8 @@ import {
   fetchReleases,
   fetchMyAssignedPullRequests,
   fetchLastCommitForFile,
-  // --- INICIO DE CAMBIOS ---
-  // 1. Cambiamos la importación al nuevo nombre de la función
   fetchPullRequestReviewInfo,
   type ReviewState,
-  // --- FIN DE CAMBIOS ---
 } from './githubClient';
 import type { TrackedFile, PullRequestInfo } from '../hooks/useGithubData';
 
@@ -20,7 +17,6 @@ export interface AlertSettings {
   [repoFullName: string]: {
     issues?: boolean;
     newPRs?: boolean;
-
     assignedPRs?: boolean;
     actions?: boolean;
     newReleases?: boolean;
@@ -102,51 +98,67 @@ async function checkForUpdates() {
       newLastData[repo] = { ...newLastData[repo], issues: newIssueIds };
     }
 
-    // Check for new Pull Requests
-    if (settings.newPRs) {
-      const { items: newPRs } = await fetchPullRequests(repo, 'open', 1);
-      const newPRIds = newPRs.map((pr: { id: any }) => pr.id);
-      const lastPRIds = lastData[repo]?.prs || [];
-      const foundNotifications = newPRIds.filter((id: number) => !lastPRIds.includes(id));
-
-      if (foundNotifications.length > 0) {
-        currentNotifications[repo].newPRs = [...(currentNotifications[repo].newPRs || []), ...foundNotifications];
-      }
-      newLastData[repo] = { ...newLastData[repo], prs: newPRIds };
+    // --- Pull Requests (Optimized Logic) ---
+    // Fetch open PRs once if any PR-related alert is active
+    let openPRs: PullRequestInfo[] = [];
+    if (settings.newPRs || settings.assignedPRs) {
+        const { items } = await fetchPullRequests(repo, 'open', 1);
+        openPRs = items;
     }
     
-    // Bloque para comprobar cambios de estado en PRs existentes
+    // 1. Check for new Pull Requests
+    if (settings.newPRs) {
+        const newPRIds = openPRs.map((pr: { id: any }) => pr.id);
+        const lastPRIds = lastData[repo]?.prs || [];
+        const foundNotifications = newPRIds.filter((id: number) => !lastPRIds.includes(id));
+
+        if (foundNotifications.length > 0) {
+            currentNotifications[repo].newPRs = [...(currentNotifications[repo].newPRs || []), ...foundNotifications];
+        }
+        newLastData[repo] = { ...newLastData[repo], prs: newPRIds };
+    }
+    
+    // 2. Check for PR status changes (The critical, corrected part)
     if (settings.newPRs || settings.assignedPRs) {
-        const { items: openPRs } = await fetchPullRequests(repo, 'open', 1);
         const lastPRStates = lastData[repo]?.prStates || {};
         const newPRStates: { [prNumber: number]: ReviewState } = {};
 
-        for (const pr of openPRs as PullRequestInfo[]) {
-            // --- INICIO DE CAMBIOS ---
-            // 2. Llamamos a la nueva función y desestructuramos el resultado
-            const { overallState: currentState } = await fetchPullRequestReviewInfo(repo, pr.number);
-            // --- FIN DE CAMBIOS ---
-            newPRStates[pr.number] = currentState;
-            const previousState = lastPRStates[pr.number];
+        // IMPORTANT! Limit the check to the 10 most recent PRs to avoid rate limiting.
+        const prsToCheck = openPRs.slice(0, 10);
 
-            if (previousState === 'PENDING' && (currentState === 'APPROVED' || currentState === 'CHANGES_REQUESTED')) {
-                if (!currentNotifications[repo].prStatusChanges) {
-                    currentNotifications[repo].prStatusChanges = [];
+        for (const pr of prsToCheck) {
+            try {
+                const { overallState: currentState } = await fetchPullRequestReviewInfo(repo, pr.number);
+                newPRStates[pr.number] = currentState;
+                const previousState = lastPRStates[pr.number];
+
+                if (previousState === 'PENDING' && (currentState === 'APPROVED' || currentState === 'CHANGES_REQUESTED')) {
+                    if (!currentNotifications[repo].prStatusChanges) {
+                        currentNotifications[repo].prStatusChanges = [];
+                    }
+                    // Avoid duplicate notifications for the same state change
+                    if (!currentNotifications[repo].prStatusChanges!.some(n => n.id === pr.id && n.state === currentState)) {
+                        currentNotifications[repo].prStatusChanges!.push({
+                            id: pr.id,
+                            number: pr.number,
+                            title: pr.title,
+                            state: currentState,
+                        });
+                    }
                 }
-                if (!currentNotifications[repo].prStatusChanges!.some(n => n.id === pr.id && n.state === currentState)) {
-                    currentNotifications[repo].prStatusChanges!.push({
-                        id: pr.id,
-                        number: pr.number,
-                        title: pr.title,
-                        state: currentState,
-                    });
+            } catch (error) {
+                console.error(`Error checking PR status for ${repo}#${pr.number}:`, error);
+                // If it fails, keep the previous state to avoid losing it
+                if (lastPRStates[pr.number]) {
+                    newPRStates[pr.number] = lastPRStates[pr.number];
                 }
             }
         }
-        newLastData[repo] = { ...newLastData[repo], prStates: newPRStates };
+        // Combine the newly checked states with the old ones that weren't checked
+        newLastData[repo] = { ...newLastData[repo], prStates: { ...lastPRStates, ...newPRStates } };
     }
 
-    // Check for PRs assigned to me
+    // 3. Check for PRs assigned to me
     if (settings.assignedPRs) {
       const { items: assignedPRs } = await fetchMyAssignedPullRequests(repo, 1);
       const newAssignedPRIds = assignedPRs.map((pr: { id: any }) => pr.id);
@@ -196,14 +208,14 @@ async function checkForUpdates() {
       newLastData[repo] = { ...newLastData[repo], releases: newReleaseIds };
     }
 
-    // Check de cambios en archivos
+    // Check for file changes
     if (settings.fileChanges) {
-      const trackedFiles = trackedFilesByRepo[repo] || [];
-      if (trackedFiles.length > 0) {
+      const repoTrackedFiles = trackedFilesByRepo[repo] || [];
+      if (repoTrackedFiles.length > 0) {
         if (!newLastData[repo]) newLastData[repo] = {};
         if (!newLastData[repo].trackedFiles) newLastData[repo].trackedFiles = {};
 
-        for (const file of trackedFiles) {
+        for (const file of repoTrackedFiles) {
           try {
             const lastCommit = await fetchLastCommitForFile(repo, file.branch, file.path);
             if (lastCommit && lastCommit.sha) {
