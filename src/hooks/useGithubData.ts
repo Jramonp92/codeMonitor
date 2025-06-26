@@ -4,6 +4,19 @@ import { useState, useEffect, useCallback } from 'react';
 import type { AlertSettings, ActiveNotifications } from '../background/alarms';
 import { type ReviewState, type PRReviewInfo, type Reviewer } from '../background/githubClient';
 
+
+const checkRuntime = () => {
+  if (chrome.runtime?.id === undefined) {
+    console.warn("El contexto de la extensión se ha invalidado. Recargando la UI...");
+
+    window.location.reload();
+
+    throw new Error("Extension runtime invalidated, reloading.");
+  }
+};
+
+
+
 export type TabKey = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions' | 'Releases';
 export type Tab = 'README' | 'Code' | 'Commits' | 'Issues' | 'PRs' | 'Actions'| 'Releases';
 
@@ -82,6 +95,7 @@ export function useGithubData() {
     frequency: number;
     files: { [key: string]: TrackedFile[] };
   }) => {
+    checkRuntime(); // <-- Se añade el chequeo aquí
     if (!user?.login) return;
     setAlertSettings(data.settings);
     setAlertFrequency(data.frequency);
@@ -97,11 +111,8 @@ export function useGithubData() {
     });
   }, [user]);
 
-  // --- INICIO DE LA CORRECCIÓN ---
-  // La función updateTrackedFiles se elimina.
-  // La lógica se mueve directamente dentro de add y remove.
-
   const addTrackedFile = useCallback((repoFullName: string, path: string, branch: string) => {
+    checkRuntime(); // <-- Se añade el chequeo aquí
     if (!user?.login) return;
     const newFile: TrackedFile = { path, branch };
     const repoFiles = trackedFiles[repoFullName] || [];
@@ -115,6 +126,7 @@ export function useGithubData() {
   }, [trackedFiles, user]);
 
   const removeTrackedFile = useCallback((repoFullName: string, path: string, branch: string) => {
+    checkRuntime(); // <-- Se añade el chequeo aquí
     if (!user?.login) return;
     const repoFiles = trackedFiles[repoFullName] || [];
     const newRepoFiles = repoFiles.filter(f => f.path !== path || f.branch !== branch);
@@ -131,9 +143,9 @@ export function useGithubData() {
     const repoFiles = trackedFiles[repoFullName] || [];
     return repoFiles.some(f => f.path === path && f.branch === branch);
   }, [trackedFiles]);
-  // --- FIN DE LA CORRECCIÓN ---
 
   useEffect(() => {
+    checkRuntime(); // <-- Se añade el chequeo aquí
     chrome.runtime.sendMessage({ type: 'checkAuthStatus' }, (response) => {
       if (response?.loggedIn && response.user) {
         const currentUser = response.user;
@@ -171,6 +183,7 @@ export function useGithubData() {
   }, []);
   
   const fetchBranchesForRepo = useCallback(() => {
+    checkRuntime(); // <-- Se añade el chequeo aquí
     if (selectedRepo) {
       setAreBranchesLoading(true);
       chrome.runtime.sendMessage({ type: 'getBranches', repoFullName: selectedRepo }, (response) => {
@@ -185,6 +198,7 @@ export function useGithubData() {
   }, [selectedRepo]);
 
   const fetchWorkflowsForRepo = useCallback(() => {
+    checkRuntime(); // <-- Se añade el chequeo aquí
     if (selectedRepo) {
       setAreWorkflowsLoading(true);
       chrome.runtime.sendMessage({ type: 'getWorkflows', repoFullName: selectedRepo }, (response) => {
@@ -210,6 +224,7 @@ export function useGithubData() {
   useEffect(() => { fetchBranchesForRepo(); fetchWorkflowsForRepo(); }, [fetchBranchesForRepo, fetchWorkflowsForRepo]); 
   
   const handleTabVisibilityChange = useCallback((tab: TabKey, isVisible: boolean) => {
+    checkRuntime(); // <-- Se añade el chequeo aquí
     const newVisibility = { ...tabVisibility, [tab]: isVisible };
     setTabVisibility(newVisibility);
     chrome.storage.local.set({ tabVisibility: newVisibility });
@@ -237,6 +252,7 @@ export function useGithubData() {
     if (!didClear) return;
     if (Object.keys(newRepoNotifications).length === 0) delete newNotifications[repo]; else newNotifications[repo] = newRepoNotifications;
     setActiveNotifications(newNotifications);
+    checkRuntime(); // <-- Se añade el chequeo aquí
     chrome.storage.local.set({ [`notifications_${user.login}`]: newNotifications });
     let newTotalCount = 0;
     Object.values(newNotifications).forEach(repoNotifications => { if (repoNotifications) Object.values(repoNotifications).forEach(notificationsArray => { if (Array.isArray(notificationsArray)) newTotalCount += notificationsArray.length; }); });
@@ -255,6 +271,7 @@ export function useGithubData() {
     if (updatedFileChanges.length === 0) delete newNotifications[repo].fileChanges; else newNotifications[repo].fileChanges = updatedFileChanges;
     if (Object.keys(newNotifications[repo]).length === 0) delete newNotifications[repo];
     setActiveNotifications(newNotifications);
+    checkRuntime(); // <-- Se añade el chequeo aquí
     chrome.storage.local.set({ [`notifications_${user.login}`]: newNotifications });
     let newTotalCount = 0;
     Object.values(newNotifications).forEach(repoNotifications => { if (repoNotifications) Object.values(repoNotifications).forEach(notificationsArray => { if (Array.isArray(notificationsArray)) newTotalCount += notificationsArray.length; }); });
@@ -265,6 +282,7 @@ export function useGithubData() {
     if (!selectedRepo || !selectedBranch) return;
     clearSingleFileNotification(selectedRepo, filePath, selectedBranch);
     setIsContentLoading(true);
+    checkRuntime(); // <-- Se añade el chequeo aquí
     chrome.runtime.sendMessage({ type: 'getFileContent', repoFullName: selectedRepo, branch: selectedBranch, path: filePath }, (response) => {
       if (response.success) setViewedFile({ path: filePath, content: response.data });
       else { console.error(`Error fetching file ${filePath}:`, response.error); setViewedFile({ path: filePath, content: `Error: No se pudo cargar el archivo.` }); }
@@ -273,6 +291,11 @@ export function useGithubData() {
   }, [selectedRepo, selectedBranch, clearSingleFileNotification]);
 
   const fetchDataForTab = useCallback(async () => {
+    try {
+      checkRuntime();
+    } catch (error) {
+      return; 
+    }
     if (!selectedRepo || ((activeTab === 'Commits' || activeTab === 'Code') && !selectedBranch)) return;
     setIsContentLoading(true);
     let message: any = { repoFullName: selectedRepo };
@@ -307,6 +330,7 @@ export function useGithubData() {
           if (isPrTab && items) {
             const prsWithReviewInfo = await Promise.all(items.map(async (pr: PullRequestInfo) => {
               return new Promise((resolve) => {
+                checkRuntime(); // <-- Se añade el chequeo aquí también
                 chrome.runtime.sendMessage({ type: 'getPullRequestApprovalState', repoFullName: selectedRepo, prNumber: pr.number }, (reviewResponse) => {
                   if (reviewResponse.success) resolve({ ...pr, reviewInfo: reviewResponse.data });
                   else resolve(pr);
@@ -374,6 +398,7 @@ export function useGithubData() {
     if (!user) return;
     const notificationsKey = `notifications_${user.login}`;
     setActiveNotifications({});
+    checkRuntime(); // <-- Se añade el chequeo aquí
     chrome.storage.local.set({ [notificationsKey]: {} });
     chrome.action.setBadgeText({ text: '' });
   }, [user]);
@@ -381,6 +406,7 @@ export function useGithubData() {
   const updateManagedRepos = useCallback((updatedRepos: Repo[]) => {
     if (user?.login) {
       setManagedRepos(updatedRepos);
+      checkRuntime(); // <-- Se añade el chequeo aquí
       chrome.storage.local.set({ [`userRepos_${user.login}`]: updatedRepos });
       if (selectedRepo && !updatedRepos.some(repo => repo.full_name === selectedRepo)) {
         setSelectedRepo(updatedRepos.length > 0 ? updatedRepos[0].full_name : '');
@@ -390,7 +416,7 @@ export function useGithubData() {
 
   return {
     user, allRepos, managedRepos, 
-    updateManagedRepos, // <-- Se retorna la nueva función
+    updateManagedRepos,
     selectedRepo, setSelectedRepo, isContentLoading, activeTab, issueStateFilter,
     prStateFilter, actionStatusFilter, handleTabChange, handleIssueFilterChange,
     handlePrFilterChange, handleActionStatusChange, readmeHtml, commits, issues,
