@@ -29,34 +29,34 @@
 }
 
 .modal-header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-/* CAMBIO: Usando variable */
-border-bottom: 1px solid var(--border-color);
-padding-bottom: 10px;
-margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* CAMBIO: Usando variable */
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+  margin-bottom: 15px;
 }
 
 .modal-header h2 {
-margin: 0;
-font-size: 1.2em;
-color: var(--text-primary);
+  margin: 0;
+  font-size: 1.2em;
+  color: var(--text-primary);
 }
 
 .close-button {
-background: none;
-border: none;
-font-size: 1.8em;
-cursor: pointer;
-padding: 0;
-line-height: 1;
-/* CAMBIO: Usando variable */
-color: var(--text-secondary);
+  background: none;
+  border: none;
+  font-size: 1.8em;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  /* CAMBIO: Usando variable */
+  color: var(--text-secondary);
 }
 
 .close-button:hover {
-color: var(--text-primary);
+  color: var(--text-primary);
 }
 
 /* Configuración de la frecuencia de alertas */
@@ -153,82 +153,126 @@ color: var(--text-primary);
 
 /* Estilos para la celda de archivos observados */
 .tracked-files-cell {
-min-width: 250px;
-text-align: left;
-vertical-align: top;
+  min-width: 250px;
+  text-align: left;
+  vertical-align: top;
 }
 
 .branch-group {
-margin-bottom: 10px;
+  margin-bottom: 10px;
 }
 
 .branch-group:last-child {
-margin-bottom: 0;
+  margin-bottom: 0;
 }
 
 .branch-group strong {
-font-size: 0.95em;
-/* CAMBIO: Usando variable */
-color: var(--text-primary);
+  font-size: 0.95em;
+  /* CAMBIO: Usando variable */
+  color: var(--text-primary);
 }
 
 .tracked-files-cell ul {
-list-style: none;
-padding: 0;
-margin: 4px 0 0 10px;
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0 10px;
 }
 
 .tracked-files-cell li {
-display: flex;
-justify-content: space-between; /* Ajustado para alinear el botón */
-align-items: center;
-font-size: 0.9em;
-padding: 2px 0;
-gap: 8px; /* Espacio entre el nombre y el botón */
+  display: flex;
+  justify-content: space-between; /* Ajustado para alinear el botón */
+  align-items: center;
+  font-size: 0.9em;
+  padding: 2px 0;
+  gap: 8px; /* Espacio entre el nombre y el botón */
 }
 
 .tracked-files-cell li span {
-white-space: nowrap;
-overflow: hidden;
-text-overflow: ellipsis;
-max-width: 200px;
-flex-grow: 1; /* Permite que el span ocupe el espacio */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  flex-grow: 1; /* Permite que el span ocupe el espacio */
 }
 
 .remove-file-btn {
-background: none;
-border: none;
-cursor: pointer;
-font-weight: bold;
-font-size: 1.2em;
-padding: 0 5px;
-/* CAMBIO: Usando variable */
-color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.2em;
+  padding: 0 5px;
+  /* CAMBIO: Usando variable */
+  color: var(--text-secondary);
 }
 
 .remove-file-btn:hover {
-color: #d73a49; /* Se mantiene el rojo de "peligro" */
+  color: #d73a49; /* Se mantiene el rojo de "peligro" */
 }
 
 .add-file-btn {
-background: none;
-border: none;
-cursor: pointer;
-font-size: 0.9em;
-font-weight: 500;
-padding: 4px 0;
-margin-top: 5px;
-/* CAMBIO: Usando variable */
-color: var(--accent-color);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+  padding: 4px 0;
+  margin-top: 5px;
+  /* CAMBIO: Usando variable */
+  color: var(--accent-color);
 }
 
 .add-file-btn:hover {
-text-decoration: underline;
+  text-decoration: underline;
 }
 
 .add-file-btn:disabled {
-/* CAMBIO: Usando variable */
-color: var(--text-secondary);
-cursor: not-allowed;
-text-decoration: none;
+  /* CAMBIO: Usando variable */
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  text-decoration: none;
 }
+
+/* --- INICIO DE NUEVOS ESTILOS --- */
+/* Pie de página para los botones de acción */
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 15px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Estilo base para los botones del footer */
+.footer-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* Botón de Cancelar */
+.cancel-button {
+  background-color: transparent;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.cancel-button:hover {
+  background-color: var(--button-background-hover);
+}
+
+/* Botón de Guardar */
+.save-button {
+  background-color: #238636; /* Verde estándar de GitHub */
+  color: white;
+  border-color: #238636;
+}
+
+.save-button:hover {
+  background-color: #2ea043; /* Un verde un poco más claro para el hover */
+}
+/* --- FIN DE NUEVOS ESTILOS --- */

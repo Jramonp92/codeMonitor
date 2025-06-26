@@ -13,14 +13,13 @@
 }
 
 .modal-content {
-  /* CAMBIO: Usando variables */
   background-color: var(--background-primary);
   color: var(--text-primary);
   padding: 20px;
   border-radius: 8px;
   width: 90%;
   max-width: 700px;
-  max-height: 80vh;
+  max-height: 80vh; /* El modal nunca será más alto que el 80% de la ventana */
   display: flex;
   flex-direction: column;
 }
@@ -31,8 +30,8 @@
   align-items: center;
   padding-bottom: 10px;
   margin-bottom: 15px;
-  /* CAMBIO: Usando variable */
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0; /* Evita que el header se encoja */
 }
 
 .modal-header h2 {
@@ -48,7 +47,6 @@
   cursor: pointer;
   padding: 0;
   line-height: 1;
-  /* CAMBIO: Usando variable */
   color: var(--text-secondary);
 }
 .close-button:hover {
@@ -58,8 +56,12 @@
 .modal-body {
   display: flex;
   gap: 20px;
-  overflow: hidden;
-  flex-wrap: wrap; 
+  /* --- INICIO DE LA CORRECCIÓN --- */
+  flex-grow: 1;      /* Permite que el cuerpo del modal crezca para llenar el espacio disponible */
+  overflow-y: hidden; /* Oculta cualquier desbordamiento vertical del cuerpo en sí */
+  min-height: 0;      /* Arreglo para que flexbox calcule la altura correctamente en algunos navegadores */
+  /* Se elimina 'flex-wrap: wrap;' que no es necesario aquí */
+  /* --- FIN DE LA CORRECCIÓN --- */
 }
 
 /* Estilos para las columnas de repositorios */
@@ -67,13 +69,12 @@
   flex: 1 1 250px; 
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  min-height: 0; /* Permite que el hijo con flex-grow se ajuste correctamente */
 }
 
 .repo-column h3 {
   margin-top: 0;
   font-size: 1em;
-  /* CAMBIO: Usando variable */
   color: var(--text-secondary);
 }
 
@@ -83,7 +84,6 @@
   border-radius: 4px;
   margin-bottom: 10px;
   box-sizing: border-box;
-  /* CAMBIO: Usando variables */
   border: 1px solid var(--input-border-color);
   background-color: var(--input-background);
   color: var(--text-primary);
@@ -93,10 +93,9 @@
   list-style: none;
   padding: 0;
   margin: 0;
-  overflow-y: auto;
+  overflow-y: auto; /* Esta es la clave: la lista tendrá su propio scroll */
   border-radius: 4px;
-  flex-grow: 1;
-  /* CAMBIO: Usando variable */
+  flex-grow: 1; /* La lista crecerá para llenar el espacio de su columna */
   border: 1px solid var(--border-color);
 }
 
@@ -105,7 +104,6 @@
   justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
-  /* CAMBIO: Usando variable */
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
 }
@@ -130,7 +128,6 @@
   padding: 4px;
 }
 
-/* Se mantienen colores semánticos */
 .add-button {
   color: green;
 }
@@ -142,7 +139,6 @@
 .external-add-section {
   margin-top: 20px;
   padding-top: 15px;
-  /* CAMBIO: Usando variable */
   border-top: 1px solid var(--border-color);
 }
 
@@ -162,7 +158,6 @@
   flex-grow: 1;
 }
 
-/* Se mantienen colores semánticos */
 .add-external-button {
   padding: 8px 12px;
   border: 1px solid #27ae60;
@@ -174,16 +169,53 @@
 }
 
 .add-external-button:disabled {
-  /* CAMBIO: Usando variables */
   background-color: var(--button-background);
   border-color: var(--border-color);
   color: var(--text-secondary);
   cursor: not-allowed;
 }
 
-/* Se mantienen colores semánticos */
 .error-message {
   color: #c0392b;
   font-size: 0.85em;
   margin-top: 8px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 15px;
+  margin-top: 20px;
+  border-top: 1px solid var(--border-color);
+  flex-shrink: 0; /* Evita que el footer se encoja */
+}
+
+.footer-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.cancel-button {
+  background-color: transparent;
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.cancel-button:hover {
+  background-color: var(--button-background-hover);
+}
+
+.save-button {
+  background-color: #238636;
+  color: white;
+  border-color: #238636;
+}
+
+.save-button:hover {
+  background-color: #2ea043;
 }

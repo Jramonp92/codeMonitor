@@ -20,46 +20,37 @@ function App() {
   const [isAppLoading, setIsAppLoading] = useState(true);
   const [isRepoModalOpen, setIsRepoModalOpen] = useState(false);
   const [isAlertsModalOpen, setIsAlertsModalOpen] = useState(false);
-
-  // --- INICIO DEL CAMBIO ---
-  // El estado inicial ahora puede ser cualquiera, ya que el useEffect lo establecerá inmediatamente.
   const [theme, setTheme] = useState<Theme>('light');
 
-  // Este useEffect ahora tiene la lógica mejorada para detectar el tema del sistema.
   useEffect(() => {
-    // 1. Primero, intentamos obtener el tema que el usuario guardó explícitamente.
     chrome.storage.local.get('theme', (result) => {
       if (result.theme) {
-        // Si hay un tema guardado, lo usamos y terminamos.
         setTheme(result.theme);
       } else {
-        // 2. Si NO hay un tema guardado, consultamos la preferencia del sistema.
         const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         setTheme(systemPrefersDark ? 'dark' : 'light');
       }
     });
   }, []);
 
-  // Este efecto no cambia, se encarga de aplicar la clase CSS al body.
   useEffect(() => {
     const body = document.body;
     body.classList.remove('light', 'dark');
     body.classList.add(theme);
   }, [theme]);
 
-  // Esta función no cambia, permite al usuario cambiar el tema manualmente.
   const handleThemeChange = (newTheme: Theme) => {
     setTheme(newTheme);
     chrome.storage.local.set({ theme: newTheme });
   };
-  // --- FIN DEL CAMBIO ---
   
+  // --- INICIO DEL CAMBIO ---
+  // Actualizamos la destructuración para que coincida con el hook corregido
   const {
     user,
     allRepos,
     managedRepos,
-    addRepoToManagedList,
-    removeRepoFromManagedList,
+    updateManagedRepos, // <-- Se usa la nueva función de guardado
     selectedRepo,
     setSelectedRepo,
     isContentLoading,
@@ -84,8 +75,7 @@ function App() {
     alertSettings,
     activeNotifications,
     alertFrequency,
-    handleAlertSettingsChange,
-    handleFrequencyChange,
+    handleSaveAlerts,
     tabVisibility,
     handleTabVisibilityChange,
     branches,
@@ -108,6 +98,7 @@ function App() {
     selectedWorkflowId,
     handleWorkflowFilterChange,
   } = useGithubData();
+  // --- FIN DEL CAMBIO ---
 
   useEffect(() => {
     if (user !== undefined) {
@@ -135,26 +126,25 @@ function App() {
 
   return (
     <AppShell isLoading={isAppLoading} user={user} onLogin={handleLogin}>
+      {/* --- INICIO DEL CAMBIO --- */}
+      {/* Se actualizan las props del RepoManagerModal */}
       <RepoManagerModal
         isOpen={isRepoModalOpen}
         onClose={() => setIsRepoModalOpen(false)}
         allRepos={allRepos}
         managedRepos={managedRepos}
-        onAdd={addRepoToManagedList}
-        onRemove={removeRepoFromManagedList}
+        onSave={updateManagedRepos}
       />
+      {/* --- FIN DEL CAMBIO --- */}
       
       <AlertsManagerModal
         isOpen={isAlertsModalOpen}
         onClose={() => setIsAlertsModalOpen(false)}
         managedRepos={managedRepos}
         alertSettings={alertSettings}
-        onSettingsChange={handleAlertSettingsChange}
         alertFrequency={alertFrequency}
-        onFrequencyChange={handleFrequencyChange}
         trackedFiles={trackedFiles}
-        addTrackedFile={addTrackedFile}
-        removeTrackedFile={removeTrackedFile}
+        onSave={handleSaveAlerts}
       />
       
       <div className="app-container">

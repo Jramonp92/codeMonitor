@@ -1,27 +1,27 @@
 // src/components/AlertsManagerModal.tsx
 
-import { useState } from 'react';
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos los nuevos tipos y el nuevo modal
+import { useState, useEffect } from 'react';
 import type { Repo, TrackedFile, Branch } from '../hooks/useGithubData';
 import type { AlertSettings } from '../background/alarms';
 import { AddTrackedFileModal } from './AddTrackedFileModal';
-// --- FIN DE CAMBIOS ---
 import './AlertsManagerModal.css';
 
-// --- INICIO DE CAMBIOS ---
-// 2. Actualizamos las props para recibir todo lo relacionado con el seguimiento de archivos
+// --- INICIO DE CAMBIOS (NUEVAS PROPS) ---
+// La interfaz de Props ahora es mucho más simple.
+// Recibe los datos iniciales y una única función onSave.
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   managedRepos: Repo[];
   alertSettings: AlertSettings;
-  onSettingsChange: (repoFullName: string, setting: keyof AlertSettings[string], value: boolean) => void;
   alertFrequency: number;
-  onFrequencyChange: (frequency: number) => void;
   trackedFiles: { [repoFullName: string]: TrackedFile[] };
-  addTrackedFile: (repo: string, path: string, branch: string) => void;
-  removeTrackedFile: (repo: string, path: string, branch: string) => void;
+  // La nueva función onSave que guardará todos los cambios a la vez.
+  onSave: (data: {
+    settings: AlertSettings;
+    frequency: number;
+    files: { [key: string]: TrackedFile[] };
+  }) => void;
 }
 // --- FIN DE CAMBIOS ---
 
@@ -31,35 +31,40 @@ const alertTypes = [
   { id: 'assignedPRs', label: 'PRs Asignados a Mí' },
   { id: 'actions', label: 'Workflows de Actions' },
   { id: 'newReleases', label: 'Nuevos Releases' },
-  // --- INICIO DE CAMBIOS ---
-  // 3. Añadimos el nuevo tipo de alerta para cambios en archivos
   { id: 'fileChanges', label: 'Cambios en Archivos' },
-  // --- FIN DE CAMBIOS ---
 ];
 
-export function AlertsManagerModal({ 
-  isOpen, 
-  onClose, 
-  managedRepos, 
-  alertSettings, 
-  onSettingsChange,
+export function AlertsManagerModal({
+  isOpen,
+  onClose,
+  managedRepos,
+  alertSettings,
   alertFrequency,
-  onFrequencyChange,
-  // --- INICIO DE CAMBIOS ---
-  // 4. Desestructuramos las nuevas props
   trackedFiles,
-  addTrackedFile,
-  removeTrackedFile
-  // --- FIN DE CAMBIOS ---
+  onSave, // Usamos la nueva prop onSave
 }: Props) {
-  // --- INICIO DE CAMBIOS ---
-  // 5. Estado local para manejar el modal de añadir archivo
+  // --- INICIO DE CAMBIOS (ESTADO LOCAL) ---
+  // Estados locales para almacenar los cambios temporalmente
+  const [localAlertSettings, setLocalAlertSettings] = useState<AlertSettings>({});
+  const [localAlertFrequency, setLocalAlertFrequency] = useState(10);
+  const [localTrackedFiles, setLocalTrackedFiles] = useState<{ [key: string]: TrackedFile[] }>({});
+
+  // Este efecto se ejecuta cuando el modal se abre para inicializar el estado local
+  useEffect(() => {
+    if (isOpen) {
+      // Usamos JSON.parse/stringify para crear una copia profunda y evitar mutaciones
+      setLocalAlertSettings(JSON.parse(JSON.stringify(alertSettings)));
+      setLocalAlertFrequency(alertFrequency);
+      setLocalTrackedFiles(JSON.parse(JSON.stringify(trackedFiles)));
+    }
+  }, [isOpen, alertSettings, alertFrequency, trackedFiles]);
+  // --- FIN DE CAMBIOS ---
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [repoForAddModal, setRepoForAddModal] = useState<Repo | null>(null);
   const [branchesForRepo, setBranchesForRepo] = useState<Branch[]>([]);
   const [isLoadingBranches, setIsLoadingBranches] = useState(false);
 
-  // 6. Función para abrir el modal de añadir archivo
   const handleOpenAddFileModal = async (repo: Repo) => {
     setIsLoadingBranches(true);
     setRepoForAddModal(repo);
@@ -69,55 +74,99 @@ export function AlertsManagerModal({
         setIsAddModalOpen(true);
       } else {
         console.error(`Error fetching branches for ${repo.full_name}:`, response?.error);
-        // Aquí podrías mostrar un error al usuario
       }
       setIsLoadingBranches(false);
     });
   };
 
-  // 7. Agrupamos los archivos por rama para una mejor visualización
   const groupFilesByBranch = (files: TrackedFile[] = []) => {
     return files.reduce((acc, file) => {
       (acc[file.branch] = acc[file.branch] || []).push(file);
       return acc;
     }, {} as { [branch: string]: TrackedFile[] });
   };
+  
+  // --- INICIO DE CAMBIOS (MANEJADORES LOCALES) ---
+  const handleLocalSettingsChange = (repoFullName: string, setting: keyof AlertSettings[string], value: boolean) => {
+    setLocalAlertSettings(prev => {
+      const newSettings = JSON.parse(JSON.stringify(prev));
+      if (!newSettings[repoFullName]) {
+        newSettings[repoFullName] = {};
+      }
+      (newSettings[repoFullName] as any)[setting] = value;
+      return newSettings;
+    });
+  };
+
+  const handleLocalAddTrackedFile = (repo: string, path: string, branch: string) => {
+    setLocalTrackedFiles(prev => {
+      const newFiles = JSON.parse(JSON.stringify(prev));
+      const repoFiles = newFiles[repo] || [];
+      if (!repoFiles.some((f: TrackedFile) => f.path === path && f.branch === branch)) {
+        repoFiles.push({ path, branch });
+        newFiles[repo] = repoFiles;
+      }
+      return newFiles;
+    });
+  };
+  
+  const handleLocalRemoveTrackedFile = (repo: string, path: string, branch: string) => {
+    setLocalTrackedFiles(prev => {
+      const newFiles = JSON.parse(JSON.stringify(prev));
+      if (newFiles[repo]) {
+        newFiles[repo] = newFiles[repo].filter((f: TrackedFile) => f.path !== path || f.branch !== branch);
+        if (newFiles[repo].length === 0) {
+          delete newFiles[repo];
+        }
+      }
+      return newFiles;
+    });
+  };
+
+  const handleSave = () => {
+    onSave({
+      settings: localAlertSettings,
+      frequency: localAlertFrequency,
+      files: localTrackedFiles,
+    });
+    onClose();
+  };
+
+  const handleCancel = () => {
+    // Simplemente cierra el modal, los cambios locales se perderán
+    onClose();
+  };
   // --- FIN DE CAMBIOS ---
 
-  if (!isOpen) {
-    return null;
-  }
+  if (!isOpen) return null;
 
   return (
     <div className="modal-overlay">
       <div className="modal-content alerts-modal">
-        {/* --- INICIO DE CAMBIOS --- */}
-        {/* 8. Renderizamos el modal para añadir archivos si está abierto */}
         {repoForAddModal && (
           <AddTrackedFileModal
             isOpen={isAddModalOpen}
             onClose={() => setIsAddModalOpen(false)}
             branches={branchesForRepo}
-            onAdd={(path, branch) => addTrackedFile(repoForAddModal.full_name, path, branch)}
+            onAdd={(path, branch) => handleLocalAddTrackedFile(repoForAddModal.full_name, path, branch)}
           />
         )}
-        {/* --- FIN DE CAMBIOS --- */}
 
         <div className="modal-header">
           <h2>Gestionar Alertas</h2>
-          <button onClick={onClose} className="close-button">&times;</button>
+          <button onClick={handleCancel} className="close-button">&times;</button>
         </div>
         <div className="modal-body">
           <div className="frequency-settings">
             <label htmlFor="frequency-select">Revisar cada:</label>
-            <select 
+            <select
               id="frequency-select"
-              value={alertFrequency} 
-              onChange={(e) => onFrequencyChange(parseInt(e.target.value, 10))}
+              value={localAlertFrequency}
+              onChange={(e) => setLocalAlertFrequency(parseInt(e.target.value, 10))}
             >
-              <option value="10">10 minutos</option>
-              <option value="30">30 minutos</option>
-              <option value="60">1 hora</option>
+              <option value={10}>10 minutos</option>
+              <option value={30}>30 minutos</option>
+              <option value={60}>1 hora</option>
             </select>
           </div>
 
@@ -129,19 +178,13 @@ export function AlertsManagerModal({
                   {alertTypes.map(alert => (
                     <th key={alert.id}>{alert.label}</th>
                   ))}
-                  {/* --- INICIO DE CAMBIOS --- */}
-                  {/* 9. Añadimos la nueva cabecera de la tabla */}
                   <th>Archivos Observados</th>
-                  {/* --- FIN DE CAMBIOS --- */}
                 </tr>
               </thead>
               <tbody>
                 {managedRepos.map(repo => {
-                  // --- INICIO DE CAMBIOS ---
-                  // 10. Obtenemos y agrupamos los archivos para el repo actual
-                  const currentRepoTrackedFiles = trackedFiles[repo.full_name] || [];
+                  const currentRepoTrackedFiles = localTrackedFiles[repo.full_name] || [];
                   const groupedFiles = groupFilesByBranch(currentRepoTrackedFiles);
-                  // --- FIN DE CAMBIOS ---
 
                   return (
                     <tr key={repo.id}>
@@ -150,13 +193,11 @@ export function AlertsManagerModal({
                         <td key={alert.id}>
                           <input
                             type="checkbox"
-                            checked={!!alertSettings[repo.full_name]?.[alert.id as keyof AlertSettings[string]]}
-                            onChange={(e) => onSettingsChange(repo.full_name, alert.id as keyof AlertSettings[string], e.target.checked)}
+                            checked={!!localAlertSettings[repo.full_name]?.[alert.id as keyof AlertSettings[string]]}
+                            onChange={(e) => handleLocalSettingsChange(repo.full_name, alert.id as keyof AlertSettings[string], e.target.checked)}
                           />
                         </td>
                       ))}
-                      {/* --- INICIO DE CAMBIOS --- */}
-                      {/* 11. Renderizamos la nueva celda con la lista de archivos */}
                       <td className="tracked-files-cell">
                         {Object.keys(groupedFiles).map(branchName => (
                           <div key={branchName} className="branch-group">
@@ -165,7 +206,7 @@ export function AlertsManagerModal({
                               {groupedFiles[branchName].map(file => (
                                 <li key={file.path}>
                                   <span title={file.path}>{file.path}</span>
-                                  <button onClick={() => removeTrackedFile(repo.full_name, file.path, branchName)} className="remove-file-btn">
+                                  <button onClick={() => handleLocalRemoveTrackedFile(repo.full_name, file.path, branchName)} className="remove-file-btn">
                                     &times;
                                   </button>
                                 </li>
@@ -177,7 +218,6 @@ export function AlertsManagerModal({
                           {isLoadingBranches ? 'Cargando...' : '+ Añadir archivo'}
                         </button>
                       </td>
-                      {/* --- FIN DE CAMBIOS --- */}
                     </tr>
                   )
                 })}
@@ -188,6 +228,17 @@ export function AlertsManagerModal({
             <p className="no-repos-message">Aún no tienes repositorios visibles.</p>
           )}
         </div>
+        
+        {/* --- INICIO DE CAMBIOS (BOTONES DE ACCIÓN) --- */}
+        <div className="modal-footer">
+            <button onClick={handleCancel} className="footer-button cancel-button">
+              Cancelar
+            </button>
+            <button onClick={handleSave} className="footer-button save-button">
+              Guardar Cambios
+            </button>
+        </div>
+        {/* --- FIN DE CAMBIOS --- */}
       </div>
     </div>
   );
