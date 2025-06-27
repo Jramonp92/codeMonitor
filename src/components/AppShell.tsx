@@ -1,4 +1,7 @@
+// src/components/AppShell.tsx
+
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import type { GitHubUser } from '../hooks/useGithubData';
 import './AppShell.css';
 
@@ -27,30 +30,31 @@ const GitHubLogo = () => (
 );
 
 export const AppShell = ({ isLoading, user, onLogin, children }: AppShellProps) => {
+  const { t } = useTranslation(); // 2. Usar hook
+
   if (isLoading) {
     return (
-
       <div className="shell-container">
         <div className="spinner"></div>
       </div>
-
     );
   }
 
   if (!user) {
+    // 3. Reemplazar textos fijos
     return (
       <div className="shell-container login-view">
         <div className="login-card">
-          <h1 className="login-title">Repo Observer</h1>
-          <p className="login-tagline">Tu centro de notificaciones para GitHub.</p>
+          <h1 className="login-title">{t('loginTitle')}</h1>
+          <p className="login-tagline">{t('loginTagline')}</p>
           <ul className="features-list">
-            <li><span role="img" aria-label="bell">🔔</span> Alertas personalizables</li>
-            <li><span role="img" aria-label="chart">📊</span> Monitoriza Commits, PRs y más</li>
-            <li><span role="img" aria-label="zap">⚡</span> Acceso rápido desde el panel lateral</li>
+            <li><span role="img" aria-label="bell">🔔</span>{t('featureCustomAlerts')}</li>
+            <li><span role="img" aria-label="chart">📊</span>{t('featureMonitor')}</li>
+            <li><span role="img" aria-label="zap">⚡</span>{t('featureQuickAccess')}</li>
           </ul>
           <button className="login-button" onClick={onLogin}>
             <GitHubLogo />
-            <span>Iniciar Sesión con GitHub</span>
+            <span>{t('loginButton')}</span>
           </button>
         </div>
       </div>

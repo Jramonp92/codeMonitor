@@ -52,5 +52,25 @@
     "addFile": "+ Добавить файл",
     "noVisibleRepos": "У вас пока нет видимых репозиториев.",
     "cancel": "Отмена",
-    "saveChanges": "Сохранить изменения"
+    "saveChanges": "Сохранить изменения",
+
+    "appTitle": "CodeMonitor",
+    "userAvatarAlt": "Аватар пользователя",
+
+    "loginTitle": "CodeMonitor",
+    "loginTagline": "Ваш центр уведомлений для GitHub.",
+    "featureCustomAlerts": "Настраиваемые оповещения",
+    "featureMonitor": "Отслеживайте коммиты, PR и многое другое",
+    "featureQuickAccess": "Быстрый доступ с боковой панели",
+    "loginButton": "Войти через GitHub",
+
+    "gitBranchIconTitle": "Иконка ветки Git",
+    "loadingBranches": "Загрузка веток...",
+    "searchBranch": "Поиск ветки...",
+    "noBranchesFound": "Ветки не найдены",
+
+    "rootBreadcrumb": "Корень",
+    "emptyDirectory": "Эта папка пуста.",
+    "trackFile": "Отслеживать файл",
+    "untrackFile": "Прекратить отслеживание"
   }

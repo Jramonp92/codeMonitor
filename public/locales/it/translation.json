@@ -52,5 +52,26 @@
     "addFile": "+ Aggiungi file",
     "noVisibleRepos": "Non hai ancora repository visibili.",
     "cancel": "Annulla",
-    "saveChanges": "Salva Modifiche"
+    "saveChanges": "Salva Modifiche",
+
+    "appTitle": "CodeMonitor",
+    "userAvatarAlt": "Avatar dell'utente",
+
+    "loginTitle": "CodeMonitor",
+    "loginTagline": "Il tuo centro notifiche per GitHub.",
+    "featureCustomAlerts": "Avvisi personalizzabili",
+    "featureMonitor": "Monitora Commit, PR e altro",
+    "featureQuickAccess": "Accesso rapido dal pannello laterale",
+    "loginButton": "Accedi con GitHub",
+
+    "gitBranchIconTitle": "Icona Ramo Git",
+    "loadingBranches": "Caricamento rami...",
+    "searchBranch": "Cerca ramo...",
+    "noBranchesFound": "Nessun ramo trovato",
+
+    "rootBreadcrumb": "Radice",
+    "emptyDirectory": "Questa directory è vuota.",
+    "trackFile": "Traccia file",
+    "untrackFile": "Smetti di tracciare il file"
+
   }

@@ -52,6 +52,26 @@
     "addFile": "+ Datei hinzufügen",
     "noVisibleRepos": "Sie haben noch keine sichtbaren Repositories.",
     "cancel": "Abbrechen",
-    "saveChanges": "Änderungen speichern"
+    "saveChanges": "Änderungen speichern",
+
+    "appTitle": "CodeMonitor",
+    "userAvatarAlt": "Benutzer-Avatar",
+
+    "loginTitle": "CodeMonitor",
+    "loginTagline": "Ihr Benachrichtigungszentrum für GitHub.",
+    "featureCustomAlerts": "Anpassbare Benachrichtigungen",
+    "featureMonitor": "Überwachen Sie Commits, PRs & mehr",
+    "featureQuickAccess": "Schnellzugriff über das Seitenpanel",
+    "loginButton": "Mit GitHub anmelden",
+
+    "gitBranchIconTitle": "Git-Branch-Symbol",
+    "loadingBranches": "Lade Branches...",
+    "searchBranch": "Branch suchen...",
+    "noBranchesFound": "Keine Branches gefunden",
+
+    "rootBreadcrumb": "Stammverzeichnis",
+    "emptyDirectory": "Dieses Verzeichnis ist leer.",
+    "trackFile": "Datei verfolgen",
+    "untrackFile": "Datei nicht mehr verfolgen"
 
   }

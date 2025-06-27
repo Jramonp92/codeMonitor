@@ -1,10 +1,8 @@
 // src/components/FileBrowser.tsx
 
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos el tipo ActiveNotifications
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import type { DirectoryContentItem } from '../hooks/useGithubData';
 import type { ActiveNotifications } from '../background/alarms';
-// --- FIN DE CAMBIOS ---
 import './FileBrowser.css';
 import { VscFolder, VscFile, VscArrowUp, VscEye, VscEyeClosed } from 'react-icons/vsc';
 
@@ -18,9 +16,7 @@ interface FileBrowserProps {
   isTracked: (repo: string, path: string, branch: string) => boolean;
   addTrackedFile: (repo: string, path: string, branch: string) => void;
   removeTrackedFile: (repo: string, path: string, branch: string) => void;
-  // --- INICIO DE CAMBIOS ---
   activeNotifications: ActiveNotifications;
-  // --- FIN DE CAMBIOS ---
 }
 
 export const FileBrowser = ({ 
@@ -33,11 +29,9 @@ export const FileBrowser = ({
   isTracked,
   addTrackedFile,
   removeTrackedFile,
-  // --- INICIO DE CAMBIOS ---
-  // 3. Desestructuramos la nueva prop
   activeNotifications
-  // --- FIN DE CAMBIOS ---
 }: FileBrowserProps) => {
+  const { t } = useTranslation(); // 2. Usar hook
   const pathSegments = currentPath.split('/').filter(Boolean);
 
   const handleBreadcrumbClick = (index: number) => {
@@ -66,11 +60,12 @@ export const FileBrowser = ({
     return a.type === 'dir' ? -1 : 1;
   });
 
+  // 3. Reemplazar textos fijos
   return (
     <div className="file-browser-container">
       <div className="breadcrumbs">
         <span className="breadcrumb-item" onClick={() => onPathChange('')}>
-          Raíz
+          {t('rootBreadcrumb')}
         </span>
         {pathSegments.map((segment, index) => (
           <span key={index}>
@@ -94,17 +89,14 @@ export const FileBrowser = ({
 
         {sortedContent.length > 0 ? (
           sortedContent.map(item => {
-            // --- INICIO DE CAMBIOS ---
-            // 4. Lógica para determinar si el item (archivo o carpeta) tiene una notificación
             let hasNotification = false;
             const fileChanges = activeNotifications[repoFullName]?.fileChanges || [];
 
             if (item.type === 'file') {
               hasNotification = fileChanges.some(n => n.path === item.path && n.branch === selectedBranch);
-            } else { // 'dir'
+            } else {
               hasNotification = fileChanges.some(n => n.branch === selectedBranch && n.path.startsWith(item.path + '/'));
             }
-            // --- FIN DE CAMBIOS ---
 
             return (
               <li 
@@ -117,7 +109,6 @@ export const FileBrowser = ({
                     {item.type === 'dir' ? <VscFolder /> : <VscFile />}
                   </span>
                   <span className="item-name">{item.name}</span>
-                  {/* 5. Mostramos el punto rojo si hay notificación */}
                   {hasNotification && <span className="notification-dot item-dot"></span>}
                 </div>
                 
@@ -125,7 +116,7 @@ export const FileBrowser = ({
                   <button 
                     className={`track-button ${isTracked(repoFullName, item.path, selectedBranch) ? 'tracked' : ''}`}
                     onClick={(e) => handleToggleTrack(e, item)}
-                    aria-label={isTracked(repoFullName, item.path, selectedBranch) ? 'Dejar de observar' : 'Observar archivo'}
+                    aria-label={isTracked(repoFullName, item.path, selectedBranch) ? t('untrackFile') : t('trackFile')}
                   >
                     {isTracked(repoFullName, item.path, selectedBranch) ? <VscEye /> : <VscEyeClosed />}
                   </button>
@@ -134,7 +125,7 @@ export const FileBrowser = ({
             )
           })
         ) : (
-          !currentPath && <li className="empty-directory">Este directorio está vacío.</li>
+          !currentPath && <li className="empty-directory">{t('emptyDirectory')}</li>
         )}
       </ul>
     </div>
