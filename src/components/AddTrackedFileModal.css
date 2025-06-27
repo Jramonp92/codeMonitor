@@ -90,7 +90,7 @@
   padding: 10px;
   border: none;
   /* CAMBIO: Usando el color de acento del tema. El color original era verde. */
-  background-color: var(--accent-color);
+  background-color: #238636;
   color: #ffffff; /* Mantenemos el texto blanco que contrasta bien con el acento */
   font-weight: bold;
   border-radius: 4px;
@@ -105,7 +105,8 @@
 
 .add-button-small:disabled {
   /* CAMBIO: Usando variables para el estado deshabilitado */
-  background-color: var(--button-background);
+  background-color: #275f32;
+  opacity: 1;
   color: var(--text-secondary);
   cursor: not-allowed;
   filter: none;
