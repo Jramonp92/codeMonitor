@@ -122,5 +122,30 @@
     "filterCancelled": "Отменено",
 
     "allWorkflows": "Все Workflows",
-    "selectWorkflowPlaceholder": "Выберите workflow"
+    "selectWorkflowPlaceholder": "Выберите workflow",
+
+    "approved": "Одобрено",
+    "changesRequested": "Запрошены изменения",
+    "pending": "В ожидании",
+    "commented": "Прокомментировано",
+    "noReviewers": "Нет рецензентов",
+    "reviewers": "Рецензенты:",
+    "userAvatarAltText": "Аватар {{userLogin}}",
+    "today": "Сегодня",
+    "mergedOn": "Слито",
+    "closedOn": "Закрыто",
+    "openedOn": "Открыто",
+    "createdBy": "Создано",
+    "assignedTo": "Назначено:",
+    "notAssigned": "Не назначено",
+    "noReadmeFound": "Файл README для этого репозитория не найден.",
+    "viewCommitOnGithub": "Посмотреть коммит на GitHub",
+    "author": "Автор:",
+    "triggeredBy": "Выполнено",
+    "onBranch": "в ветке",
+    "initiatedBy": "Инициировано:",
+    "latest": "Последний",
+    "preRelease": "Предварительный выпуск",
+    "publishedOn": "Опубликовано",
+    "noDataForTab": "Данные для этой вкладки не найдены."
   }

@@ -1,11 +1,10 @@
 // src/components/ContentDisplay.tsx
 
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import './ContentDisplay.css';
 import { ItemStatus } from './ItemStatus';
 import { FileBrowser } from './FileBrowser';
 import { FileViewer } from './FileViewer';
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos los nuevos tipos que vamos a necesitar desde nuestro hook
 import type { 
   Tab, 
   IssueInfo, 
@@ -20,7 +19,6 @@ import type {
   Reviewer,
   GitHubUser
 } from '../hooks/useGithubData';
-// --- FIN DE CAMBIOS ---
 import type { ActiveNotifications } from '../background/alarms';
 import { VscCheck, VscError, VscCircleSlash, VscLoading, VscQuestion, VscVmRunning, VscHistory } from 'react-icons/vsc';
 
@@ -48,9 +46,8 @@ export interface ContentDisplayProps {
   removeTrackedFile: (repo: string, path: string, branch: string) => void;
 }
 
-// --- INICIO DE CAMBIOS ---
-// 2. Este componente ahora muestra el estado general del PR
 const ApprovalStatusIndicator = ({ reviewInfo }: { reviewInfo?: PRReviewInfo }) => {
+  const { t } = useTranslation();
   const state = reviewInfo?.overallState;
 
   if (!state || state === 'PENDING') {
@@ -58,10 +55,10 @@ const ApprovalStatusIndicator = ({ reviewInfo }: { reviewInfo?: PRReviewInfo }) 
   }
 
   const statusInfo = {
-    APPROVED: { text: 'Aprobado', className: 'approved', icon: <VscCheck /> },
-    CHANGES_REQUESTED: { text: 'Cambios solicitados', className: 'changes-requested', icon: <VscError /> },
-    PENDING: { text: 'Pendiente', className: 'pending', icon: <VscHistory /> },
-    COMMENTED: {text: 'Comentado', className: 'commented', icon: <VscHistory /> }
+    APPROVED: { text: t('approved'), className: 'approved', icon: <VscCheck /> },
+    CHANGES_REQUESTED: { text: t('changesRequested'), className: 'changes-requested', icon: <VscError /> },
+    PENDING: { text: t('pending'), className: 'pending', icon: <VscHistory /> },
+    COMMENTED: {text: t('commented'), className: 'commented', icon: <VscHistory /> }
   }[state];
 
   if (!statusInfo) return null;
@@ -74,16 +71,14 @@ const ApprovalStatusIndicator = ({ reviewInfo }: { reviewInfo?: PRReviewInfo }) 
   );
 };
 
-// 3. Este nuevo componente se encarga de mostrar la lista unificada de revisores
 const ReviewerDisplay = ({ pr }: { pr: PullRequestInfo }) => {
+  const { t } = useTranslation();
   const allReviewers = new Map<string, { user: GitHubUser | Reviewer, state: ReviewState }>();
 
-  // Prioridad 1: Los que ya han enviado una revisión
   pr.reviewInfo?.reviewers.forEach(reviewer => {
     allReviewers.set(reviewer.login, { user: reviewer, state: reviewer.state });
   });
 
-  // Prioridad 2: Los que han sido solicitados pero aún no responden
   pr.requested_reviewers?.forEach(requested => {
     if (!allReviewers.has(requested.login)) {
       allReviewers.set(requested.login, { user: requested, state: 'PENDING' });
@@ -91,16 +86,16 @@ const ReviewerDisplay = ({ pr }: { pr: PullRequestInfo }) => {
   });
 
   if (allReviewers.size === 0) {
-    return <div className="assignee-info"><span>No reviewers</span></div>;
+    return <div className="assignee-info"><span>{t('noReviewers')}</span></div>;
   }
 
   return (
     <div className="assignee-info">
-      <span>Reviewers:</span>
+      <span>{t('reviewers')}</span>
       {Array.from(allReviewers.values()).map(({ user, state }) => (
         <div key={user.login} className="reviewer-avatar-container">
           <a href={user.html_url} target="_blank" rel="noopener noreferrer" title={`${user.login} (${state})`}>
-            <img src={user.avatar_url} alt={`Avatar de ${user.login}`} className="assignee-avatar" />
+            <img src={user.avatar_url} alt={t('userAvatarAltText', { userLogin: user.login })} className="assignee-avatar" />
             {state === 'APPROVED' && <VscCheck className="reviewer-status-icon approved" />}
             {state === 'CHANGES_REQUESTED' && <VscError className="reviewer-status-icon changes-requested" />}
             {state === 'PENDING' && <VscHistory className="reviewer-status-icon pending" />}
@@ -110,7 +105,6 @@ const ReviewerDisplay = ({ pr }: { pr: PullRequestInfo }) => {
     </div>
   );
 };
-// --- FIN DE CAMBIOS ---
 
 
 export const ContentDisplay = ({ 
@@ -137,12 +131,14 @@ export const ContentDisplay = ({
   removeTrackedFile,
 }: ContentDisplayProps) => {
 
+  const { t } = useTranslation(); // 2. Usar hook principal
+
   const formatCommitDate = (dateString: string) => {
     if (!dateString) return '';
     const commitDate = new Date(dateString);
     const today = new Date();
     if (commitDate.toDateString() === today.toDateString()) {
-      return `Today ${commitDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      return `${t('today')} ${commitDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
     }
     return commitDate.toLocaleDateString();
   };
@@ -192,13 +188,13 @@ export const ContentDisplay = ({
         let dateValue = '';
 
         if ('merged_at' in item && item.merged_at) {
-          dateLabel = 'Mergeado';
+          dateLabel = t('mergedOn');
           dateValue = formatCommitDate(item.merged_at);
         } else if (item.closed_at) {
-          dateLabel = 'Cerrado';
+          dateLabel = t('closedOn');
           dateValue = formatCommitDate(item.closed_at);
         } else {
-          dateLabel = 'Abierto';
+          dateLabel = t('openedOn');
           dateValue = formatCommitDate(item.created_at);
         }
 
@@ -211,35 +207,31 @@ export const ContentDisplay = ({
               </div>
               <div className="item-meta">
                   <div className="item-meta-column">
-                    <span>Creado por <strong>{item.user.login}</strong></span>
+                    <span>{t('createdBy')} <strong>{item.user.login}</strong></span>
                     <span className="item-date">{dateLabel}: {dateValue}</span>
                   </div>
                   <div className="assignee-and-status-container">
-                    {/* --- INICIO DE CAMBIOS --- */}
-                    {/* 4. Usamos nuestros nuevos componentes aquí */}
                     {itemType === 'pr' ? (
                       <>
                         <ApprovalStatusIndicator reviewInfo={(item as PullRequestInfo).reviewInfo} />
                         <ReviewerDisplay pr={item as PullRequestInfo} />
                       </>
                     ) : (
-                      // Lógica original para los Issues
                       (item as IssueInfo).assignees && (item as IssueInfo).assignees.length > 0 ? (
                         <div className="assignee-info">
-                          <span>Asignado a:</span>
+                          <span>{t('assignedTo')}</span>
                           {(item as IssueInfo).assignees.map(assignee => (
                             <a key={assignee.login} href={assignee.html_url} target="_blank" rel="noopener noreferrer" title={assignee.login}>
-                              <img src={assignee.avatar_url} alt={`Avatar de ${assignee.login}`} className="assignee-avatar" />
+                              <img src={assignee.avatar_url} alt={t('userAvatarAltText', { userLogin: assignee.login })} className="assignee-avatar" />
                             </a>
                           ))}
                         </div>
                       ) : (
                         <div className="assignee-info">
-                          <span>No asignado</span>
+                          <span>{t('notAssigned')}</span>
                         </div>
                       )
                     )}
-                    {/* --- FIN DE CAMBIOS --- */}
                   </div>
               </div>
           </li>
@@ -272,7 +264,7 @@ export const ContentDisplay = ({
     if (readmeHtml) {
       return <div className="readme-content" dangerouslySetInnerHTML={{ __html: readmeHtml }} />;
     }
-    return <p className="loading-text">No se encontró un archivo README para este repositorio.</p>;
+    return <p className="loading-text">{t('noReadmeFound')}</p>;
   }
   
   if (activeTab === 'Code') {
@@ -317,7 +309,7 @@ export const ContentDisplay = ({
             </div>
             <div className="item-meta">
               <div className="item-meta-column commit-meta-details">
-                <a href={c.html_url} target="_blank" rel="noopener noreferrer" title="Ver commit en GitHub">
+                <a href={c.html_url} target="_blank" rel="noopener noreferrer" title={t('viewCommitOnGithub')}>
                   <code>{c.sha.substring(0, 7)}</code>
                 </a>
                 <span title={new Date(c.commit.author.date).toLocaleString()}>
@@ -325,10 +317,10 @@ export const ContentDisplay = ({
                 </span>
               </div>
               <div className="assignee-info">
-                <span>Author:</span>
+                <span>{t('author')}</span>
                 {c.author ? (
                   <a href={c.author.html_url} target="_blank" rel="noopener noreferrer" title={c.author.login}>
-                    <img src={c.author.avatar_url} alt={`Avatar de ${c.author.login}`} className="assignee-avatar" />
+                    <img src={c.author.avatar_url} alt={t('userAvatarAltText', { userLogin: c.author.login })} className="assignee-avatar" />
                   </a>
                 ) : (
                   <strong className="commit-author-name">{c.commit.author.name}</strong>
@@ -365,7 +357,7 @@ export const ContentDisplay = ({
                   <div className="item-meta">
                     <div className="item-meta-column">
                       <div className="action-details">
-                        <span>Triggered by <strong>{action.event.replace(/_/g, ' ')}</strong> on branch <code>{action.head_branch}</code></span>
+                        <span>{t('triggeredBy')} <strong>{action.event.replace(/_/g, ' ')}</strong> {t('onBranch')} <code>{action.head_branch}</code></span>
                         {action.pull_requests?.length > 0 && action.pull_requests[0] && (
                           <a href={action.pull_requests[0].html_url} target="_blank" rel="noopener noreferrer" className="pr-link action-pr-link">
                             (PR #{action.pull_requests[0].number})
@@ -378,11 +370,11 @@ export const ContentDisplay = ({
                     </div>
 
                     <div className="assignee-info">
-                      <span>Iniciado por:</span>
+                      <span>{t('initiatedBy')}</span>
                       <a href={`https://github.com/${action.actor.login}`} target="_blank" rel="noopener noreferrer" title={action.actor.login}>
                         <img 
                           src={action.actor.avatar_url} 
-                          alt={`Avatar de ${action.actor.login}`} 
+                          alt={t('userAvatarAltText', { userLogin: action.actor.login })}
                           className="assignee-avatar"
                         />
                       </a>
@@ -413,20 +405,20 @@ export const ContentDisplay = ({
               <div className="item-meta item-meta--align-start">
                 <div className="item-meta-column">
                   <div className="release-tags">
-                    {index === 0 && !release.prerelease && <span className="release-tag latest">Latest</span>}
-                    {release.prerelease && <span className="release-tag prerelease">Pre-release</span>}
+                    {index === 0 && !release.prerelease && <span className="release-tag latest">{t('latest')}</span>}
+                    {release.prerelease && <span className="release-tag prerelease">{t('preRelease')}</span>}
                   </div>
                   <span className="item-date">
-                    Publicado el {new Date(release.published_at).toLocaleDateString()}
+                    {t('publishedOn')} {new Date(release.published_at).toLocaleDateString()}
                   </span>
                 </div>
 
                 <div className="assignee-info">
-                  <span>Author:</span>
+                  <span>{t('author')}</span>
                   <a href={release.author.html_url} target="_blank" rel="noopener noreferrer" title={release.author.login}>
                     <img 
                       src={release.author.avatar_url}
-                      alt={`Avatar de ${release.author.login}`}
+                      alt={t('userAvatarAltText', { userLogin: release.author.login })}
                       className="assignee-avatar"
                     />
                   </a>
@@ -439,5 +431,5 @@ export const ContentDisplay = ({
     );
   }
     
-  return <p className="loading-text">No se encontraron datos para esta pestaña.</p>;
+  return <p className="loading-text">{t('noDataForTab')}</p>;
 }

@@ -122,6 +122,31 @@
     "filterCancelled": "Annullato",
 
     "allWorkflows": "Tutti i Workflows",
-    "selectWorkflowPlaceholder": "Seleziona un workflow"
+    "selectWorkflowPlaceholder": "Seleziona un workflow",
+
+    "approved": "Approvato",
+    "changesRequested": "Modifiche richieste",
+    "pending": "In attesa",
+    "commented": "Commentato",
+    "noReviewers": "Nessun revisore",
+    "reviewers": "Revisori:",
+    "userAvatarAltText": "Avatar di {{userLogin}}",
+    "today": "Oggi",
+    "mergedOn": "Unito",
+    "closedOn": "Chiuso",
+    "openedOn": "Aperto",
+    "createdBy": "Creato da",
+    "assignedTo": "Assegnato a:",
+    "notAssigned": "Non assegnato",
+    "noReadmeFound": "Nessun file README trovato per questo repository.",
+    "viewCommitOnGithub": "Vedi commit su GitHub",
+    "author": "Autore:",
+    "triggeredBy": "Eseguito da",
+    "onBranch": "sul ramo",
+    "initiatedBy": "Iniziato da:",
+    "latest": "Ultimo",
+    "preRelease": "Pre-release",
+    "publishedOn": "Pubblicato il",
+    "noDataForTab": "Nessun dato trovato per questa scheda."
 
   }
