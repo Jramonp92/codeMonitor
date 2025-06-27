@@ -1,6 +1,7 @@
 // src/components/AddTrackedFileModal.tsx
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Importar el hook
 import type { Branch } from '../hooks/useGithubData';
 import './AddTrackedFileModal.css';
 
@@ -12,10 +13,10 @@ interface AddTrackedFileModalProps {
 }
 
 export const AddTrackedFileModal = ({ isOpen, onClose, branches, onAdd }: AddTrackedFileModalProps) => {
+  const { t } = useTranslation(); // 2. Usar el hook
   const [path, setPath] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
 
-  // Setea la primera rama como seleccionada por defecto cuando el modal se abre
   useEffect(() => {
     if (isOpen && branches.length > 0) {
       setSelectedBranch(branches[0].name);
@@ -29,31 +30,32 @@ export const AddTrackedFileModal = ({ isOpen, onClose, branches, onAdd }: AddTra
   const handleAdd = () => {
     if (path && selectedBranch) {
       onAdd(path, selectedBranch);
-      setPath(''); // Limpiar el input
+      setPath('');
       onClose();
     }
   };
 
+  // 3. Reemplazar los textos con la función t()
   return (
     <div className="modal-overlay-small">
       <div className="modal-content-small">
         <div className="modal-header-small">
-          <h4>Añadir Archivo a Observar</h4>
+          <h4>{t('addFileToTrackTitle')}</h4>
           <button onClick={onClose} className="close-button-small">&times;</button>
         </div>
         <div className="modal-body-small">
           <div className="form-group">
-            <label htmlFor="file-path-input">Ruta del Archivo:</label>
+            <label htmlFor="file-path-input">{t('filePathLabel')}</label>
             <input
               id="file-path-input"
               type="text"
               value={path}
               onChange={(e) => setPath(e.target.value)}
-              placeholder="ej: src/components/Button.tsx"
+              placeholder={t('filePathPlaceholder')}
             />
           </div>
           <div className="form-group">
-            <label htmlFor="branch-select-input">Rama:</label>
+            <label htmlFor="branch-select-input">{t('branchLabel')}</label>
             <select
               id="branch-select-input"
               value={selectedBranch}
@@ -71,7 +73,7 @@ export const AddTrackedFileModal = ({ isOpen, onClose, branches, onAdd }: AddTra
             disabled={!path || !selectedBranch} 
             className="add-button-small"
           >
-            Añadir
+            {t('addFileButton')}
           </button>
         </div>
       </div>

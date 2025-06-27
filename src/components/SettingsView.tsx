@@ -2,10 +2,7 @@
 
 import './SettingsView.css';
 import type { TabVisibility, TabKey } from '../hooks/useGithubData';
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos el hook que nos da acceso a las traducciones
 import { useTranslation } from 'react-i18next';
-// --- FIN DE CAMBIOS ---
 
 // --- Iconos (Sin cambios) ---
 const BackArrowIcon = () => (
@@ -33,65 +30,68 @@ interface SettingsViewProps {
   onThemeChange: (theme: Theme) => void;
 }
 
-const configurableTabs: { id: TabKey, label: string }[] = [
-    { id: 'README', label: 'README' },
-    { id: 'Code', label: 'Code' },
-    { id: 'Commits', label: 'Commits' },
-    { id: 'Issues', label: 'Issues' },
-    { id: 'PRs', label: 'Pull Requests' },
-    { id: 'Actions', label: 'Actions' },
-    { id: 'Releases', label: 'Releases' },
+// --- INICIO DE CAMBIOS ---
+// Ahora el label se obtiene de la función de traducción
+const getConfigurableTabs = (t: (key: string) => string): { id: TabKey, label: string }[] => [
+    { id: 'README', label: t('tabReadme') },
+    { id: 'Code', label: t('tabCode') },
+    { id: 'Commits', label: t('tabCommits') },
+    { id: 'Issues', label: t('tabIssues') },
+    { id: 'PRs', label: t('tabPullRequests') },
+    { id: 'Actions', label: t('tabActions') },
+    { id: 'Releases', label: t('tabReleases') },
 ];
+// --- FIN DE CAMBIOS ---
 
 export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange, theme, onThemeChange }: SettingsViewProps) => {
   
-  // --- INICIO DE CAMBIOS ---
-  // 2. Usamos el hook. 't' es la función para traducir, 'i18n' es la instancia de i18next.
   const { t, i18n } = useTranslation();
+  const configurableTabs = getConfigurableTabs(t); // Obtenemos las pestañas traducidas
 
   const handleThemeToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
     onThemeChange(e.target.checked ? 'dark' : 'light');
   };
 
-  // 3. Creamos un manejador para el cambio de idioma.
   const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const lang = e.target.value;
-    i18n.changeLanguage(lang); // Esta función cambia el idioma de toda la app.
+    i18n.changeLanguage(lang);
   };
-  // --- FIN DE CAMBIOS ---
 
   return (
     <div className="settings-view-container">
       <header className="settings-header">
-        <button onClick={onClose} className="back-button" aria-label="Volver">
+        <button onClick={onClose} className="back-button" aria-label={t('ariaBack')}>
           <BackArrowIcon />
         </button>
-        {/* Usamos la función t() con la clave del JSON */}
         <h2>{t('settingsTitle')}</h2>
       </header>
       
       <div className="settings-body">
         <section className="settings-section">
-          <h3><span role="img" aria-label="globo">🌍</span> {t('language')}</h3>
-          <p>{t('languageSelector')}</p>
+          <h3><span role="img" aria-label="globo">🌍</span> {t('languageTitle')}</h3>
+          <p>{t('languageDescription')}</p>
           {/* --- INICIO DE CAMBIOS --- */}
-          {/* 4. Conectamos el valor y el manejador al <select> */}
+          {/* Usamos las claves de traducción para las opciones */}
           <select 
             className="settings-select" 
             value={i18n.language} 
             onChange={handleLanguageChange}
           >
-            <option value="es">Español</option>
-            <option value="en">English</option>
+            <option value="en">{t('languageNameEnglish')}</option>
+            <option value="es">{t('languageNameSpanish')}</option>
+            <option value="pt">{t('languageNamePortuguese')}</option>
+            <option value="it">{t('languageNameItalian')}</option>
+            <option value="de">{t('languageNameGerman')}</option>
+            <option value="ru">{t('languageNameRussian')}</option>
+            <option value="fr">{t('languageNameFrench')}</option>
           </select>
           {/* --- FIN DE CAMBIOS --- */}
         </section>
 
         <section className="settings-section">
-          <h3><span role="img" aria-label="paleta">🎨</span> {t('appearance')}</h3>
+          <h3><span role="img" aria-label="paleta">🎨</span> {t('appearanceTitle')}</h3>
           <p>{t('themeDescription')}</p>
           <div className="theme-toggle">
-            {/* Traducimos los textos de los temas */}
             <span>{t('lightTheme')}</span>
             <label className="switch">
               <input 
@@ -106,8 +106,8 @@ export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange, th
         </section>
         
         <section className="settings-section">
-          <h3><span role="img" aria-label="pestañas">📑</span> Pestañas Visibles</h3>
-          <p>Elige qué pestañas mostrar en la vista principal.</p>
+          <h3><span role="img" aria-label="pestañas">📑</span> {t('visibleTabsTitle')}</h3>
+          <p>{t('visibleTabsDescription')}</p>
           <div className="toggle-list-container">
             {configurableTabs.map(tab => (
               <div key={tab.id} className="toggle-list-item">
@@ -126,15 +126,15 @@ export const SettingsView = ({ onClose, tabVisibility, onTabVisibilityChange, th
         </section>
 
         <section className="settings-section">
-          <h3><span role="img" aria-label="libro">📖</span> Legal</h3>
+          <h3><span role="img" aria-label="libro">📖</span> {t('legalTitle')}</h3>
           <div className="settings-links-container">
             <a href="#" target="_blank" rel="noopener noreferrer" className="settings-link-item">
               <DocumentIcon />
-              <span>Términos y Condiciones</span>
+              <span>{t('termsAndConditions')}</span>
             </a>
             <a href="#" target="_blank" rel="noopener noreferrer" className="settings-link-item">
               <ShieldIcon />
-              <span>Política de Privacidad</span>
+              <span>{t('privacyPolicy')}</span>
             </a>
           </div>
         </section>

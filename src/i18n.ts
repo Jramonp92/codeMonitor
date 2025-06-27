@@ -23,7 +23,7 @@ i18n
     fallbackLng: 'en',
     
     // Lista de idiomas soportados por tu aplicación
-    supportedLngs: ['en', 'es'],
+    supportedLngs: ['en', 'es','pt','fr','it','ru','de'],
 
     // Opción para depuración en la consola. Muy útil durante el desarrollo.
     debug: true,

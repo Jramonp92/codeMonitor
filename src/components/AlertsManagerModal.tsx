@@ -1,14 +1,12 @@
 // src/components/AlertsManagerModal.tsx
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import type { Repo, TrackedFile, Branch } from '../hooks/useGithubData';
 import type { AlertSettings } from '../background/alarms';
 import { AddTrackedFileModal } from './AddTrackedFileModal';
 import './AlertsManagerModal.css';
 
-// --- INICIO DE CAMBIOS (NUEVAS PROPS) ---
-// La interfaz de Props ahora es mucho más simple.
-// Recibe los datos iniciales y una única función onSave.
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -16,22 +14,21 @@ interface Props {
   alertSettings: AlertSettings;
   alertFrequency: number;
   trackedFiles: { [repoFullName: string]: TrackedFile[] };
-  // La nueva función onSave que guardará todos los cambios a la vez.
   onSave: (data: {
     settings: AlertSettings;
     frequency: number;
     files: { [key: string]: TrackedFile[] };
   }) => void;
 }
-// --- FIN DE CAMBIOS ---
 
+// 2. Definir los tipos de alerta y sus claves de traducción
 const alertTypes = [
-  { id: 'issues', label: 'Nuevos Issues' },
-  { id: 'newPRs', label: 'Nuevos PRs' },
-  { id: 'assignedPRs', label: 'PRs Asignados a Mí' },
-  { id: 'actions', label: 'Workflows de Actions' },
-  { id: 'newReleases', label: 'Nuevos Releases' },
-  { id: 'fileChanges', label: 'Cambios en Archivos' },
+  { id: 'issues', translationKey: 'alertTypeIssues' },
+  { id: 'newPRs', translationKey: 'alertTypeNewPRs' },
+  { id: 'assignedPRs', translationKey: 'alertTypeAssignedPRs' },
+  { id: 'actions', translationKey: 'alertTypeActions' },
+  { id: 'newReleases', translationKey: 'alertTypeNewReleases' },
+  { id: 'fileChanges', translationKey: 'alertTypeFileChanges' },
 ];
 
 export function AlertsManagerModal({
@@ -41,24 +38,20 @@ export function AlertsManagerModal({
   alertSettings,
   alertFrequency,
   trackedFiles,
-  onSave, // Usamos la nueva prop onSave
+  onSave,
 }: Props) {
-  // --- INICIO DE CAMBIOS (ESTADO LOCAL) ---
-  // Estados locales para almacenar los cambios temporalmente
+  const { t } = useTranslation(); // 3. Usar hook
   const [localAlertSettings, setLocalAlertSettings] = useState<AlertSettings>({});
   const [localAlertFrequency, setLocalAlertFrequency] = useState(10);
   const [localTrackedFiles, setLocalTrackedFiles] = useState<{ [key: string]: TrackedFile[] }>({});
 
-  // Este efecto se ejecuta cuando el modal se abre para inicializar el estado local
   useEffect(() => {
     if (isOpen) {
-      // Usamos JSON.parse/stringify para crear una copia profunda y evitar mutaciones
       setLocalAlertSettings(JSON.parse(JSON.stringify(alertSettings)));
       setLocalAlertFrequency(alertFrequency);
       setLocalTrackedFiles(JSON.parse(JSON.stringify(trackedFiles)));
     }
   }, [isOpen, alertSettings, alertFrequency, trackedFiles]);
-  // --- FIN DE CAMBIOS ---
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [repoForAddModal, setRepoForAddModal] = useState<Repo | null>(null);
@@ -86,10 +79,9 @@ export function AlertsManagerModal({
     }, {} as { [branch: string]: TrackedFile[] });
   };
   
-  // --- INICIO DE CAMBIOS (MANEJADORES LOCALES) ---
   const handleLocalSettingsChange = (repoFullName: string, setting: keyof AlertSettings[string], value: boolean) => {
     setLocalAlertSettings(prev => {
-      const newSettings = JSON.parse(JSON.stringify(prev));
+      const newSettings = { ...prev };
       if (!newSettings[repoFullName]) {
         newSettings[repoFullName] = {};
       }
@@ -100,7 +92,7 @@ export function AlertsManagerModal({
 
   const handleLocalAddTrackedFile = (repo: string, path: string, branch: string) => {
     setLocalTrackedFiles(prev => {
-      const newFiles = JSON.parse(JSON.stringify(prev));
+      const newFiles = { ...prev };
       const repoFiles = newFiles[repo] || [];
       if (!repoFiles.some((f: TrackedFile) => f.path === path && f.branch === branch)) {
         repoFiles.push({ path, branch });
@@ -112,7 +104,7 @@ export function AlertsManagerModal({
   
   const handleLocalRemoveTrackedFile = (repo: string, path: string, branch: string) => {
     setLocalTrackedFiles(prev => {
-      const newFiles = JSON.parse(JSON.stringify(prev));
+      const newFiles = { ...prev };
       if (newFiles[repo]) {
         newFiles[repo] = newFiles[repo].filter((f: TrackedFile) => f.path !== path || f.branch !== branch);
         if (newFiles[repo].length === 0) {
@@ -133,13 +125,12 @@ export function AlertsManagerModal({
   };
 
   const handleCancel = () => {
-    // Simplemente cierra el modal, los cambios locales se perderán
     onClose();
   };
-  // --- FIN DE CAMBIOS ---
 
   if (!isOpen) return null;
 
+  // 4. Reemplazar todos los textos fijos
   return (
     <div className="modal-overlay">
       <div className="modal-content alerts-modal">
@@ -153,24 +144,24 @@ export function AlertsManagerModal({
         )}
 
         <div className="modal-header">
-          <h2>Gestionar Alertas</h2>
+          <h2>{t('manageAlerts')}</h2>
           <button onClick={handleCancel} className="close-button">&times;</button>
         </div>
         <div className="modal-body">
           <div className="frequency-settings">
-            <label htmlFor="frequency-select">Revisar cada:</label>
+            <label htmlFor="frequency-select">{t('checkEvery')}</label>
             <select
               id="frequency-select"
               value={localAlertFrequency}
               onChange={(e) => setLocalAlertFrequency(parseInt(e.target.value, 10))}
             >
-              <option value={10}>10 minutos</option>
-              <option value={30}>30 minutos</option>
-              <option value={60}>1 hora</option>
-              <option value={300}>5 horas</option>
-              <option value={720}>12 horas</option>
-              <option value={1440}>24 horas</option>
-              <option value={10080}>1 semana</option>
+              <option value={10}>{t('minutes', { count: 10 })}</option>
+              <option value={30}>{t('minutes', { count: 30 })}</option>
+              <option value={60}>{t('hour', { count: 1 })}</option>
+              <option value={300}>{t('hours', { count: 5 })}</option>
+              <option value={720}>{t('hours', { count: 12 })}</option>
+              <option value={1440}>{t('hours', { count: 24 })}</option>
+              <option value={10080}>{t('week', { count: 1 })}</option>
             </select>
           </div>
 
@@ -178,11 +169,11 @@ export function AlertsManagerModal({
             <table className="alerts-table">
               <thead>
                 <tr>
-                  <th>Repositorio</th>
+                  <th>{t('repository')}</th>
                   {alertTypes.map(alert => (
-                    <th key={alert.id}>{alert.label}</th>
+                    <th key={alert.id}>{t(alert.translationKey)}</th>
                   ))}
-                  <th>Archivos Observados</th>
+                  <th>{t('trackedFiles')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -219,7 +210,7 @@ export function AlertsManagerModal({
                           </div>
                         ))}
                         <button onClick={() => handleOpenAddFileModal(repo)} className="add-file-btn" disabled={isLoadingBranches}>
-                          {isLoadingBranches ? 'Cargando...' : '+ Añadir archivo'}
+                          {isLoadingBranches ? t('loading') : t('addFile')}
                         </button>
                       </td>
                     </tr>
@@ -229,20 +220,18 @@ export function AlertsManagerModal({
             </table>
           </div>
           {managedRepos.length === 0 && (
-            <p className="no-repos-message">Aún no tienes repositorios visibles.</p>
+            <p className="no-repos-message">{t('noVisibleRepos')}</p>
           )}
         </div>
         
-        {/* --- INICIO DE CAMBIOS (BOTONES DE ACCIÓN) --- */}
         <div className="modal-footer">
             <button onClick={handleCancel} className="footer-button cancel-button">
-              Cancelar
+              {t('cancel')}
             </button>
             <button onClick={handleSave} className="footer-button save-button">
-              Guardar Cambios
+              {t('saveChanges')}
             </button>
         </div>
-        {/* --- FIN DE CAMBIOS --- */}
       </div>
     </div>
   );

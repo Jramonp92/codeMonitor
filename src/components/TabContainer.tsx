@@ -1,5 +1,6 @@
 // src/components/TabContainer.tsx
 
+import { useState } from 'react';
 import './TabContainer.css';
 import { FilterBar } from './FilterBar';
 import { BranchSelector } from './BranchSelector';
@@ -61,19 +62,22 @@ export const TabContainer = ({
   handleWorkflowFilterChange
 }: TabContainerProps) => {
   
+  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true); // <--- CAMBIO: Empezamos colapsado
+
+  const toggleFiltersVisibility = () => {
+    setIsFiltersCollapsed(prev => !prev);
+  };
+  
   if (!selectedRepo) {
     return null;
   }
 
-  // --- INICIO DEL CAMBIO ---
-  // Determinamos si se debe mostrar el contenedor de filtros
   const showFilterArea = 
     activeTab === 'Commits' || 
     activeTab === 'Code' || 
     activeTab === 'Issues' || 
     activeTab === 'PRs' || 
     activeTab === 'Actions';
-  // --- FIN DEL CAMBIO ---
 
   return (
     <>
@@ -96,44 +100,56 @@ export const TabContainer = ({
         })}
       </div>
 
-      {/* --- INICIO DEL CAMBIO --- */}
-      {/* Envolvemos todos los filtros en nuestro nuevo contenedor */}
+      {/* --- INICIO DE CAMBIOS PRINCIPALES --- */}
       {showFilterArea && (
         <div className="filter-area-container">
-          {(activeTab === 'Commits' || activeTab === 'Code') && (
-            <BranchSelector 
-              branches={branches}
-              selectedBranch={selectedBranch}
-              onBranchChange={handleBranchChange}
-              isLoading={areBranchesLoading}
-              activeNotifications={activeNotifications}
-              repoFullName={selectedRepo}
-            />
-          )}
+          {/* El botón ahora vive aquí dentro, en una cabecera */}
+          <div className="filter-area-header">
+            <span className="filter-area-title">Filters</span>
+            <button onClick={toggleFiltersVisibility} className="filters-toggle-button">
+              {isFiltersCollapsed ? 'Expand ▼' : 'Collapse ▲'}
+            </button>
+          </div>
 
-          {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
-          
-          {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }, { label: 'Merged', value: 'merged' }, { label: 'Asignados a mi', value: 'assigned_to_me' }]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
-          
-          {activeTab === 'Actions' && (
-            <div className="actions-filter-container">
-              <WorkflowFilterDropdown 
-                workflows={workflows}
-                selectedWorkflowId={selectedWorkflowId}
-                onFilterChange={handleWorkflowFilterChange}
-                isLoading={areWorkflowsLoading}
-              />
-              <FilterBar 
-                name="Actions" 
-                filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} 
-                currentFilter={actionStatusFilter} 
-                onFilterChange={handleActionStatusChange} 
-              />
+          {/* El contenido de los filtros solo se muestra si NO está colapsado */}
+          {!isFiltersCollapsed && (
+            <div className="filter-area-content">
+              {(activeTab === 'Commits' || activeTab === 'Code') && (
+                <BranchSelector 
+                  branches={branches}
+                  selectedBranch={selectedBranch}
+                  onBranchChange={handleBranchChange}
+                  isLoading={areBranchesLoading}
+                  activeNotifications={activeNotifications}
+                  repoFullName={selectedRepo}
+                />
+              )}
+
+              {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
+              
+              {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }, { label: 'Merged', value: 'merged' }, { label: 'Asignados a mi', value: 'assigned_to_me' }]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
+              
+              {activeTab === 'Actions' && (
+                <div className="actions-filter-container">
+                  <WorkflowFilterDropdown 
+                    workflows={workflows}
+                    selectedWorkflowId={selectedWorkflowId}
+                    onFilterChange={handleWorkflowFilterChange}
+                    isLoading={areWorkflowsLoading}
+                  />
+                  <FilterBar 
+                    name="Actions" 
+                    filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} 
+                    currentFilter={actionStatusFilter} 
+                    onFilterChange={handleActionStatusChange} 
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>
       )}
-      {/* --- FIN DEL CAMBIO --- */}
+      {/* --- FIN DE CAMBIOS PRINCIPALES --- */}
     </>
   );
 };

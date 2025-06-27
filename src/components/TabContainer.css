@@ -20,25 +20,20 @@
   position: relative;
   white-space: nowrap;
   transition: color 0.2s ease, border-color 0.2s ease;
-  /* CAMBIO: Usando variable */
   color: var(--text-secondary);
 }
 
 .tab-container button:hover:not(.active) {
-  /* CAMBIO: Usando variable */
   color: var(--text-primary);
 }
 
 .tab-container button.active {
   font-weight: 600;
   border-bottom: 2px solid; 
-  /* CAMBIO: Usando variable para el texto */
   color: var(--text-primary);
-  /* Se mantiene el color de acento para la pestaña activa */
   border-bottom-color: #f9826c; 
 }
 
-/* Se mantiene la animación con el color azul por defecto */
 @keyframes pulse {
   0% {
     opacity: 1;
@@ -54,7 +49,6 @@
   }
 }
 
-/* Punto de notificación en las pestañas */
 .tab-container .notification-dot {
   display: inline-block;
   width: 8px;
@@ -64,7 +58,6 @@
   top: 6px;
   right: -2px;
   animation: pulse 2s infinite;
-  /* CAMBIO: Usando variable */
   background-color: var(--accent-color);
 }
 
@@ -76,12 +69,52 @@
 }
 
 .filter-area-container {
-  padding: 12px;
+  width: 100%;
   margin-bottom: 1rem;
   border-radius: 8px;
-  background-color: var(--background-primary #f6f8fa); /* Un fondo sutilmente diferente */
+  background-color: var(--background-primary, #f6f8fa);
   border: 1px solid var(--border-color);
+  padding: 12px;
+  transition: all 0.2s ease-in-out;
+  box-sizing: border-box; /* <--- ¡AQUÍ ESTÁ EL FIX! */
+}
+
+.filter-area-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.filter-area-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.filters-toggle-button {
+  background-color: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.filters-toggle-button:hover {
+  color: var(--text-primary);
+  background-color: var(--button-background-hover);
+}
+
+.filter-area-content {
+  padding-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px; /* Espacio entre los filtros si hay más de uno */
+  gap: 12px;
 }
