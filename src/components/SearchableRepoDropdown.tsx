@@ -1,6 +1,9 @@
+// src/components/SearchableRepoDropdown.tsx
+
 import { useState, useEffect, useRef } from 'react';
-import type { Repo } from '../hooks/useGithubData'; // Repo viene del hook.
-import type { ActiveNotifications } from '../background/alarms'; // ActiveNotifications viene de las alarmas.
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
+import type { Repo } from '../hooks/useGithubData';
+import type { ActiveNotifications } from '../background/alarms';
 import './SearchableRepoDropdown.css';
 
 interface Props {
@@ -12,6 +15,7 @@ interface Props {
 }
 
 export function SearchableRepoDropdown({ repos, selectedRepo, onSelect, disabled, notifications }: Props) {
+  const { t } = useTranslation(); // 2. Usar hook
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -37,13 +41,14 @@ export function SearchableRepoDropdown({ repos, selectedRepo, onSelect, disabled
     setSearchTerm('');
     setIsOpen(false);
   };
-
+  
+  // 3. Reemplazar textos fijos
   return (
     <div className="searchable-dropdown" ref={dropdownRef}>
       <input
         type="text"
         className="search-input"
-        placeholder={selectedRepoName || "Select a repository"}
+        placeholder={selectedRepoName || t('selectRepositoryPlaceholder')}
         value={searchTerm || (!isOpen ? selectedRepoName : '')}
         onFocus={() => {
           setIsOpen(true);
@@ -59,8 +64,6 @@ export function SearchableRepoDropdown({ repos, selectedRepo, onSelect, disabled
               const repoNotifications = notifications && notifications[repo.full_name];
               const hasNotification = repoNotifications && Object.values(repoNotifications).some(arr => Array.isArray(arr) && arr.length > 0);
               
-              // --- LOG DE DEBUG AÑADIDO ---
-              // Este log se ejecutará por cada repositorio en la lista desplegable.
               if (hasNotification) {
                 console.log(`%c[DEBUG] Repo "${repo.name}" DEBE tener punto rojo. Razón:`, 'color: purple; font-weight: bold;', repoNotifications);
               } else {
@@ -75,7 +78,7 @@ export function SearchableRepoDropdown({ repos, selectedRepo, onSelect, disabled
               );
             })
           ) : (
-            <li className="no-results">No repositories found</li>
+            <li className="no-results">{t('noRepositoriesFound')}</li>
           )}
         </ul>
       )}

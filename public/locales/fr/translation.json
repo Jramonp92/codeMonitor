@@ -72,6 +72,56 @@
   "rootBreadcrumb": "Racine",
   "emptyDirectory": "Ce répertoire est vide.",
   "trackFile": "Suivre le fichier",
-  "untrackFile": "Ne plus suivre le fichier"
+  "untrackFile": "Ne plus suivre le fichier",
+
+  "statusMerged": "Merged",
+  "statusOpen": "Ouvert",
+  "statusClosed": "Fermé",
+
+    "paginationPrevious": "Précédent",
+    "paginationNext": "Suivant",
+
+    "manageRepositories": "Gérer les Dépôts",
+    "availableRepositories": "Dépôts Disponibles",
+    "searchYourRepositories": "Rechercher dans vos dépôts...",
+    "addByUrlOrName": "Ajouter par URL ou Nom",
+    "addRepoPlaceholder": "ex: facebook/react",
+    "add": "Ajouter",
+    "adding": "...",
+    "visibleRepositories": "Dépôts Visibles",
+    "errorUrlNotGithub": "L'URL doit provenir de github.com",
+    "errorInvalidUrlFormat": "Format d'URL invalide. Utilisez : propriétaire/dépôt",
+    "errorInvalidFormat": "Format invalide. Utilisez \"propriétaire/dépôt\" ou une URL GitHub complète.",
+    "errorRepoAlreadyVisible": "Le dépôt est déjà dans votre liste visible.",
+    "errorRepoNotFound": "Impossible de trouver le dépôt.",
+
+    "refreshDataTitle": "Rafraîchir les données",
+
+    "selectRepositoryPlaceholder": "Sélectionnez un dépôt",
+    "noRepositoriesFound": "Aucun dépôt trouvé",
+
+    "configureRepositories": "Configurer les Dépôts",
+    "configureAlerts": "Configurer les Alertes",
+    "clearAllNotifications": "Effacer toutes les notifications",
+    "settings": "Paramètres",
+    "logout": "Se déconnecter",
+
+    "filtersTitle": "Filtres",
+    "expand": "Développer ▼",
+    "collapse": "Réduire ▲",
+    "filterAll": "Tous",
+    "filterOpen": "Ouvert",
+    "filterClosed": "Fermé",
+    "filterMerged": "Merged",
+    "filterAssignedToMe": "Assigné à moi",
+    "filterSuccess": "Succès",
+    "filterFailure": "Échec",
+    "filterInProgress": "En Cours",
+    "filterQueued": "En file d'attente",
+    "filterWaiting": "En attente",
+    "filterCancelled": "Annulé",
+
+    "allWorkflows": "Tous les Workflows",
+    "selectWorkflowPlaceholder": "Sélectionnez un workflow"
 
   }

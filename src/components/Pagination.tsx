@@ -1,4 +1,7 @@
+// src/components/Pagination.tsx
+
 import React from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import './Pagination.css';
 
 interface PaginationProps {
@@ -8,6 +11,7 @@ interface PaginationProps {
 }
 
 export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages, onPageChange }) => {
+    const { t } = useTranslation(); // 2. Usar hook
     
     const getPageNumbers = () => {
         const pageNumbers = [];
@@ -46,10 +50,11 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
 
     const pages = getPageNumbers();
 
+    // 3. Reemplazar textos fijos
     return (
         <div className="pagination-container">
             <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage <= 1}>
-                Anterior
+                {t('paginationPrevious')}
             </button>
             <div className="pagination-pages">
                 {pages.map((page, index) => 
@@ -67,7 +72,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
                 )}
             </div>
             <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage >= totalPages}>
-                Siguiente
+                {t('paginationNext')}
             </button>
         </div>
     );

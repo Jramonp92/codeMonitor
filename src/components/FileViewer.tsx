@@ -1,10 +1,8 @@
 // src/components/FileViewer.tsx
 
-// --- INICIO DE CAMBIOS ---
-// 1. Importamos los tipos necesarios y los nuevos iconos
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import type { ViewedFile } from '../hooks/useGithubData';
 import { VscEye, VscEyeClosed } from 'react-icons/vsc';
-// --- FIN DE CAMBIOS ---
 import './FileViewer.css';
 
 const BackArrowIcon = () => (
@@ -14,8 +12,6 @@ const BackArrowIcon = () => (
   </svg>
 );
 
-// --- INICIO DE CAMBIOS ---
-// 2. Actualizamos las props para recibir todo lo necesario para el seguimiento
 interface FileViewerProps {
   file: ViewedFile;
   onBack: () => void;
@@ -25,25 +21,19 @@ interface FileViewerProps {
   addTrackedFile: (repo: string, path: string, branch: string) => void;
   removeTrackedFile: (repo: string, path: string, branch: string) => void;
 }
-// --- FIN DE CAMBIOS ---
 
 export const FileViewer = ({ 
   file, 
   onBack,
-  // --- INICIO DE CAMBIOS ---
-  // 3. Desestructuramos las nuevas props
   repoFullName,
   selectedBranch,
   isTracked,
   addTrackedFile,
   removeTrackedFile,
-  // --- FIN DE CAMBIOS ---
 }: FileViewerProps) => {
-
+  const { t } = useTranslation(); // 2. Usar hook
   const lines = file.content.split('\n');
 
-  // --- INICIO DE CAMBIOS ---
-  // 4. Creamos el manejador para el botón de observar/dejar de observar
   const handleToggleTrack = () => {
     if (isTracked(repoFullName, file.path, selectedBranch)) {
       removeTrackedFile(repoFullName, file.path, selectedBranch);
@@ -51,25 +41,22 @@ export const FileViewer = ({
       addTrackedFile(repoFullName, file.path, selectedBranch);
     }
   };
-  // --- FIN DE CAMBIOS ---
 
+  // 3. Reemplazar textos fijos
   return (
     <div className="file-viewer-container">
       <div className="file-viewer-header">
-        <button onClick={onBack} className="back-button" aria-label="Volver">
+        <button onClick={onBack} className="back-button" aria-label={t('ariaBack')}>
           <BackArrowIcon />
         </button>
         <span className="file-path-display">{file.path}</span>
-        {/* --- INICIO DE CAMBIOS --- */}
-        {/* 5. Añadimos el botón de seguimiento al lado del nombre del archivo */}
         <button 
           className={`track-button ${isTracked(repoFullName, file.path, selectedBranch) ? 'tracked' : ''}`}
           onClick={handleToggleTrack}
-          aria-label={isTracked(repoFullName, file.path, selectedBranch) ? 'Dejar de observar' : 'Observar archivo'}
+          aria-label={isTracked(repoFullName, file.path, selectedBranch) ? t('untrackFile') : t('trackFile')}
         >
           {isTracked(repoFullName, file.path, selectedBranch) ? <VscEye /> : <VscEyeClosed />}
         </button>
-        {/* --- FIN DE CAMBIOS --- */}
       </div>
       <div className="code-editor-look">
         {lines.map((line, index) => (

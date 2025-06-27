@@ -1,6 +1,8 @@
+// src/components/SettingsMenu.tsx
+
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import './SettingsMenu.css';
 
-// La interfaz ahora incluye la nueva función para limpiar notificaciones
 interface SettingsMenuProps {
   onManageRepos: () => void;
   onManageAlerts: () => void;
@@ -18,37 +20,39 @@ export const SettingsMenu = ({
   onOpenSettings,
   onClearAllNotifications 
 }: SettingsMenuProps) => {
+  const { t } = useTranslation(); // 2. Usar hook
 
   const handleAction = (action: () => void) => {
     action();
     onClose();
   };
 
+  // 3. Reemplazar textos fijos
   return (
     <ul className="settings-menu">
       <li>
         <button className="settings-menu-item" onClick={() => handleAction(onManageRepos)}>
-          Configurar Repositorios
+          {t('configureRepositories')}
         </button>
       </li>
       <li>
         <button className="settings-menu-item" onClick={() => handleAction(onManageAlerts)}>
-          Configurar Alertas
+          {t('configureAlerts')}
         </button>
       </li>
       <li>
         <button className="settings-menu-item clear-notifications" onClick={() => handleAction(onClearAllNotifications)}>
-          Limpiar todas las notificaciones
+          {t('clearAllNotifications')}
         </button>
       </li>
       <li>
         <button className="settings-menu-item" onClick={() => handleAction(onOpenSettings)}>
-          Settings
+          {t('settings')}
         </button>
       </li>
       <li>
         <button className="settings-menu-item logout" onClick={() => handleAction(onLogout)}>
-          Cerrar Sesión
+          {t('logout')}
         </button>
       </li>
     </ul>

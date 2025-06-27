@@ -1,6 +1,7 @@
 // src/components/TabContainer.tsx
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import './TabContainer.css';
 import { FilterBar } from './FilterBar';
 import { BranchSelector } from './BranchSelector';
@@ -29,8 +30,6 @@ interface TabContainerProps {
   areWorkflowsLoading: boolean;
   handleWorkflowFilterChange: (workflowId: number | null) => void;
 }
-
-const TABS: Tab[] = ['README', 'Code', 'Commits', 'Issues', 'PRs', 'Actions', 'Releases'];
 
 const NOTIFICATION_KEY_MAP: { [key in Tab]?: (keyof ActiveNotifications[string])[] } = {
   'Code': ['fileChanges'],
@@ -62,7 +61,43 @@ export const TabContainer = ({
   handleWorkflowFilterChange
 }: TabContainerProps) => {
   
-  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true); // <--- CAMBIO: Empezamos colapsado
+  const { t } = useTranslation(); // 2. Usar hook
+  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
+
+  // 3. Crear los arrays de pestañas y filtros usando la función de traducción t()
+  const TABS: { id: Tab, translationKey: string }[] = [
+    { id: 'README', translationKey: 'tabReadme' },
+    { id: 'Code', translationKey: 'tabCode' },
+    { id: 'Commits', translationKey: 'tabCommits' },
+    { id: 'Issues', translationKey: 'tabIssues' },
+    { id: 'PRs', translationKey: 'tabPullRequests' },
+    { id: 'Actions', translationKey: 'tabActions' },
+    { id: 'Releases', translationKey: 'tabReleases' },
+  ];
+
+  const issueFilters = [
+    { label: t('filterAll'), value: 'all' },
+    { label: t('filterOpen'), value: 'open' },
+    { label: t('filterClosed'), value: 'closed' }
+  ];
+
+  const prFilters = [
+    { label: t('filterAll'), value: 'all' },
+    { label: t('filterOpen'), value: 'open' },
+    { label: t('filterClosed'), value: 'closed' },
+    { label: t('filterMerged'), value: 'merged' },
+    { label: t('filterAssignedToMe'), value: 'assigned_to_me' }
+  ];
+
+  const actionFilters = [
+    { label: t('filterAll'), value: 'all' },
+    { label: t('filterSuccess'), value: 'success' },
+    { label: t('filterFailure'), value: 'failure' },
+    { label: t('filterInProgress'), value: 'in_progress' },
+    { label: t('filterQueued'), value: 'queued' },
+    { label: t('filterWaiting'), value: 'waiting' },
+    { label: t('filterCancelled'), value: 'cancelled' }
+  ];
 
   const toggleFiltersVisibility = () => {
     setIsFiltersCollapsed(prev => !prev);
@@ -79,11 +114,12 @@ export const TabContainer = ({
     activeTab === 'PRs' || 
     activeTab === 'Actions';
 
+  // 4. Reemplazar todos los textos fijos
   return (
     <>
       <div className="tab-container">
-        {TABS.filter(tab => tabVisibility[tab as TabKey]).map(tab => {
-          const notificationKeysForTab = NOTIFICATION_KEY_MAP[tab];
+        {TABS.filter(tab => tabVisibility[tab.id as TabKey]).map(tab => {
+          const notificationKeysForTab = NOTIFICATION_KEY_MAP[tab.id];
           const hasNotification = notificationKeysForTab?.some(key => {
             const notificationsForRepo = activeNotifications[selectedRepo!];
             if (!notificationsForRepo) return false;
@@ -92,26 +128,23 @@ export const TabContainer = ({
           });
 
           return (
-            <button key={tab} onClick={() => handleTabChange(tab)} className={activeTab === tab ? 'active' : ''}>
-              {tab}
+            <button key={tab.id} onClick={() => handleTabChange(tab.id)} className={activeTab === tab.id ? 'active' : ''}>
+              {t(tab.translationKey)}
               {hasNotification && <span className="notification-dot"></span>}
             </button>
           );
         })}
       </div>
 
-      {/* --- INICIO DE CAMBIOS PRINCIPALES --- */}
       {showFilterArea && (
         <div className="filter-area-container">
-          {/* El botón ahora vive aquí dentro, en una cabecera */}
           <div className="filter-area-header">
-            <span className="filter-area-title">Filters</span>
+            <span className="filter-area-title">{t('filtersTitle')}</span>
             <button onClick={toggleFiltersVisibility} className="filters-toggle-button">
-              {isFiltersCollapsed ? 'Expand ▼' : 'Collapse ▲'}
+              {isFiltersCollapsed ? t('expand') : t('collapse')}
             </button>
           </div>
 
-          {/* El contenido de los filtros solo se muestra si NO está colapsado */}
           {!isFiltersCollapsed && (
             <div className="filter-area-content">
               {(activeTab === 'Commits' || activeTab === 'Code') && (
@@ -125,9 +158,9 @@ export const TabContainer = ({
                 />
               )}
 
-              {activeTab === 'Issues' && <FilterBar name="Issues" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }]} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
+              {activeTab === 'Issues' && <FilterBar name="Issues" filters={issueFilters} currentFilter={issueStateFilter} onFilterChange={handleIssueFilterChange} />}
               
-              {activeTab === 'PRs' && <FilterBar name="PRs" filters={[{ label: 'All', value: 'all' }, { label: 'Open', value: 'open' }, { label: 'Closed', value: 'closed' }, { label: 'Merged', value: 'merged' }, { label: 'Asignados a mi', value: 'assigned_to_me' }]} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
+              {activeTab === 'PRs' && <FilterBar name="PRs" filters={prFilters} currentFilter={prStateFilter} onFilterChange={handlePrFilterChange} />}
               
               {activeTab === 'Actions' && (
                 <div className="actions-filter-container">
@@ -139,7 +172,7 @@ export const TabContainer = ({
                   />
                   <FilterBar 
                     name="Actions" 
-                    filters={[{ label: 'All', value: 'all' }, { label: 'Success', value: 'success' }, { label: 'Failure', value: 'failure' }, { label: 'In Progress', value: 'in_progress' }, { label: 'Queued', value: 'queued' }, { label: 'Waiting', value: 'waiting' }, { label: 'Cancelled', value: 'cancelled' }]} 
+                    filters={actionFilters} 
                     currentFilter={actionStatusFilter} 
                     onFilterChange={handleActionStatusChange} 
                   />
@@ -149,7 +182,6 @@ export const TabContainer = ({
           )}
         </div>
       )}
-      {/* --- FIN DE CAMBIOS PRINCIPALES --- */}
     </>
   );
 };

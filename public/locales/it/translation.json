@@ -17,7 +17,7 @@
     "tabCommits": "Commit",
     "tabIssues": "Issues",
     "tabPullRequests": "Pull Request",
-    "tabActions": "Azioni",
+    "tabActions": "Actions",
     "tabReleases": "Rilasci",
     "languageNameEnglish": "Inglese",
     "languageNameSpanish": "Spagnolo",
@@ -72,6 +72,56 @@
     "rootBreadcrumb": "Radice",
     "emptyDirectory": "Questa directory è vuota.",
     "trackFile": "Traccia file",
-    "untrackFile": "Smetti di tracciare il file"
+    "untrackFile": "Smetti di tracciare il file",
+
+    "statusMerged": "Merged",
+    "statusOpen": "Aperto",
+    "statusClosed": "Chiuso",
+
+    "paginationPrevious": "Precedente",
+    "paginationNext": "Successivo",
+
+    "manageRepositories": "Gestisci Repository",
+    "availableRepositories": "Repository Disponibili",
+    "searchYourRepositories": "Cerca nei tuoi repository...",
+    "addByUrlOrName": "Aggiungi per URL o Nome",
+    "addRepoPlaceholder": "es: facebook/react",
+    "add": "Aggiungi",
+    "adding": "...",
+    "visibleRepositories": "Repository Visibili",
+    "errorUrlNotGithub": "L'URL deve essere di github.com",
+    "errorInvalidUrlFormat": "Formato URL non valido. Usa: proprietario/repo",
+    "errorInvalidFormat": "Formato non valido. Usa \"proprietario/repo\" o un URL GitHub completo.",
+    "errorRepoAlreadyVisible": "Il repository è già nella tua lista visibile.",
+    "errorRepoNotFound": "Impossibile trovare il repository.",
+
+    "refreshDataTitle": "Aggiorna dati",
+
+    "selectRepositoryPlaceholder": "Seleziona un repository",
+    "noRepositoriesFound": "Nessun repository trovato",
+
+    "configureRepositories": "Configura Repository",
+    "configureAlerts": "Configura Avvisi",
+    "clearAllNotifications": "Cancella tutte le notifiche",
+    "settings": "Impostazioni",
+    "logout": "Esci",
+
+    "filtersTitle": "Filtri",
+    "expand": "Espandi ▼",
+    "collapse": "Comprimi ▲",
+    "filterAll": "Tutti",
+    "filterOpen": "Aperto",
+    "filterClosed": "Chiuso",
+    "filterMerged": "Merged",
+    "filterAssignedToMe": "Assegnato a me",
+    "filterSuccess": "Successo",
+    "filterFailure": "Fallimento",
+    "filterInProgress": "In Corso",
+    "filterQueued": "In Coda",
+    "filterWaiting": "In Attesa",
+    "filterCancelled": "Annullato",
+
+    "allWorkflows": "Tutti i Workflows",
+    "selectWorkflowPlaceholder": "Seleziona un workflow"
 
   }

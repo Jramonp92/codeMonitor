@@ -74,5 +74,54 @@
         "rootBreadcrumb": "Root",
         "emptyDirectory": "This directory is empty.",
         "trackFile": "Track file",
-        "untrackFile": "Untrack file"
+        "untrackFile": "Untrack file",
+
+        "statusMerged": "Merged",
+        "statusOpen": "Open",
+        "statusClosed": "Closed",
+
+        "paginationPrevious": "Previous",
+        "paginationNext": "Next",
+
+        "manageRepositories": "Manage Repositories",
+        "availableRepositories": "Available Repositories",
+        "searchYourRepositories": "Search in your repositories...",
+        "addByUrlOrName": "Add by URL or Name",
+        "addRepoPlaceholder": "e.g., facebook/react",
+        "add": "Add",
+        "adding": "...",
+        "visibleRepositories": "Visible Repositories",
+        "errorUrlNotGithub": "URL must be from github.com",
+        "errorInvalidUrlFormat": "Invalid URL format. Use: owner/repo",
+        "errorInvalidFormat": "Invalid format. Use \"owner/repo\" or a full GitHub URL.",
+        "errorRepoAlreadyVisible": "Repository is already in your visible list.",
+        "errorRepoNotFound": "Could not find the repository.",
+
+        "refreshDataTitle": "Refresh data",
+
+        "selectRepositoryPlaceholder": "Select a repository",
+        "noRepositoriesFound": "No repositories found",
+
+        "configureRepositories": "Configure Repositories",
+        "configureAlerts": "Configure Alerts",
+        "clearAllNotifications": "Clear all notifications",
+        "settings": "Settings",
+        "logout": "Log Out",
+        "filtersTitle": "Filters",
+        "expand": "Expand ▼",
+        "collapse": "Collapse ▲",
+        "filterAll": "All",
+        "filterOpen": "Open",
+        "filterClosed": "Closed",
+        "filterMerged": "Merged",
+        "filterAssignedToMe": "Assigned to me",
+        "filterSuccess": "Success",
+        "filterFailure": "Failure",
+        "filterInProgress": "In Progress",
+        "filterQueued": "Queued",
+        "filterWaiting": "Waiting",
+        "filterCancelled": "Cancelled",
+
+        "allWorkflows": "All Workflows",
+        "selectWorkflowPlaceholder": "Select a workflow"
   }

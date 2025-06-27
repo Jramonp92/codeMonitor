@@ -72,5 +72,55 @@
     "rootBreadcrumb": "Корень",
     "emptyDirectory": "Эта папка пуста.",
     "trackFile": "Отслеживать файл",
-    "untrackFile": "Прекратить отслеживание"
+    "untrackFile": "Прекратить отслеживание",
+
+    "statusMerged": "Merged",
+    "statusOpen": "Открыт",
+    "statusClosed": "Закрыт",
+
+    "paginationPrevious": "Назад",
+    "paginationNext": "Вперед",
+
+    "manageRepositories": "Управление репозиториями",
+    "availableRepositories": "Доступные репозитории",
+    "searchYourRepositories": "Поиск в ваших репозиториях...",
+    "addByUrlOrName": "Добавить по URL или названию",
+    "addRepoPlaceholder": "например, facebook/react",
+    "add": "Добавить",
+    "adding": "...",
+    "visibleRepositories": "Видимые репозитории",
+    "errorUrlNotGithub": "URL должен быть с github.com",
+    "errorInvalidUrlFormat": "Неверный формат URL. Используйте: владелец/репо",
+    "errorInvalidFormat": "Неверный формат. Используйте \"владелец/репо\" или полный URL-адрес GitHub.",
+    "errorRepoAlreadyVisible": "Репозиторий уже в вашем списке видимых.",
+    "errorRepoNotFound": "Не удалось найти репозиторий.",
+
+    "refreshDataTitle": "Обновить данные",
+
+    "selectRepositoryPlaceholder": "Выберите репозиторий",
+    "noRepositoriesFound": "Репозитории не найдены",
+
+    "configureRepositories": "Настроить репозитории",
+    "configureAlerts": "Настроить оповещения",
+    "clearAllNotifications": "Очистить все уведомления",
+    "settings": "Настройки",
+    "logout": "Выйти",
+
+    "filtersTitle": "Фильтры",
+    "expand": "Развернуть ▼",
+    "collapse": "Свернуть ▲",
+    "filterAll": "Все",
+    "filterOpen": "Открыт",
+    "filterClosed": "Закрыт",
+    "filterMerged": "Merged",
+    "filterAssignedToMe": "Назначенные мне",
+    "filterSuccess": "Успешно",
+    "filterFailure": "Сбой",
+    "filterInProgress": "В процессе",
+    "filterQueued": "В очереди",
+    "filterWaiting": "Ожидание",
+    "filterCancelled": "Отменено",
+
+    "allWorkflows": "Все Workflows",
+    "selectWorkflowPlaceholder": "Выберите workflow"
   }

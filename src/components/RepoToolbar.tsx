@@ -1,9 +1,11 @@
+// src/components/RepoToolbar.tsx
+
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import './RepoToolbar.css';
 import { SearchableRepoDropdown } from './SearchableRepoDropdown';
 import type { Repo, GitHubUser } from '../hooks/useGithubData';
 import type { ActiveNotifications } from '../background/alarms';
 
-// --- INICIO DEL CAMBIO: Componente para el nuevo ícono SVG ---
 const RefreshIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -20,7 +22,6 @@ const RefreshIcon = () => (
     <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
   </svg>
 );
-// --- FIN DEL CAMBIO ---
 
 interface RepoToolbarProps {
   managedRepos: Repo[];
@@ -41,6 +42,7 @@ export const RepoToolbar = ({
   onRefresh,
   notifications
 }: RepoToolbarProps) => {
+  const { t } = useTranslation(); // 2. Usar hook
   return (
     <div className="repo-toolbar">
       <SearchableRepoDropdown
@@ -51,13 +53,11 @@ export const RepoToolbar = ({
         notifications={notifications}
       />
 
-      {/* --- INICIO DEL CAMBIO: Usamos el nuevo componente de ícono --- */}
       {selectedRepo && (
-         <button onClick={onRefresh} className="refresh-button" title="Refrescar datos">
+         <button onClick={onRefresh} className="refresh-button" title={t('refreshDataTitle')}>
             <RefreshIcon />
          </button>
       )}
-      {/* --- FIN DEL CAMBIO --- */}
     </div>
   );
 };

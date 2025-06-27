@@ -1,3 +1,6 @@
+// src/components/ItemStatus.tsx
+
+import { useTranslation } from 'react-i18next'; // 1. Importar hook
 import './ItemStatus.css';
 import type { PullRequestInfo, IssueInfo } from '../hooks/useGithubData';
 
@@ -6,7 +9,7 @@ interface ItemStatusProps {
 }
 
 export function ItemStatus({ item }: ItemStatusProps) {
-  // CAMBIO: En lugar de un color, ahora determinamos una clase de estado
+  const { t } = useTranslation(); // 2. Usar hook
   let statusClassName = '';
   let text = '';
 
@@ -14,24 +17,23 @@ export function ItemStatus({ item }: ItemStatusProps) {
     const pr = item as PullRequestInfo;
     if (pr.merged_at) {
       statusClassName = 'status-merged';
-      text = 'Merged';
+      text = t('statusMerged');
     } else if (pr.state === 'open') {
       statusClassName = 'status-open';
-      text = 'Open';
+      text = t('statusOpen');
     } else {
       statusClassName = 'status-closed';
-      text = 'Closed';
+      text = t('statusClosed');
     }
   } else {
     if (item.state === 'open') {
       statusClassName = 'status-open';
-      text = 'Open';
+      text = t('statusOpen');
     } else {
       statusClassName = 'status-closed';
-      text = 'Closed';
+      text = t('statusClosed');
     }
   }
 
-  // CAMBIO: Aplicamos la clase de estado al span, en lugar de un estilo en línea
   return <span className={`item-status-pill ${statusClassName}`}>{text}</span>;
 }
